@@ -43,13 +43,19 @@ fn lookup(day: u8) -> Option<(fn(&Vec<String>) -> Solution, (&'static str, &'sta
 #[test]
 fn all_days_give_correct_output() -> Result<(), std::io::Error> {
     for day in 1..=25 {
-        if let Some((solve, correct_solution)) = lookup(day) {
+        if let Some((solve, (correct_a, correct_b))) = lookup(day) {
             let input_lines = get_file_lines(&day_input_filename(day))?;
-            let solution = solve(&input_lines);
+            let (solution_a, solution_b) = solve(&input_lines);
             assert_eq!(
-                (solution.0.as_str(), solution.1.as_str()),
-                correct_solution,
-                "Incorrect solution for day {}",
+                solution_a.as_str(),
+                correct_a,
+                "Incorrect solution for day {}a",
+                day
+            );
+            assert_eq!(
+                solution_b.as_str(),
+                correct_b,
+                "Incorrect solution for day {}b",
                 day
             );
         }
