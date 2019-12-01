@@ -13,7 +13,7 @@ fn full_fuel_mass(mass: i64) -> i64 {
     }
 }
 
-pub fn solve(lines: &Vec<String>) -> Solution {
+pub fn solve(lines: &[String]) -> Solution {
     let module_masses: Vec<i64> = lines
         .iter()
         .map(|line| line.parse::<i64>().unwrap())

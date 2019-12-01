@@ -14,7 +14,10 @@ pub fn get_file_lines(path: &Path) -> Result<Vec<String>, std::io::Error> {
     if path == Path::new("-") {
         read_lines(std::io::stdin())
     } else {
-        read_lines(File::open(&path).expect(&format!("Input file not found: {:?}", path)))
+        read_lines(
+            File::open(&path)
+                .unwrap_or_else(|_| panic!(format!("Input file not found: {:?}", path))),
+        )
     }
 }
 

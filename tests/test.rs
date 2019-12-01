@@ -3,7 +3,7 @@ use adventofcode_2019::common::get_file_lines;
 use adventofcode_2019::common::Solution;
 use adventofcode_2019::days;
 
-fn lookup(day: u8) -> Option<(fn(&Vec<String>) -> Solution, (&'static str, &'static str))> {
+fn lookup(day: u8) -> Option<(fn(&[String]) -> Solution, (&'static str, &'static str))> {
     match day {
         1 => Some((days::day01::solve, ("3262356", "4890664"))),
         // 2 => Some((days::day02::solve, ("", ""))),
