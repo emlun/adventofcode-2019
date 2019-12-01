@@ -1,7 +1,7 @@
 # Advent of Code 2019 solutions
 
-[![Build Status](https://github.com/emlun/adventofcode-2019/workflows/build/badge.svg)](https://github.com/emlun/adventofcode-2019/actions)
-[![Clippy Status](https://github.com/emlun/adventofcode-2019/workflows/clippy/badge.svg)](https://github.com/emlun/adventofcode-2019/actions)
+[![Build Status](https://github.com/emlun/adventofcode-2019/workflows/build/badge.svg)](https://github.com/emlun/adventofcode-2019/actions?query=workflow:build)
+[![Clippy Status](https://github.com/emlun/adventofcode-2019/workflows/clippy/badge.svg)](https://github.com/emlun/adventofcode-2019/actions?query=workflow:clippy)
 
 To run the solutions:
 
