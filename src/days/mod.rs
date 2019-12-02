@@ -1,5 +1,5 @@
 pub mod day01;
-// pub mod day02;
+pub mod day02;
 // pub mod day03;
 // pub mod day04;
 // pub mod day05;
@@ -31,7 +31,7 @@ pub fn all_numbers() -> Vec<u8> {
 pub fn get_solver(day: u8) -> Option<fn(&[String]) -> crate::common::Solution> {
     match day {
         1 => Some(day01::solve),
-        // 2 => Some(day02::solve),
+        2 => Some(day02::solve),
         // 3 => Some(day03::solve),
         // 4 => Some(day04::solve),
         // 5 => Some(day05::solve),
