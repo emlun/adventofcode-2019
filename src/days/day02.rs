@@ -28,13 +28,16 @@ fn solve_a(mut program: Vec<usize>) -> usize {
     run(program)
 }
 
+#[allow(clippy::unreadable_literal)]
+const B_OUTPUT_TARGET: usize = 19690720;
+
 fn solve_b(program: Vec<usize>) -> usize {
     for noun in 0..program.len() {
         for verb in 0..program.len() {
             let mut prog = program.clone();
             prog[1] = noun;
             prog[2] = verb;
-            if run(prog) == 19690720 {
+            if run(prog) == B_OUTPUT_TARGET {
                 return 100 * noun + verb;
             }
         }
