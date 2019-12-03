@@ -1,11 +1,14 @@
-use crate::common::Solution;
+use std::collections::HashMap;
 use std::collections::HashSet;
+
+use crate::common::Solution;
 
 type Point = (i64, i64);
 
-fn parse_wire(desc: &str) -> HashSet<Point> {
-    let mut points: HashSet<Point> = HashSet::new();
+fn parse_wire(desc: &str) -> Vec<Point> {
+    let mut points: Vec<Point> = Vec::new();
     let mut pos: Point = (0, 0);
+    points.push(pos);
     for step in desc.split(',') {
         let dir = match step.chars().nth(0).unwrap() {
             'R' => (1, 0),
@@ -17,21 +20,36 @@ fn parse_wire(desc: &str) -> HashSet<Point> {
         let len: u32 = step[1..step.len()].parse().unwrap();
         for _i in 0..len {
             pos = (pos.0 + dir.0, pos.1 + dir.1);
-            points.insert(pos);
+            points.push(pos);
         }
     }
     points
 }
 
+fn norm(p: &Point) -> u64 {
+    (p.0.abs() as u64) + (p.1.abs() as u64)
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let wire1 = parse_wire(&lines[0]);
     let wire2 = parse_wire(&lines[1]);
-    let a_solution: i64 = wire1
-        .intersection(&wire2)
+
+    let wire1_set: HashSet<&Point> = wire1.iter().collect();
+    let wire2_set: HashSet<&Point> = wire2.iter().collect();
+
+    let wire1_inv: HashMap<&Point, usize> = wire1.iter().enumerate().map(|(i, p)| (p, i)).collect();
+    let wire2_inv: HashMap<&Point, usize> = wire2.iter().enumerate().map(|(i, p)| (p, i)).collect();
+
+    let intersections: HashSet<&&Point> = wire1_set
+        .intersection(&wire2_set)
         .filter(|(x, y)| (x, y) != (&0, &0))
-        .map(|(x, y)| x.abs() + y.abs())
+        .collect();
+
+    let a_solution: u64 = intersections.iter().map(|p| norm(*p)).min().unwrap();
+    let b_solution: usize = intersections
+        .iter()
+        .map(|p| wire1_inv.get(*p).unwrap() + wire2_inv.get(*p).unwrap())
         .min()
         .unwrap();
-    let b_solution: i64 = 0;
     (a_solution.to_string(), b_solution.to_string())
 }
