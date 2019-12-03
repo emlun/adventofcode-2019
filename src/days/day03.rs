@@ -8,7 +8,6 @@ type Point = (i64, i64);
 fn parse_wire(desc: &str) -> Vec<Point> {
     let mut points: Vec<Point> = Vec::new();
     let mut pos: Point = (0, 0);
-    points.push(pos);
     for step in desc.split(',') {
         let dir = match step.chars().nth(0).unwrap() {
             'R' => (1, 0),
@@ -40,13 +39,10 @@ pub fn solve(lines: &[String]) -> Solution {
     let wire1_inv: HashMap<&Point, usize> = wire1.iter().enumerate().map(|(i, p)| (p, i)).collect();
     let wire2_inv: HashMap<&Point, usize> = wire2.iter().enumerate().map(|(i, p)| (p, i)).collect();
 
-    let intersections: HashSet<&&Point> = wire1_set
-        .intersection(&wire2_set)
-        .filter(|(x, y)| (x, y) != (&0, &0))
-        .collect();
+    let intersections: HashSet<&&Point> = wire1_set.intersection(&wire2_set).collect();
 
     let a_solution: u64 = intersections.iter().map(|p| norm(*p)).min().unwrap();
-    let b_solution: usize = intersections
+    let b_solution: usize = 2 + intersections
         .iter()
         .map(|p| wire1_inv.get(*p).unwrap() + wire2_inv.get(*p).unwrap())
         .min()
