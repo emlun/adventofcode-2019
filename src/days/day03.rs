@@ -17,7 +17,7 @@ fn parse_wire(desc: &str) -> Vec<Point> {
             'D' => (0, -1),
             _ => unreachable!(),
         };
-        let len: u32 = step[1..step.len()].parse().unwrap();
+        let len: u32 = step[1..].parse().unwrap();
         for _i in 0..len {
             pos = (pos.0 + dir.0, pos.1 + dir.1);
             points.push(pos);
