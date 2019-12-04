@@ -8,7 +8,7 @@ fn lookup(day: u8) -> Option<(fn(&[String]) -> Solution, (&'static str, &'static
         1 => Some((days::day01::solve, ("3262356", "4890664"))),
         2 => Some((days::day02::solve, ("3101844", "8478"))),
         3 => Some((days::day03::solve, ("232", "6084"))),
-        // 4 => Some((days::day04::solve, ("", ""))),
+        4 => Some((days::day04::solve, ("", ""))),
         // 5 => Some((days::day05::solve, ("", ""))),
         // 6 => Some((days::day06::solve, ("", ""))),
         // 7 => Some((days::day07::solve, ("", ""))),
