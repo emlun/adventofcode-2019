@@ -21,7 +21,6 @@ fn satisfies_new_conditions_b(pw: &PasswordNumber) -> bool {
     return sames.values().any(|i| i == &1);
 }
 
-#[derive(Debug)]
 struct PasswordNumber {
     digits: Vec<u8>,
 }
