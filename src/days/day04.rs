@@ -7,7 +7,7 @@ fn satisfies_conditions_a(pw: &PasswordNumber) -> bool {
             return true;
         }
     }
-    return false;
+    false
 }
 
 fn satisfies_new_conditions_b(pw: &PasswordNumber) -> bool {
@@ -18,7 +18,7 @@ fn satisfies_new_conditions_b(pw: &PasswordNumber) -> bool {
             sames.insert(d1, sames.get(&d1).unwrap_or(&0) + 1);
         }
     }
-    return sames.values().any(|i| i == &1);
+    sames.values().any(|i| i == &1)
 }
 
 struct PasswordNumber {
@@ -69,7 +69,7 @@ impl From<u32> for PasswordNumber {
             digits.push(((i % (pow * 10)) / pow) as u8);
             pow *= 10;
         }
-        PasswordNumber { digits: digits }
+        PasswordNumber { digits }
     }
 }
 
