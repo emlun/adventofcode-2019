@@ -1,24 +1,21 @@
 use crate::common::Solution;
 use std::collections::HashMap;
 
-fn satisfies_conditions_a(password: u32) -> bool {
-    let s = password.to_string();
-
-    for i in 1..s.len() {
-        if s.chars().nth(i - 1) == s.chars().nth(i) {
+fn satisfies_conditions_a(pw: &PasswordNumber) -> bool {
+    for i in 1..pw.digits.len() {
+        if pw.digits[i - 1] == pw.digits[i] {
             return true;
         }
     }
     return false;
 }
 
-fn satisfies_new_conditions_b(password: u32) -> bool {
-    let s = password.to_string();
-    let mut sames: HashMap<char, u8> = HashMap::new();
-    for i in 1..s.len() {
-        let c1 = s.chars().nth(i - 1).unwrap();
-        if c1 == s.chars().nth(i).unwrap() {
-            sames.insert(c1, sames.get(&c1).unwrap_or(&0) + 1);
+fn satisfies_new_conditions_b(pw: &PasswordNumber) -> bool {
+    let mut sames: HashMap<u8, u8> = HashMap::new();
+    for i in 1..pw.digits.len() {
+        let d1 = pw.digits[i - 1];
+        if d1 == pw.digits[i] {
+            sames.insert(d1, sames.get(&d1).unwrap_or(&0) + 1);
         }
     }
     return sames.values().any(|i| i == &1);
@@ -88,14 +85,10 @@ pub fn solve(lines: &[String]) -> Solution {
     let mut count_a = 0;
     let mut count_b = 0;
     let mut num = PasswordNumber::from(low_bound);
-    loop {
-        let numu = num.as_u32();
-        if numu > high_bound {
-            break;
-        }
-        if satisfies_conditions_a(numu) {
+    while num.as_u32() <= high_bound {
+        if satisfies_conditions_a(&num) {
             count_a += 1;
-            if satisfies_new_conditions_b(numu) {
+            if satisfies_new_conditions_b(&num) {
                 count_b += 1;
             }
         }
