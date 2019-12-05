@@ -116,7 +116,7 @@ pub fn solve(lines: &[String]) -> Solution {
     (
         solve_a(program.clone())
             .map(|i| i.to_string())
-            .unwrap_or("Failure!".to_string()),
+            .unwrap_or_else(|| "Failure!".to_string()),
         solve_b(program).to_string(),
     )
 }

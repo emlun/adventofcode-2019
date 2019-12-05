@@ -51,7 +51,7 @@ impl PasswordNumber {
         let mut result: u32 = 0;
         let mut pow: u32 = 1;
         for i in 0..self.digits.len() {
-            result += pow * (self.digits[i] as u32);
+            result += pow * u32::from(self.digits[i]);
             pow *= 10;
         }
         result
