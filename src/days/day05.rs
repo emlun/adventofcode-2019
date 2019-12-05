@@ -158,37 +158,30 @@ fn run(mut program: Vec<i32>, input: &mut dyn Iterator<Item = i32>) -> (Vec<i32>
     (program, output)
 }
 
-fn solve_a(mut program: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
-    let (prog2, output) = run(program, &mut vec![1].into_iter());
-    println!("{:?}", prog2);
-    println!("{:?}", output);
+fn solve_a(program: Vec<i32>) -> Option<i32> {
+    let (_, output) = run(program, &mut vec![1].into_iter());
     if output
         .iter()
         .enumerate()
         .all(|(i, o)| *o == 0 || i == output.len() - 1)
     {
-        println!("Success!");
+        Some(output[output.len() - 1])
     } else {
-        println!("Failure!");
+        None
     }
-    (prog2, output)
 }
 
-fn solve_b(mut program: Vec<i32>) -> (Vec<i32>, Vec<i32>) {
-    let (prog2, output) = run(program, &mut vec![5].into_iter());
-    println!("{:?}", prog2);
-    println!("{:?}", output);
-    (prog2, output)
+fn solve_b(program: Vec<i32>) -> i32 {
+    let (_, output) = run(program, &mut vec![5].into_iter());
+    output[output.len() - 1]
 }
-
-#[allow(clippy::unreadable_literal)]
-const B_OUTPUT_TARGET: usize = 19690720;
 
 pub fn solve(lines: &[String]) -> Solution {
-    // println!("{:?}", solve_a(vec![1002, 4, 3, 4, 33], vec![42]));
     let program: Vec<i32> = lines[0].split(',').map(|s| s.parse().unwrap()).collect();
     (
-        solve_a(program.clone()).0[0].to_string(),
-        solve_b(program).0[0].to_string(),
+        solve_a(program.clone())
+            .map(|i| i.to_string())
+            .unwrap_or("Failure!".to_string()),
+        solve_b(program).to_string(),
     )
 }
