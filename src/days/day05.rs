@@ -8,172 +8,107 @@ fn step(
 ) -> (usize, Vec<i32>) {
     let instruction = prog[eip];
     let opcode = instruction % 100;
-    let parmodes = instruction / 100;
-    match opcode {
+
+    let get_args = |num: usize| {
+        let mut result = Vec::new();
+
+        let mut parmode_pow = 100;
+        for i in 1..=num {
+            let iarg = prog[eip + i];
+            let arg = if (instruction / parmode_pow) % 10 == 0 {
+                prog[iarg as usize]
+            } else {
+                iarg
+            };
+            result.push(arg);
+            parmode_pow *= 10;
+        }
+
+        result
+    };
+
+    let eip = match opcode {
         1 => {
-            let ia = prog[eip + 1];
-            let ib = prog[eip + 2];
-            let ic = prog[eip + 3] as usize;
-
-            let a = if parmodes % 10 == 0 {
-                prog[ia as usize]
-            } else {
-                ia
-            };
-            let b = if (parmodes / 10) % 10 == 0 {
-                prog[ib as usize]
-            } else {
-                ib
-            };
-
-            prog[ic] = a + b;
-            (eip + 4, prog)
+            let args = get_args(2);
+            let io = prog[eip + 3] as usize;
+            prog[io] = args[0] + args[1];
+            eip + 4
         }
         2 => {
-            let ia = prog[eip + 1];
-            let ib = prog[eip + 2];
-            let ic = prog[eip + 3] as usize;
-
-            let a = if parmodes % 10 == 0 {
-                prog[ia as usize]
-            } else {
-                ia
-            };
-            let b = if (parmodes / 10) % 10 == 0 {
-                prog[ib as usize]
-            } else {
-                ib
-            };
-
-            prog[ic] = a * b;
-            (eip + 4, prog)
+            let args = get_args(2);
+            let io = prog[eip + 3] as usize;
+            prog[io] = args[0] * args[1];
+            eip + 4
         }
         3 => {
-            let ia = prog[eip + 1] as usize;
-            prog[ia] = input.next().unwrap();
-            (eip + 2, prog)
+            let io = prog[eip + 1] as usize;
+            prog[io] = input.next().unwrap();
+            eip + 2
         }
         4 => {
-            let ia = prog[eip + 1];
-            let a = if parmodes % 10 == 0 {
-                prog[ia as usize]
-            } else {
-                ia
-            };
-            output.push(a);
-            (eip + 2, prog)
+            let args = get_args(1);
+            output.push(args[0]);
+            eip + 2
         }
         5 => {
-            let ia = prog[eip + 1];
-            let ib = prog[eip + 2];
-
-            let a = if parmodes % 10 == 0 {
-                prog[ia as usize]
+            let args = get_args(2);
+            if args[0] != 0 {
+                args[1] as usize
             } else {
-                ia
-            };
-            let b = if (parmodes / 10) % 10 == 0 {
-                prog[ib as usize]
-            } else {
-                ib
-            };
-
-            if a != 0 {
-                (b as usize, prog)
-            } else {
-                (eip + 3, prog)
+                eip + 3
             }
         }
         6 => {
-            let ia = prog[eip + 1];
-            let ib = prog[eip + 2];
-
-            let a = if parmodes % 10 == 0 {
-                prog[ia as usize]
+            let args = get_args(2);
+            if args[0] == 0 {
+                args[1] as usize
             } else {
-                ia
-            };
-            let b = if (parmodes / 10) % 10 == 0 {
-                prog[ib as usize]
-            } else {
-                ib
-            };
-
-            if a == 0 {
-                (b as usize, prog)
-            } else {
-                (eip + 3, prog)
+                eip + 3
             }
         }
         7 => {
-            let ia = prog[eip + 1];
-            let ib = prog[eip + 2];
-            let ic = prog[eip + 3] as usize;
-
-            let a = if parmodes % 10 == 0 {
-                prog[ia as usize]
-            } else {
-                ia
-            };
-            let b = if (parmodes / 10) % 10 == 0 {
-                prog[ib as usize]
-            } else {
-                ib
-            };
-
-            prog[ic] = if a < b { 1 } else { 0 };
-            (eip + 4, prog)
+            let args = get_args(2);
+            let io = prog[eip + 3] as usize;
+            prog[io] = if args[0] < args[1] { 1 } else { 0 };
+            eip + 4
         }
         8 => {
-            let ia = prog[eip + 1];
-            let ib = prog[eip + 2];
-            let ic = prog[eip + 3] as usize;
-
-            let a = if parmodes % 10 == 0 {
-                prog[ia as usize]
-            } else {
-                ia
-            };
-            let b = if (parmodes / 10) % 10 == 0 {
-                prog[ib as usize]
-            } else {
-                ib
-            };
-
-            prog[ic] = if a == b { 1 } else { 0 };
-            (eip + 4, prog)
+            let args = get_args(2);
+            let io = prog[eip + 3] as usize;
+            prog[io] = if args[0] == args[1] { 1 } else { 0 };
+            eip + 4
         }
         _ => unreachable!(),
-    }
+    };
+    (eip, prog)
 }
 
-fn run(mut program: Vec<i32>, input: &mut dyn Iterator<Item = i32>) -> (Vec<i32>, Vec<i32>) {
+fn run(mut program: Vec<i32>, input: i32) -> Vec<i32> {
     let mut output: Vec<i32> = Vec::new();
     let mut eip = 0;
     while program[eip] != 99 {
-        let out = step(eip, program, &mut output, input);
+        let out = step(eip, program, &mut output, &mut vec![input].into_iter());
         eip = out.0;
         program = out.1;
     }
-    (program, output)
+    output
 }
 
 fn solve_a(program: Vec<i32>) -> Option<i32> {
-    let (_, output) = run(program, &mut vec![1].into_iter());
+    let output = run(program, 1);
     if output
         .iter()
         .enumerate()
         .all(|(i, o)| *o == 0 || i == output.len() - 1)
     {
-        Some(output[output.len() - 1])
+        Some(*output.last().unwrap())
     } else {
         None
     }
 }
 
 fn solve_b(program: Vec<i32>) -> i32 {
-    let (_, output) = run(program, &mut vec![5].into_iter());
-    output[output.len() - 1]
+    *run(program, 5).last().unwrap()
 }
 
 pub fn solve(lines: &[String]) -> Solution {
