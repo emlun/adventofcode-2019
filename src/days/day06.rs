@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
+use std::collections::LinkedList;
 
 use crate::common::Solution;
 
@@ -38,7 +40,54 @@ pub fn solve(lines: &[String]) -> Solution {
         .map(|orbitee| get_orbit_nums(&orbitee, &orbits, &mut num_orbits))
         .sum();
 
-    println!("{:?}", orbit_nums);
+    let orbiters: HashMap<&String, HashSet<&String>> =
+        orbits
+            .iter()
+            .fold(HashMap::new(), |mut result, (orbiter, orbitee)| {
+                let nw = HashSet::new();
+                let mut orbiters: HashSet<&String> = result.remove(orbitee).unwrap_or(nw);
+                orbiters.insert(orbiter);
+                result.insert(orbitee, orbiters);
+                result
+            });
 
-    (orbit_nums.to_string(), "bar".to_string())
+    let start_obj: &String = orbits.get("YOU").unwrap();
+    let target_obj: &String = orbits.get("SAN").unwrap();
+
+    fn search(
+        pos: &String,
+        target: &String,
+        orbits: &HashMap<String, String>,
+        orbiters: &HashMap<&String, HashSet<&String>>,
+    ) -> Option<u32> {
+        let mut queue: LinkedList<(&String, u32, &String)> = LinkedList::new();
+
+        queue.push_back((orbits.get(pos).unwrap(), 1, pos));
+        for orbiter in orbiters.get(pos).iter().map(|set| set.iter()).flatten() {
+            queue.push_back((orbiter, 1, pos));
+        }
+
+        while !queue.is_empty() {
+            let (pos, steps, prev) = queue.pop_front().unwrap();
+            if pos == target {
+                return Some(steps);
+            } else {
+                if let Some(orbitee) = orbits.get(pos) {
+                    if orbitee != prev {
+                        queue.push_back((orbitee, steps + 1, pos));
+                    }
+                }
+                for orbiter in orbiters.get(pos).iter().map(|set| set.iter()).flatten() {
+                    if *orbiter != prev {
+                        queue.push_back((orbiter, steps + 1, pos));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    let b = search(start_obj, target_obj, &orbits, &orbiters).unwrap();
+
+    (orbit_nums.to_string(), b.to_string())
 }
