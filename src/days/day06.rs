@@ -4,17 +4,7 @@ use std::collections::LinkedList;
 
 use crate::common::Solution;
 
-pub fn solve(lines: &[String]) -> Solution {
-    let orbits: HashMap<String, String> = lines
-        .iter()
-        .map(|line| {
-            let mut splt = line.split(')');
-            let a = splt.next().unwrap();
-            let b = splt.next().unwrap();
-            (b.to_string(), a.to_string())
-        })
-        .collect();
-
+fn solve_a(orbits: &HashMap<String, String>) -> u32 {
     let mut num_orbits: HashMap<String, u32> = HashMap::new();
 
     fn get_orbit_nums<'obt>(
@@ -35,10 +25,22 @@ pub fn solve(lines: &[String]) -> Solution {
         }
     };
 
-    let orbit_nums: u32 = orbits
+    orbits
         .keys()
         .map(|orbitee| get_orbit_nums(&orbitee, &orbits, &mut num_orbits))
-        .sum();
+        .sum()
+}
+
+pub fn solve(lines: &[String]) -> Solution {
+    let orbits: HashMap<String, String> = lines
+        .iter()
+        .map(|line| {
+            let mut splt = line.split(')');
+            let a = splt.next().unwrap();
+            let b = splt.next().unwrap();
+            (b.to_string(), a.to_string())
+        })
+        .collect();
 
     let orbiters: HashMap<&String, HashSet<&String>> =
         orbits
@@ -89,5 +91,8 @@ pub fn solve(lines: &[String]) -> Solution {
 
     let b = search(start_obj, target_obj, &orbits, &orbiters).unwrap();
 
-    (orbit_nums.to_string(), b.to_string())
+    (
+        solve_a(&orbits).to_string(),
+        b.to_string(),
+    )
 }
