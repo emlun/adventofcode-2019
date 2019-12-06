@@ -5,63 +5,55 @@ use std::collections::LinkedList;
 use crate::common::Solution;
 
 fn solve_a(orbits: &HashMap<String, String>) -> u32 {
-    let mut num_orbits: HashMap<String, u32> = HashMap::new();
+    let mut num_orbits: HashMap<&String, u32> = HashMap::new();
 
     fn get_orbit_nums<'obt>(
-        orbiter: &'obt String,
+        child: &'obt String,
         orbits: &'obt HashMap<String, String>,
-        num_orbits: &'obt mut HashMap<String, u32>,
+        num_orbits: &mut HashMap<&'obt String, u32>,
     ) -> u32 {
-        if let Some(num) = num_orbits.get(orbiter) {
-            *num
-        } else {
-            let result = if let Some(orbitee) = orbits.get(orbiter) {
-                1 + get_orbit_nums(orbitee, orbits, num_orbits)
-            } else {
-                0
-            };
-            num_orbits.insert(orbiter.clone(), result);
+        num_orbits.get(child).map(|n| *n).unwrap_or_else(|| {
+            let result = orbits
+                .get(child)
+                .map(|parent| 1 + get_orbit_nums(parent, orbits, num_orbits))
+                .unwrap_or(0);
+            num_orbits.insert(child, result);
             result
-        }
+        })
     };
 
     orbits
         .keys()
-        .map(|orbitee| get_orbit_nums(&orbitee, &orbits, &mut num_orbits))
+        .map(|child| get_orbit_nums(&child, &orbits, &mut num_orbits))
         .sum()
 }
 
 fn solve_b(
     pos: &String,
     target: &String,
-    orbits: &HashMap<String, String>,
-    orbiters: &HashMap<&String, HashSet<&String>>,
+    adjacent: &HashMap<&String, HashSet<&String>>,
 ) -> Option<u32> {
     let mut queue: LinkedList<(&String, u32, &String)> = LinkedList::new();
+    queue.push_back((pos, 0, pos));
 
-    queue.push_back((orbits.get(pos).unwrap(), 1, pos));
-    for orbiter in orbiters.get(pos).iter().map(|set| set.iter()).flatten() {
-        queue.push_back((orbiter, 1, pos));
-    }
-
-    while !queue.is_empty() {
-        let (pos, steps, prev) = queue.pop_front().unwrap();
-        if pos == target {
-            return Some(steps);
+    loop {
+        if let Some((pos, steps, prev)) = queue.pop_front() {
+            if pos == target {
+                return Some(steps);
+            } else {
+                for neighbor in adjacent
+                    .get(pos)
+                    .iter()
+                    .flat_map(|set| set.iter())
+                    .filter(|neighbor| **neighbor != prev)
+                {
+                    queue.push_back((neighbor, steps + 1, pos));
+                }
+            }
         } else {
-            if let Some(orbitee) = orbits.get(pos) {
-                if orbitee != prev {
-                    queue.push_back((orbitee, steps + 1, pos));
-                }
-            }
-            for orbiter in orbiters.get(pos).iter().map(|set| set.iter()).flatten() {
-                if *orbiter != prev {
-                    queue.push_back((orbiter, steps + 1, pos));
-                }
-            }
+            return None;
         }
     }
-    None
 }
 
 pub fn solve(lines: &[String]) -> Solution {
@@ -75,14 +67,17 @@ pub fn solve(lines: &[String]) -> Solution {
         })
         .collect();
 
-    let orbiters: HashMap<&String, HashSet<&String>> =
+    let adjacent: HashMap<&String, HashSet<&String>> =
         orbits
             .iter()
-            .fold(HashMap::new(), |mut result, (orbiter, orbitee)| {
+            .fold(HashMap::new(), |mut result, (child, parent)| {
                 let nw = HashSet::new();
-                let mut orbiters: HashSet<&String> = result.remove(orbitee).unwrap_or(nw);
-                orbiters.insert(orbiter);
-                result.insert(orbitee, orbiters);
+                let mut adjacent: HashSet<&String> = result.remove(parent).unwrap_or(nw);
+                adjacent.insert(child);
+                if let Some(parent) = orbits.get(parent) {
+                    adjacent.insert(parent);
+                }
+                result.insert(parent, adjacent);
                 result
             });
 
@@ -91,8 +86,7 @@ pub fn solve(lines: &[String]) -> Solution {
         solve_b(
             orbits.get("YOU").unwrap(),
             orbits.get("SAN").unwrap(),
-            &orbits,
-            &orbiters,
+            &adjacent,
         )
         .map(|b| b.to_string())
         .unwrap_or("Impossible".to_string())
