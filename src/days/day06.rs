@@ -31,6 +31,39 @@ fn solve_a(orbits: &HashMap<String, String>) -> u32 {
         .sum()
 }
 
+fn solve_b(
+    pos: &String,
+    target: &String,
+    orbits: &HashMap<String, String>,
+    orbiters: &HashMap<&String, HashSet<&String>>,
+) -> Option<u32> {
+    let mut queue: LinkedList<(&String, u32, &String)> = LinkedList::new();
+
+    queue.push_back((orbits.get(pos).unwrap(), 1, pos));
+    for orbiter in orbiters.get(pos).iter().map(|set| set.iter()).flatten() {
+        queue.push_back((orbiter, 1, pos));
+    }
+
+    while !queue.is_empty() {
+        let (pos, steps, prev) = queue.pop_front().unwrap();
+        if pos == target {
+            return Some(steps);
+        } else {
+            if let Some(orbitee) = orbits.get(pos) {
+                if orbitee != prev {
+                    queue.push_back((orbitee, steps + 1, pos));
+                }
+            }
+            for orbiter in orbiters.get(pos).iter().map(|set| set.iter()).flatten() {
+                if *orbiter != prev {
+                    queue.push_back((orbiter, steps + 1, pos));
+                }
+            }
+        }
+    }
+    None
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let orbits: HashMap<String, String> = lines
         .iter()
@@ -53,46 +86,16 @@ pub fn solve(lines: &[String]) -> Solution {
                 result
             });
 
-    let start_obj: &String = orbits.get("YOU").unwrap();
-    let target_obj: &String = orbits.get("SAN").unwrap();
-
-    fn search(
-        pos: &String,
-        target: &String,
-        orbits: &HashMap<String, String>,
-        orbiters: &HashMap<&String, HashSet<&String>>,
-    ) -> Option<u32> {
-        let mut queue: LinkedList<(&String, u32, &String)> = LinkedList::new();
-
-        queue.push_back((orbits.get(pos).unwrap(), 1, pos));
-        for orbiter in orbiters.get(pos).iter().map(|set| set.iter()).flatten() {
-            queue.push_back((orbiter, 1, pos));
-        }
-
-        while !queue.is_empty() {
-            let (pos, steps, prev) = queue.pop_front().unwrap();
-            if pos == target {
-                return Some(steps);
-            } else {
-                if let Some(orbitee) = orbits.get(pos) {
-                    if orbitee != prev {
-                        queue.push_back((orbitee, steps + 1, pos));
-                    }
-                }
-                for orbiter in orbiters.get(pos).iter().map(|set| set.iter()).flatten() {
-                    if *orbiter != prev {
-                        queue.push_back((orbiter, steps + 1, pos));
-                    }
-                }
-            }
-        }
-        None
-    }
-
-    let b = search(start_obj, target_obj, &orbits, &orbiters).unwrap();
-
     (
         solve_a(&orbits).to_string(),
-        b.to_string(),
+        solve_b(
+            orbits.get("YOU").unwrap(),
+            orbits.get("SAN").unwrap(),
+            &orbits,
+            &orbiters,
+        )
+        .map(|b| b.to_string())
+        .unwrap_or("Impossible".to_string())
+        .to_string(),
     )
 }
