@@ -6,6 +6,7 @@ use clap::Arg;
 mod common;
 mod crate_info;
 mod days;
+mod util;
 
 use crate::common::day_input_filename;
 use crate::common::get_file_lines;
