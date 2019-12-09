@@ -11,7 +11,7 @@ fn step(
     let instruction = prog[eip];
     let opcode = instruction % 100;
 
-    let ensure_size = |prog: &mut Vec<i64>, size: usize| {
+    fn ensure_size(prog: &mut Vec<i64>, size: usize) {
         if size >= prog.len() {
             prog.append(
                 &mut (0..=0)
@@ -22,10 +22,10 @@ fn step(
         }
     };
 
-    let proget = |prog: &mut Vec<i64>, addr: usize| -> i64 {
+    fn proget(prog: &mut Vec<i64>, addr: usize) -> i64 {
         ensure_size(prog, addr);
         prog[addr]
-    };
+    }
 
     let get_args = |prog: &mut Vec<i64>, num: usize| {
         let mut result = Vec::new();
