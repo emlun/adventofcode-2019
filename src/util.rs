@@ -50,19 +50,22 @@ where
             }
         }
 
-        if let Some(idx_perm) = self.current_index_permutation.as_mut() {
-            let mut result = Vec::new();
-            for i in 0..self.items.len() {
-                if i < self.current_insert_index {
-                    result.push(self.items[idx_perm[i] + 1]);
-                } else if i == self.current_insert_index {
-                    result.push(self.items[0]);
-                } else {
-                    result.push(self.items[idx_perm[i - 1] + 1]);
-                }
-            }
+        if let Some(idx_perm) = self.current_index_permutation.as_ref() {
+            let insert_index = self.current_insert_index;
             self.current_insert_index += 1;
-            Some(result)
+            Some(
+                (0..self.items.len())
+                    .map(|i| {
+                        if i < insert_index {
+                            self.items[idx_perm[i] + 1]
+                        } else if i == insert_index {
+                            self.items[0]
+                        } else {
+                            self.items[idx_perm[i - 1] + 1]
+                        }
+                    })
+                    .collect(),
+            )
         } else {
             None
         }
