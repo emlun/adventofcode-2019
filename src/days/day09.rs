@@ -157,7 +157,14 @@ fn solve_a(program: Vec<i64>) -> String {
     format!("{:?}", run(program.clone(), 1))
 }
 
+fn solve_b(program: Vec<i64>) -> String {
+    format!("{:?}", run(program.clone(), 2))
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let program: Vec<i64> = lines[0].split(',').map(|s| s.parse().unwrap()).collect();
-    (solve_a(program.clone()).to_string(), "bar".to_string())
+    (
+        solve_a(program.clone()).to_string(),
+        solve_b(program).to_string(),
+    )
 }
