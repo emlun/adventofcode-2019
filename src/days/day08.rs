@@ -1,9 +1,11 @@
+#![allow(clippy::naive_bytecount)]
+
 use crate::common::Solution;
 
 const W: usize = 25;
 const H: usize = 6;
 
-pub fn solve_b(layers: &Vec<Vec<u8>>) -> String {
+pub fn solve_b(layers: &[Vec<u8>]) -> String {
     let mut image: Vec<Vec<u8>> = Vec::new();
     for _ in 0..H {
         let mut row: Vec<u8> = Vec::new();

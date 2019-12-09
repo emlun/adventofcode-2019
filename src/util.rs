@@ -16,10 +16,10 @@ where
     fn from(items: I) -> Permutations<A> {
         let items: Vec<A> = items.into_iter().collect();
 
-        let mut index_permutations = if items.len() > 0 {
-            Some(Permutations::from(0..(items.len() - 1)))
-        } else {
+        let mut index_permutations = if items.is_empty() {
             None
+        } else {
+            Some(Permutations::from(0..(items.len() - 1)))
         };
 
         let first_index_perm = if items.len() == 1 {
