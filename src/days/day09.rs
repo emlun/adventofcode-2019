@@ -1,5 +1,6 @@
 use crate::common::Solution;
 use std::convert::TryFrom;
+use std::convert::TryInto;
 
 fn step(
     eip: usize,
@@ -28,10 +29,7 @@ fn step(
     }
 
     let get_addr = |prog: &mut Vec<i64>, offset: usize| -> usize {
-        let mut parmode_pow = 100;
-        for _ in 1..offset {
-            parmode_pow *= 10;
-        }
+        let parmode_pow = 10i64.pow((offset + 1).try_into().unwrap());
         let iarg = prog[eip + offset];
         let out_addr = match (instruction / parmode_pow) % 10 {
             0 => usize::try_from(iarg).unwrap(),
