@@ -27,26 +27,7 @@ fn step(
         prog[addr]
     }
 
-    let get_args = |prog: &mut Vec<i64>, num: usize| {
-        let mut result = Vec::new();
-
-        let mut parmode_pow = 100;
-        for i in 1..=num {
-            let iarg = prog[eip + i];
-            let arg = match (instruction / parmode_pow) % 10 {
-                0 => proget(prog, usize::try_from(iarg).unwrap()),
-                1 => iarg,
-                2 => proget(prog, usize::try_from(*relbase + iarg).unwrap()),
-                _ => unreachable!(),
-            };
-            result.push(arg);
-            parmode_pow *= 10;
-        }
-
-        result
-    };
-
-    let get_outaddr = |prog: &mut Vec<i64>, offset: usize| -> usize {
+    let get_addr = |prog: &mut Vec<i64>, offset: usize| -> usize {
         let mut parmode_pow = 100;
         for _ in 1..offset {
             parmode_pow *= 10;
@@ -54,6 +35,7 @@ fn step(
         let iarg = prog[eip + offset];
         let out_addr = match (instruction / parmode_pow) % 10 {
             0 => usize::try_from(iarg).unwrap(),
+            1 => eip + offset,
             2 => usize::try_from(*relbase + iarg).unwrap(),
             _ => unreachable!(),
         };
@@ -61,21 +43,30 @@ fn step(
         out_addr
     };
 
+    let get_args = |prog: &mut Vec<i64>, num: usize| -> Vec<i64> {
+        (1..=num)
+            .map(|i| {
+                let addr = get_addr(prog, i);
+                proget(prog, addr)
+            })
+            .collect()
+    };
+
     let eip = match opcode {
         1 => {
             let args = get_args(&mut prog, 2);
-            let io = get_outaddr(&mut prog, 3);
+            let io = get_addr(&mut prog, 3);
             prog[io] = args[0] + args[1];
             eip + 4
         }
         2 => {
             let args = get_args(&mut prog, 2);
-            let io = get_outaddr(&mut prog, 3);
+            let io = get_addr(&mut prog, 3);
             prog[io] = args[0] * args[1];
             eip + 4
         }
         3 => {
-            let io = get_outaddr(&mut prog, 1);
+            let io = get_addr(&mut prog, 1);
             if let Some(i) = input.take() {
                 prog[io] = i;
                 eip + 2
@@ -110,13 +101,13 @@ fn step(
         }
         7 => {
             let args = get_args(&mut prog, 2);
-            let io = get_outaddr(&mut prog, 3);
+            let io = get_addr(&mut prog, 3);
             prog[io] = if args[0] < args[1] { 1 } else { 0 };
             eip + 4
         }
         8 => {
             let args = get_args(&mut prog, 2);
-            let io = get_outaddr(&mut prog, 3);
+            let io = get_addr(&mut prog, 3);
             prog[io] = if args[0] == args[1] { 1 } else { 0 };
             eip + 4
         }
