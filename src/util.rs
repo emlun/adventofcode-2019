@@ -21,7 +21,7 @@ where
         let mut index_permutations = if items.is_empty() {
             None
         } else {
-            Some(Permutations::from(0..(items.len() - 1)))
+            Some(Permutations::from(1..items.len()))
         };
 
         let first_index_perm = if items.len() == 1 {
@@ -58,9 +58,9 @@ where
             Some(
                 (0..self.items.len())
                     .map(|i| match i.cmp(&insert_index) {
-                        Ordering::Less => idx_perm[i] + 1,
+                        Ordering::Less => idx_perm[i],
                         Ordering::Equal => 0,
-                        Ordering::Greater => idx_perm[i - 1] + 1,
+                        Ordering::Greater => idx_perm[i - 1],
                     })
                     .map(|i| self.items[i])
                     .collect(),
