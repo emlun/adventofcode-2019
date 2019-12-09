@@ -153,12 +153,16 @@ fn run(mut program: Vec<i64>, input: i64) -> Vec<i64> {
     output
 }
 
-fn solve_a(program: Vec<i64>) -> String {
-    format!("{:?}", run(program.clone(), 1))
+fn solve_a(program: Vec<i64>) -> i64 {
+    let output = run(program.clone(), 1);
+    assert_eq!(output.len(), 1, "{:?}", output);
+    output[0]
 }
 
-fn solve_b(program: Vec<i64>) -> String {
-    format!("{:?}", run(program.clone(), 2))
+fn solve_b(program: Vec<i64>) -> i64 {
+    let output = run(program.clone(), 2);
+    assert_eq!(output.len(), 1, "{:?}", output);
+    output[0]
 }
 
 pub fn solve(lines: &[String]) -> Solution {
