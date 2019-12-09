@@ -171,4 +171,31 @@ mod tests {
         let moved_items = items;
         assert_eq!(moved_items, moved_items);
     }
+
+    #[test]
+    fn can_permute_large_sequences() {
+        let items = 0..1000;
+        let some_permutations: Vec<Vec<i32>> = Permutations::from(items).take(1000).collect();
+        assert_eq!(some_permutations.len(), 1000);
+        assert_eq!(some_permutations[0], (0..1000).collect::<Vec<i32>>());
+        assert_eq!(
+            some_permutations[1],
+            (1..=1).chain(0..=0).chain(2..1000).collect::<Vec<i32>>()
+        );
+        assert_eq!(
+            some_permutations[2],
+            (1..=2).chain(0..=0).chain(3..1000).collect::<Vec<i32>>()
+        );
+        assert_eq!(
+            some_permutations[500],
+            (1..=500)
+                .chain(0..=0)
+                .chain(501..1000)
+                .collect::<Vec<i32>>()
+        );
+        assert_eq!(
+            some_permutations[999],
+            (1..1000).chain(0..=0).collect::<Vec<i32>>()
+        );
+    }
 }
