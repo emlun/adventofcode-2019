@@ -23,11 +23,6 @@ fn step(
         }
     };
 
-    fn proget(prog: &mut Vec<i64>, addr: usize) -> i64 {
-        ensure_size(prog, addr);
-        prog[addr]
-    }
-
     let get_addr = |prog: &mut Vec<i64>, offset: usize| -> usize {
         let parmode_pow = 10i64.pow((offset + 1).try_into().unwrap());
         let iarg = prog[eip + offset];
@@ -45,7 +40,7 @@ fn step(
         (1..=num)
             .map(|i| {
                 let addr = get_addr(prog, i);
-                proget(prog, addr)
+                prog[addr]
             })
             .collect()
     };
