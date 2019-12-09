@@ -71,5 +71,5 @@ pub fn solve(lines: &[String]) -> Solution {
     let a_solution = num_ones * num_twos;
     let b_solution = solve_b(&images);
 
-    (a_solution.to_string(), b_solution.to_string())
+    (a_solution.to_string(), b_solution)
 }

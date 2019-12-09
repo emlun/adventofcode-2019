@@ -1,5 +1,7 @@
 pub mod iter;
 
+use std::cmp::Ordering;
+
 #[derive(Debug)]
 pub struct Permutations<A> {
     items: Vec<A>,
@@ -55,15 +57,12 @@ where
             self.current_insert_index += 1;
             Some(
                 (0..self.items.len())
-                    .map(|i| {
-                        if i < insert_index {
-                            self.items[idx_perm[i] + 1]
-                        } else if i == insert_index {
-                            self.items[0]
-                        } else {
-                            self.items[idx_perm[i - 1] + 1]
-                        }
+                    .map(|i| match i.cmp(&insert_index) {
+                        Ordering::Less => idx_perm[i] + 1,
+                        Ordering::Equal => 0,
+                        Ordering::Greater => idx_perm[i - 1] + 1,
                     })
+                    .map(|i| self.items[i])
                     .collect(),
             )
         } else {

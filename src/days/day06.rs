@@ -86,7 +86,6 @@ pub fn solve(lines: &[String]) -> Solution {
         solve_a(&orbits).to_string(),
         solve_b(&orbits, &adjacent)
             .map(|b| b.to_string())
-            .unwrap_or_else(|| "Impossible".to_string())
-            .to_string(),
+            .unwrap_or_else(|| "Impossible".to_string()),
     )
 }
