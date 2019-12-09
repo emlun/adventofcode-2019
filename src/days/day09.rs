@@ -54,7 +54,6 @@ fn step(
         let iarg = prog[eip + offset];
         let out_addr = match (instruction / parmode_pow) % 10 {
             0 => usize::try_from(iarg).unwrap(),
-            1 => unreachable!(),
             2 => usize::try_from(*relbase + iarg).unwrap(),
             _ => unreachable!(),
         };
