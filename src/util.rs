@@ -46,28 +46,24 @@ where
     type Item = Vec<A>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.current_insert_index >= self.items.len() {
-            if let Some(idx_perms) = self.index_permutations.as_mut() {
-                self.current_index_permutation = idx_perms.next();
-                self.current_insert_index = 0;
-            }
+            self.current_insert_index = 0;
+            self.current_index_permutation =
+                self.index_permutations.as_mut().and_then(Iterator::next);
         }
 
-        if let Some(idx_perm) = self.current_index_permutation.as_ref() {
-            let insert_index = self.current_insert_index;
-            self.current_insert_index += 1;
-            Some(
-                (0..self.items.len())
-                    .map(|i| match i.cmp(&insert_index) {
-                        Ordering::Less => idx_perm[i],
-                        Ordering::Equal => 0,
-                        Ordering::Greater => idx_perm[i - 1],
-                    })
-                    .map(|i| self.items[i])
-                    .collect(),
-            )
-        } else {
-            None
-        }
+        let insert_index = self.current_insert_index;
+        self.current_insert_index += 1;
+
+        self.current_index_permutation.as_ref().map(|idx_perm| {
+            (0..self.items.len())
+                .map(|i| match i.cmp(&insert_index) {
+                    Ordering::Less => idx_perm[i],
+                    Ordering::Equal => 0,
+                    Ordering::Greater => idx_perm[i - 1],
+                })
+                .map(|i| self.items[i])
+                .collect()
+        })
     }
 }
 
