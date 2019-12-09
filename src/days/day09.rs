@@ -20,11 +20,10 @@ fn step(
 
     let get_addr = |prog: &mut Vec<i64>, offset: usize| -> usize {
         let parmode_pow = 10i64.pow((offset + 1).try_into().unwrap());
-        let iarg = prog[eip + offset];
         let out_addr = match (instruction / parmode_pow) % 10 {
-            0 => usize::try_from(iarg).unwrap(),
+            0 => usize::try_from(prog[eip + offset]).unwrap(),
             1 => eip + offset,
-            2 => usize::try_from(*relbase + iarg).unwrap(),
+            2 => usize::try_from(*relbase + prog[eip + offset]).unwrap(),
             _ => unreachable!(),
         };
         ensure_size(prog, out_addr);
