@@ -14,12 +14,7 @@ fn step(
 
     fn ensure_size(prog: &mut Vec<i64>, size: usize) {
         if size >= prog.len() {
-            prog.append(
-                &mut (0..=0)
-                    .cycle()
-                    .take(size - prog.len() + 1)
-                    .collect::<Vec<i64>>(),
-            );
+            prog.append(&mut (0..=0).cycle().take(size - prog.len() + 1).collect());
         }
     };
 
