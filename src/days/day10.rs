@@ -28,6 +28,10 @@ fn normalize((r, c): Point) -> Point {
     }
 }
 
+fn ray_atan((r, c): &Point) -> f64 {
+    ((*c as f64).atan2(-*r as f64) + 2.0 * std::f64::consts::PI) % (2.0 * std::f64::consts::PI)
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let map: HashSet<Point> = lines
         .iter()
@@ -74,10 +78,6 @@ pub fn solve(lines: &[String]) -> Solution {
             laser_rays = blocked_rays;
             asteroid_rays = tmp_asteroid_rays;
         }
-    }
-
-    fn ray_atan((r, c): &Point) -> f64 {
-        ((*c as f64).atan2(-*r as f64) + 2.0 * std::f64::consts::PI) % (2.0 * std::f64::consts::PI)
     }
 
     let mut laser_rays: Vec<Point> = laser_rays.into_iter().collect();
