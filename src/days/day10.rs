@@ -13,6 +13,21 @@ fn gcd(a: i64, b: i64) -> i64 {
     }
 }
 
+fn normalize((r, c): Point) -> Point {
+    if c == 0 {
+        if r == 0 {
+            unreachable!();
+        } else {
+            (r / r.abs(), 0)
+        }
+    } else if r == 0 {
+        (0, c / c.abs())
+    } else {
+        let d = gcd(r.abs(), c.abs());
+        (r / d, c / d)
+    }
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let map: HashSet<Point> = lines
         .iter()
@@ -33,21 +48,6 @@ pub fn solve(lines: &[String]) -> Solution {
     let mut laser_rays: HashSet<Point> = HashSet::new();
     let mut asteroid_rays: HashMap<Point, Vec<Point>> = HashMap::new();
 
-    fn normalize_dir(r: i64, c: i64) -> (i64, i64) {
-        if c == 0 {
-            if r == 0 {
-                unreachable!();
-            } else {
-                (r / r.abs(), 0)
-            }
-        } else if r == 0 {
-            (0, c / c.abs())
-        } else {
-            let d = gcd(r.abs(), c.abs());
-            (r / d, c / d)
-        }
-    }
-
     for (r0, c0) in &map {
         let mut recentered_map: HashSet<Point> =
             map.iter().map(|(r, c)| ((r - r0), (c - c0))).collect();
@@ -59,7 +59,7 @@ pub fn solve(lines: &[String]) -> Solution {
         let mut blocked_rays: HashSet<(i64, i64)> = HashSet::new();
         let mut tmp_asteroid_rays: HashMap<Point, Vec<Point>> = HashMap::new();
         for (r, c) in recentered_map.iter() {
-            let ray = normalize_dir(*r, *c);
+            let ray = normalize((*r, *c));
 
             if !blocked_rays.contains(&ray) {
                 visible += 1;
