@@ -49,7 +49,6 @@ pub fn solve(lines: &[String]) -> Solution {
 
     let mut max_vis = 0;
     let mut laser_pos: Point = (0, 0);
-    let mut laser_rays: HashSet<Point> = HashSet::new();
     let mut asteroid_rays: HashMap<Point, Vec<Point>> = HashMap::new();
 
     for (r0, c0) in &map {
@@ -75,24 +74,23 @@ pub fn solve(lines: &[String]) -> Solution {
         if visible > max_vis {
             max_vis = visible;
             laser_pos = (*r0, *c0);
-            laser_rays = blocked_rays;
             asteroid_rays = tmp_asteroid_rays;
         }
     }
 
-    let mut laser_rays: Vec<Point> = laser_rays.into_iter().collect();
-    laser_rays.sort_by(|ray1, ray2| {
-        let diff = ray_atan(ray1) - ray_atan(ray2);
-        if diff < 0.0 {
+    let mut asteroid_rays: Vec<(Point, Vec<Point>)> = asteroid_rays
+        .into_iter()
+        .collect::<Vec<(Point, Vec<Point>)>>();
+    asteroid_rays.sort_by(|(dir1, _), (dir2, _)| {
+        if ray_atan(dir1) - ray_atan(dir2) < 0.0 {
             std::cmp::Ordering::Less
         } else {
             std::cmp::Ordering::Greater
         }
     });
-
-    let mut asteroid_rays: Vec<Vec<Point>> = laser_rays
+    let mut asteroid_rays: Vec<Vec<Point>> = asteroid_rays
         .into_iter()
-        .map(|ray| asteroid_rays.remove(&ray).unwrap())
+        .map(|(_, asteroids)| asteroids)
         .collect();
 
     let mut num = 0;
