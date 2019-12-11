@@ -47,7 +47,6 @@ pub fn solve(lines: &[String]) -> Solution {
         .map(|(r, c, _)| (r.try_into().unwrap(), c.try_into().unwrap()))
         .collect();
 
-    let mut max_vis = 0;
     let mut laser_pos: Point = (0, 0);
     let mut asteroid_rays: HashMap<Point, Vec<Point>> = HashMap::new();
 
@@ -58,25 +57,20 @@ pub fn solve(lines: &[String]) -> Solution {
         let mut recentered_map: Vec<Point> = recentered_map.into_iter().collect();
         recentered_map.sort_by_key(|(r, c)| r.abs() + c.abs());
 
-        let mut visible = 0;
         let mut tmp_asteroid_rays: HashMap<Point, Vec<Point>> = HashMap::new();
         for (r, c) in recentered_map.iter() {
             let ray = normalize((*r, *c));
-
-            if !tmp_asteroid_rays.contains_key(&ray) {
-                visible += 1;
-            }
             tmp_asteroid_rays
                 .entry(ray)
                 .or_insert_with(Vec::new)
                 .push((*r, *c));
         }
-        if visible > max_vis {
-            max_vis = visible;
+        if tmp_asteroid_rays.len() > asteroid_rays.len() {
             laser_pos = (*r0, *c0);
             asteroid_rays = tmp_asteroid_rays;
         }
     }
+    let a_solution = asteroid_rays.len();
 
     let mut asteroid_rays: Vec<(Point, Vec<Point>)> = asteroid_rays
         .into_iter()
@@ -113,5 +107,5 @@ pub fn solve(lines: &[String]) -> Solution {
         }
     }
 
-    (max_vis.to_string(), b_solution.to_string())
+    (a_solution.to_string(), b_solution.to_string())
 }
