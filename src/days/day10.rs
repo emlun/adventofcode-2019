@@ -57,14 +57,15 @@ pub fn solve(lines: &[String]) -> Solution {
         let mut recentered_map: Vec<Point> = recentered_map.into_iter().collect();
         recentered_map.sort_by_key(|(r, c)| r.abs() + c.abs());
 
-        let mut tmp_asteroid_rays: HashMap<Point, Vec<Point>> = HashMap::new();
-        for (r, c) in recentered_map.iter() {
-            let ray = normalize((*r, *c));
-            tmp_asteroid_rays
-                .entry(ray)
-                .or_insert_with(Vec::new)
-                .push((*r, *c));
-        }
+        let tmp_asteroid_rays: HashMap<Point, Vec<Point>> =
+            recentered_map
+                .into_iter()
+                .fold(HashMap::new(), |mut result, pos| {
+                    let ray = normalize(pos);
+                    result.entry(ray).or_insert_with(Vec::new).push(pos);
+                    result
+                });
+
         if tmp_asteroid_rays.len() > asteroid_rays.len() {
             laser_pos = (*r0, *c0);
             asteroid_rays = tmp_asteroid_rays;
