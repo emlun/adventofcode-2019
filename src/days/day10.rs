@@ -47,30 +47,27 @@ pub fn solve(lines: &[String]) -> Solution {
         .map(|(r, c, _)| (r.try_into().unwrap(), c.try_into().unwrap()))
         .collect();
 
-    let mut laser_pos: Point = (0, 0);
-    let mut asteroid_rays: HashMap<Point, Vec<Point>> = HashMap::new();
+    let (laser_pos, asteroid_rays): (Point, HashMap<Point, Vec<Point>>) = map
+        .iter()
+        .map(|(r0, c0)| {
+            let mut recentered_map: HashSet<Point> =
+                map.iter().map(|(r, c)| ((r - r0), (c - c0))).collect();
+            recentered_map.remove(&(0, 0));
+            let mut recentered_map: Vec<Point> = recentered_map.into_iter().collect();
+            recentered_map.sort_by_key(|(r, c)| r.abs() + c.abs());
 
-    for (r0, c0) in &map {
-        let mut recentered_map: HashSet<Point> =
-            map.iter().map(|(r, c)| ((r - r0), (c - c0))).collect();
-        recentered_map.remove(&(0, 0));
-        let mut recentered_map: Vec<Point> = recentered_map.into_iter().collect();
-        recentered_map.sort_by_key(|(r, c)| r.abs() + c.abs());
-
-        let tmp_asteroid_rays: HashMap<Point, Vec<Point>> =
-            recentered_map
-                .into_iter()
-                .fold(HashMap::new(), |mut result, pos| {
-                    let ray = normalize(pos);
-                    result.entry(ray).or_insert_with(Vec::new).push(pos);
-                    result
-                });
-
-        if tmp_asteroid_rays.len() > asteroid_rays.len() {
-            laser_pos = (*r0, *c0);
-            asteroid_rays = tmp_asteroid_rays;
-        }
-    }
+            let asteroid_rays: HashMap<Point, Vec<Point>> =
+                recentered_map
+                    .into_iter()
+                    .fold(HashMap::new(), |mut result, pos| {
+                        let ray = normalize(pos);
+                        result.entry(ray).or_insert_with(Vec::new).push(pos);
+                        result
+                    });
+            ((*r0, *c0), asteroid_rays)
+        })
+        .max_by_key(|(_, rays)| rays.len())
+        .unwrap();
     let a_solution = asteroid_rays.len();
 
     let mut asteroid_rays: Vec<(Point, Vec<Point>)> = asteroid_rays
