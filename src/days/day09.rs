@@ -131,13 +131,13 @@ fn run(mut program: Vec<i64>, input: i64) -> Vec<i64> {
 }
 
 fn solve_a(program: Vec<i64>) -> i64 {
-    let output = run(program.clone(), 1);
+    let output = run(program, 1);
     assert_eq!(output.len(), 1, "{:?}", output);
     output[0]
 }
 
 fn solve_b(program: Vec<i64>) -> i64 {
-    let output = run(program.clone(), 2);
+    let output = run(program, 2);
     assert_eq!(output.len(), 1, "{:?}", output);
     output[0]
 }
