@@ -1,6 +1,5 @@
 use crate::common::Solution;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 
@@ -113,27 +112,6 @@ fn step(
     (eip, prog)
 }
 
-fn run(mut program: Vec<i64>, input: i64) -> Vec<i64> {
-    let mut output: Vec<i64> = Vec::new();
-    let mut eip = 0;
-    let mut input_iter = vec![input].into_iter();
-    let mut next_input = None;
-    let mut relbase = 0;
-    while program[eip] != 99 {
-        if next_input.is_none() {
-            next_input = input_iter.next();
-        }
-        let mut outpt = None;
-        let out = step(eip, program, &mut relbase, &mut outpt, &mut next_input);
-        if let Some(out) = outpt {
-            output.push(out);
-        }
-        eip = out.0;
-        program = out.1;
-    }
-    output
-}
-
 fn solve_a(mut program: Vec<i64>) -> usize {
     let mut white_panels: HashMap<Point, bool> = HashMap::new();
     let mut pos: Point = (0, 0);
@@ -160,8 +138,8 @@ fn solve_a(mut program: Vec<i64>) -> usize {
                 }
                 1 => {
                     dir = match out {
-                        0 => (dir.0 * 0 + dir.1 * -1, dir.0 * 1 + dir.1 * 0),
-                        1 => (dir.0 * 0 + dir.1 * 1, dir.0 * -1 + dir.1 * 0),
+                        0 => (-dir.1, dir.0),
+                        1 => (dir.1, -dir.0),
                         _ => unreachable!(),
                     };
                     pos = (pos.0 + dir.0, pos.1 + dir.1);
@@ -206,8 +184,8 @@ fn solve_b(mut program: Vec<i64>) -> String {
                 }
                 1 => {
                     dir = match out {
-                        0 => (dir.0 * 0 + dir.1 * -1, dir.0 * 1 + dir.1 * 0),
-                        1 => (dir.0 * 0 + dir.1 * 1, dir.0 * -1 + dir.1 * 0),
+                        0 => (-dir.1, dir.0),
+                        1 => (dir.1, -dir.0),
                         _ => unreachable!(),
                     };
                     pos = (pos.0 + dir.0, pos.1 + dir.1);
@@ -223,10 +201,10 @@ fn solve_b(mut program: Vec<i64>) -> String {
         }
     }
 
-    let minx = *white_panels.keys().map(|(x, y)| x).min().unwrap();
-    let maxx = *white_panels.keys().map(|(x, y)| x).max().unwrap();
-    let miny = *white_panels.keys().map(|(x, y)| y).min().unwrap();
-    let maxy = *white_panels.keys().map(|(x, y)| y).max().unwrap();
+    let minx = *white_panels.keys().map(|(x, _)| x).min().unwrap();
+    let maxx = *white_panels.keys().map(|(x, _)| x).max().unwrap();
+    let miny = *white_panels.keys().map(|(_, y)| y).min().unwrap();
+    let maxy = *white_panels.keys().map(|(_, y)| y).max().unwrap();
 
     format!(
         "\n{}",

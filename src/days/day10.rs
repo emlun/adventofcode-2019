@@ -65,9 +65,11 @@ pub fn solve(lines: &[String]) -> Solution {
 
             if !tmp_asteroid_rays.contains_key(&ray) {
                 visible += 1;
-                tmp_asteroid_rays.insert(ray, Vec::new());
             }
-            tmp_asteroid_rays.get_mut(&ray).unwrap().push((*r, *c));
+            tmp_asteroid_rays
+                .entry(ray)
+                .or_insert_with(Vec::new)
+                .push((*r, *c));
         }
         if visible > max_vis {
             max_vis = visible;
