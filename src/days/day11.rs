@@ -229,8 +229,5 @@ fn solve_b(mut program: Vec<i64>) -> String {
 
 pub fn solve(lines: &[String]) -> Solution {
     let program: Vec<i64> = lines[0].split(',').map(|s| s.parse().unwrap()).collect();
-    (
-        solve_a(program.clone()).to_string(),
-        solve_b(program).to_string(),
-    )
+    (solve_a(program.clone()).to_string(), solve_b(program))
 }
