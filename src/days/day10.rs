@@ -59,17 +59,15 @@ pub fn solve(lines: &[String]) -> Solution {
         recentered_map.sort_by_key(|(r, c)| r.abs() + c.abs());
 
         let mut visible = 0;
-        let mut blocked_rays: HashSet<(i64, i64)> = HashSet::new();
         let mut tmp_asteroid_rays: HashMap<Point, Vec<Point>> = HashMap::new();
         for (r, c) in recentered_map.iter() {
             let ray = normalize((*r, *c));
 
-            if !blocked_rays.contains(&ray) {
+            if !tmp_asteroid_rays.contains_key(&ray) {
                 visible += 1;
                 tmp_asteroid_rays.insert(ray, Vec::new());
             }
             tmp_asteroid_rays.get_mut(&ray).unwrap().push((*r, *c));
-            blocked_rays.insert(ray);
         }
         if visible > max_vis {
             max_vis = visible;
