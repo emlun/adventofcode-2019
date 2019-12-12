@@ -65,10 +65,6 @@ fn lcm(a: i64, b: i64, c: i64) -> i64 {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let mut x_states: HashSet<Vec<(i64, i64)>> = HashSet::new();
-    let mut y_states: HashSet<Vec<(i64, i64)>> = HashSet::new();
-    let mut z_states: HashSet<Vec<(i64, i64)>> = HashSet::new();
-
     let mut moons: Vec<Moon> = lines
         .iter()
         .map(|line| {
@@ -93,7 +89,9 @@ pub fn solve(lines: &[String]) -> Solution {
         })
         .collect();
 
-    let mut b_solution: Option<i64> = None;
+    let mut x_states: HashSet<Vec<(i64, i64)>> = HashSet::new();
+    let mut y_states: HashSet<Vec<(i64, i64)>> = HashSet::new();
+    let mut z_states: HashSet<Vec<(i64, i64)>> = HashSet::new();
 
     for _ in 0..1000 {
         moons = step(moons);
@@ -103,6 +101,7 @@ pub fn solve(lines: &[String]) -> Solution {
     }
 
     let a_solution: i64 = moons.iter().map(energy).sum();
+    let mut b_solution: Option<i64> = None;
 
     let mut x_period = None;
     let mut y_period = None;
