@@ -104,39 +104,39 @@ pub fn solve(lines: &[String]) -> Solution {
 
     let a_solution: i64 = moons.iter().map(energy).sum();
 
-    let mut x_cycle = None;
-    let mut y_cycle = None;
-    let mut z_cycle = None;
+    let mut x_period = None;
+    let mut y_period = None;
+    let mut z_period = None;
 
     for i in 1000.. {
         moons = step(moons);
 
-        if x_cycle.is_none() {
+        if x_period.is_none() {
             let x_state = moons.iter().map(|moon| (moon.pos.0, moon.vel.0)).collect();
             if x_states.contains(&x_state) {
-                x_cycle = Some(i);
+                x_period = Some(i);
             }
             x_states.insert(x_state);
         }
 
-        if y_cycle.is_none() {
+        if y_period.is_none() {
             let y_state = moons.iter().map(|moon| (moon.pos.1, moon.vel.1)).collect();
             if y_states.contains(&y_state) {
-                y_cycle = Some(i);
+                y_period = Some(i);
             }
             y_states.insert(y_state);
         }
 
-        if z_cycle.is_none() {
+        if z_period.is_none() {
             let z_state = moons.iter().map(|moon| (moon.pos.2, moon.vel.2)).collect();
             if z_states.contains(&z_state) {
-                z_cycle = Some(i);
+                z_period = Some(i);
             }
             z_states.insert(z_state);
         }
 
-        if let (Some(xc), Some(yc), Some(zc)) = (x_cycle, y_cycle, z_cycle) {
-            b_solution = Some(lcm(xc, yc, zc));
+        if let (Some(xp), Some(yp), Some(zp)) = (x_period, y_period, z_period) {
+            b_solution = Some(lcm(xp, yp, zp));
             break;
         }
     }
