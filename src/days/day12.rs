@@ -68,9 +68,8 @@ pub fn solve(lines: &[String]) -> Solution {
     let mut moons: Vec<Moon> = lines
         .iter()
         .map(|line| {
-            let parts = line.split(',');
-            let posv: Vec<i64> = parts
-                .into_iter()
+            let posv: Vec<i64> = line
+                .split(',')
                 .map(|part| {
                     part.split('=')
                         .nth(1)
