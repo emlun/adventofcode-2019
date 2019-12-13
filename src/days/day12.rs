@@ -1,4 +1,5 @@
 use crate::common::Solution;
+use crate::util::sign;
 use std::collections::HashSet;
 
 type Point = (i64, i64, i64);
@@ -14,14 +15,6 @@ fn add(p1: &Point, p2: &Point) -> Point {
 
 fn sub(p1: &Point, p2: &Point) -> Point {
     (p1.0 - p2.0, p1.1 - p2.1, p1.2 - p2.2)
-}
-
-fn sign(i: i64) -> i64 {
-    if i == 0 {
-        0
-    } else {
-        i / i.abs()
-    }
 }
 
 fn gravity(on: &Moon, from: &Moon) -> Point {

@@ -1,5 +1,6 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
+use crate::util::sign;
 use std::collections::HashMap;
 
 type Point = (i64, i64);
@@ -108,14 +109,6 @@ fn step_game(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
     }
 
     (Some(state.joystick), state)
-}
-
-fn sign(i: i64) -> i64 {
-    if i == 0 {
-        0
-    } else {
-        i / i.abs()
-    }
 }
 
 fn solve_a(computer: IntcodeComputer) -> usize {

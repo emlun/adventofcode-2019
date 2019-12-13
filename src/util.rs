@@ -2,6 +2,14 @@ pub mod iter;
 
 use std::cmp::Ordering;
 
+pub fn sign(i: i64) -> i64 {
+    if i == 0 {
+        0
+    } else {
+        i / i.abs()
+    }
+}
+
 #[derive(Debug)]
 pub struct Permutations<A> {
     items: Vec<A>,
