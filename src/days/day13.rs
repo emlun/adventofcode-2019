@@ -123,68 +123,7 @@ enum Tile {
     Ball,
 }
 
-fn solve_a(mut program: Vec<i64>) -> String {
-    let mut world: HashMap<Point, Tile> = HashMap::new();
-    let mut pos: Point = (0, 0);
-    let mut dir: Point = (0, 1);
-    let mut eip = 0;
-    let mut relbase = 0;
-    let mut state = 0;
-    let mut output_x = 0;
-    let mut output_y = 0;
-
-    loop {
-        let mut output: Option<i64> = None;
-        let mut input: Option<i64> = None;
-        let (eip2, prog2) = step(eip, program, &mut relbase, &mut output, &mut input);
-        eip = eip2;
-        program = prog2;
-        if let Some(out) = output {
-            match state {
-                0 => {
-                    output_x = out;
-                }
-                1 => {
-                    output_y = out;
-                }
-                2 => {
-                    let output_tile_id = match out {
-                        0 => Tile::Empty,
-                        1 => Tile::Wall,
-                        2 => Tile::Block,
-                        3 => Tile::Paddle,
-                        4 => Tile::Ball,
-                        _ => unreachable!(),
-                    };
-                    world.insert((output_x, output_y), output_tile_id);
-                }
-                _ => unreachable!(),
-            };
-
-            state += 1;
-            state %= 3;
-        }
-        if program[eip] == 99 {
-            break;
-        }
-    }
-
-    world
-        .values()
-        .filter(|tile| **tile == Tile::Block)
-        .count()
-        .to_string()
-}
-
-fn sign(i: i64) -> i64 {
-    if i == 0 {
-        0
-    } else {
-        i / i.abs()
-    }
-}
-
-fn solve_b(mut program: Vec<i64>) -> String {
+fn run(mut program: Vec<i64>) -> (usize, i64) {
     let mut world: HashMap<Point, Tile> = HashMap::new();
     let mut eip = 0;
     let mut relbase = 0;
@@ -196,8 +135,6 @@ fn solve_b(mut program: Vec<i64>) -> String {
     let mut paddle_x = 0;
     let mut ball_x = 0;
 
-    program[0] = 2;
-
     loop {
         let mut output: Option<i64> = None;
         let mut input: Option<i64> = Some(joystick);
@@ -206,12 +143,8 @@ fn solve_b(mut program: Vec<i64>) -> String {
         program = prog2;
         if let Some(out) = output {
             match state {
-                0 => {
-                    output_x = out;
-                }
-                1 => {
-                    output_y = out;
-                }
+                0 => output_x = out,
+                1 => output_y = out,
                 2 => {
                     if (output_x, output_y) == (-1, 0) {
                         score = out;
@@ -220,24 +153,23 @@ fn solve_b(mut program: Vec<i64>) -> String {
                             0 => Tile::Empty,
                             1 => Tile::Wall,
                             2 => Tile::Block,
-                            3 => Tile::Paddle,
-                            4 => Tile::Ball,
+                            3 => {
+                                paddle_x = output_x;
+                                Tile::Paddle
+                            }
+                            4 => {
+                                ball_x = output_x;
+                                Tile::Ball
+                            }
                             _ => unreachable!(),
                         };
-                        if output_tile_id == Tile::Paddle {
-                            paddle_x = output_x;
-                        }
-                        if output_tile_id == Tile::Ball {
-                            ball_x = output_x;
-                        }
                         world.insert((output_x, output_y), output_tile_id);
                     }
                 }
                 _ => unreachable!(),
             };
 
-            state += 1;
-            state %= 3;
+            state = (state + 1) % 3;
 
             if ENABLE_OUTPUT {
                 let minx = *world.keys().map(|(x, _)| x).min().unwrap_or(&0);
@@ -258,7 +190,6 @@ fn solve_b(mut program: Vec<i64>) -> String {
                                     Tile::Block => "B",
                                     Tile::Paddle => "-",
                                     Tile::Ball => "o",
-                                    _ => unreachable!(),
                                 })
                                 .collect::<Vec<&str>>()
                                 .join("")
@@ -275,10 +206,33 @@ fn solve_b(mut program: Vec<i64>) -> String {
         }
     }
 
-    score.to_string()
+    (
+        world.values().filter(|tile| **tile == Tile::Block).count(),
+        score,
+    )
+}
+
+fn sign(i: i64) -> i64 {
+    if i == 0 {
+        0
+    } else {
+        i / i.abs()
+    }
+}
+
+fn solve_a(program: Vec<i64>) -> usize {
+    run(program).0
+}
+
+fn solve_b(mut program: Vec<i64>) -> i64 {
+    program[0] = 2;
+    run(program).1
 }
 
 pub fn solve(lines: &[String]) -> Solution {
     let program: Vec<i64> = lines[0].split(',').map(|s| s.parse().unwrap()).collect();
-    (solve_a(program.clone()).to_string(), solve_b(program))
+    (
+        solve_a(program.clone()).to_string(),
+        solve_b(program).to_string(),
+    )
 }
