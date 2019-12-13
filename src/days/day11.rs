@@ -4,8 +4,10 @@ use std::collections::HashMap;
 
 type Point = (i64, i64);
 
-fn solve_a(mut computer: IntcodeComputer) -> usize {
-    let mut white_panels: HashMap<Point, bool> = HashMap::new();
+fn run(
+    mut computer: IntcodeComputer,
+    mut white_panels: HashMap<Point, bool>,
+) -> HashMap<Point, bool> {
     let mut pos: Point = (0, 0);
     let mut dir: Point = (0, 1);
     let mut state = 0;
@@ -36,42 +38,17 @@ fn solve_a(mut computer: IntcodeComputer) -> usize {
             state %= 2;
         }
     }
-    white_panels.values().count()
+    white_panels
 }
 
-fn solve_b(mut computer: IntcodeComputer) -> String {
-    let mut white_panels: HashMap<Point, bool> = HashMap::new();
-    let mut pos: Point = (0, 0);
-    let mut dir: Point = (0, 1);
-    let mut state = 0;
-    white_panels.insert(pos, true);
+fn solve_a(computer: IntcodeComputer) -> usize {
+    run(computer, HashMap::new()).values().count()
+}
 
-    while computer.is_running() {
-        let mut input: Option<i64> = Some(if *white_panels.get(&pos).unwrap_or(&false) {
-            1
-        } else {
-            0
-        });
-        if let Some(out) = computer.step(&mut input).take() {
-            match state {
-                0 => {
-                    white_panels.insert(pos, out == 1);
-                }
-                1 => {
-                    dir = match out {
-                        0 => (-dir.1, dir.0),
-                        1 => (dir.1, -dir.0),
-                        _ => unreachable!(),
-                    };
-                    pos = (pos.0 + dir.0, pos.1 + dir.1);
-                }
-                _ => unreachable!(),
-            };
-
-            state += 1;
-            state %= 2;
-        }
-    }
+fn solve_b(computer: IntcodeComputer) -> String {
+    let mut white_panels = HashMap::new();
+    white_panels.insert((0, 0), true);
+    let white_panels = run(computer, white_panels);
 
     let minx = *white_panels.keys().map(|(x, _)| x).min().unwrap();
     let maxx = *white_panels.keys().map(|(x, _)| x).max().unwrap();
