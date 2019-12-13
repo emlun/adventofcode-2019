@@ -1,6 +1,5 @@
 use crate::common::Solution;
 use crate::util::sign;
-use std::collections::HashSet;
 
 type Point = (i64, i64, i64);
 
@@ -81,15 +80,15 @@ pub fn solve(lines: &[String]) -> Solution {
         })
         .collect();
 
-    let mut x_states: HashSet<Vec<(i64, i64)>> = HashSet::new();
-    let mut y_states: HashSet<Vec<(i64, i64)>> = HashSet::new();
-    let mut z_states: HashSet<Vec<(i64, i64)>> = HashSet::new();
+    let initial_x_state: Vec<(i64, i64)> =
+        moons.iter().map(|moon| (moon.pos.0, moon.vel.0)).collect();
+    let initial_y_state: Vec<(i64, i64)> =
+        moons.iter().map(|moon| (moon.pos.1, moon.vel.1)).collect();
+    let initial_z_state: Vec<(i64, i64)> =
+        moons.iter().map(|moon| (moon.pos.2, moon.vel.2)).collect();
 
     for _ in 0..1000 {
         moons = step(moons);
-        x_states.insert(moons.iter().map(|moon| (moon.pos.0, moon.vel.0)).collect());
-        y_states.insert(moons.iter().map(|moon| (moon.pos.1, moon.vel.1)).collect());
-        z_states.insert(moons.iter().map(|moon| (moon.pos.2, moon.vel.2)).collect());
     }
 
     let a_solution: i64 = moons.iter().map(energy).sum();
@@ -99,31 +98,31 @@ pub fn solve(lines: &[String]) -> Solution {
     let mut y_period = None;
     let mut z_period = None;
 
-    for i in 1000.. {
+    for i in 1001.. {
         moons = step(moons);
 
         if x_period.is_none() {
-            let x_state = moons.iter().map(|moon| (moon.pos.0, moon.vel.0)).collect();
-            if x_states.contains(&x_state) {
+            let x_state: Vec<(i64, i64)> =
+                moons.iter().map(|moon| (moon.pos.0, moon.vel.0)).collect();
+            if x_state == initial_x_state {
                 x_period = Some(i);
             }
-            x_states.insert(x_state);
         }
 
         if y_period.is_none() {
-            let y_state = moons.iter().map(|moon| (moon.pos.1, moon.vel.1)).collect();
-            if y_states.contains(&y_state) {
+            let y_state: Vec<(i64, i64)> =
+                moons.iter().map(|moon| (moon.pos.1, moon.vel.1)).collect();
+            if y_state == initial_y_state {
                 y_period = Some(i);
             }
-            y_states.insert(y_state);
         }
 
         if z_period.is_none() {
-            let z_state = moons.iter().map(|moon| (moon.pos.2, moon.vel.2)).collect();
-            if z_states.contains(&z_state) {
+            let z_state: Vec<(i64, i64)> =
+                moons.iter().map(|moon| (moon.pos.2, moon.vel.2)).collect();
+            if z_state == initial_z_state {
                 z_period = Some(i);
             }
-            z_states.insert(z_state);
         }
 
         if let (Some(xp), Some(yp), Some(zp)) = (x_period, y_period, z_period) {
