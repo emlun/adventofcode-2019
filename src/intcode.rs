@@ -6,7 +6,6 @@ pub struct IntcodeComputer {
     eip: usize,
     pub prog: Vec<i64>,
     relbase: i64,
-    output: Option<i64>,
 }
 
 impl IntcodeComputer {
@@ -15,15 +14,15 @@ impl IntcodeComputer {
             eip: 0,
             prog: program,
             relbase: 0,
-            output: None,
         }
     }
 
-    pub fn step(&mut self, input: &mut Option<i64>) -> &mut Option<i64> {
+    pub fn step(&mut self, input: &mut Option<i64>) -> Option<i64> {
         let instruction = self.prog[self.eip];
         let opcode = instruction % 100;
         let eip = self.eip;
         let relbase = self.relbase;
+        let mut output = None;
 
         fn ensure_size(prog: &mut Vec<i64>, size: usize) {
             if size >= prog.len() {
@@ -76,12 +75,8 @@ impl IntcodeComputer {
             }
             4 => {
                 let args = get_args(&mut self.prog, 1);
-                if self.output.is_none() {
-                    self.output.replace(args[0]);
-                    self.eip + 2
-                } else {
-                    self.eip
-                }
+                output = Some(args[0]);
+                self.eip + 2
             }
             5 => {
                 let args = get_args(&mut self.prog, 2);
@@ -119,7 +114,7 @@ impl IntcodeComputer {
             99 => self.eip,
             _ => unreachable!(),
         };
-        &mut self.output
+        output
     }
 
     pub fn run<I>(mut self, input: I) -> Vec<i64>
@@ -133,7 +128,7 @@ impl IntcodeComputer {
             if next_input.is_none() {
                 next_input = inputs.next();
             }
-            if let Some(o) = self.step(&mut next_input).take() {
+            if let Some(o) = self.step(&mut next_input) {
                 outputs.push(o);
             };
         }

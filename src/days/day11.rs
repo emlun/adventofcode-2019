@@ -18,7 +18,7 @@ fn run(
         } else {
             0
         });
-        if let Some(out) = computer.step(&mut input).take() {
+        if let Some(out) = computer.step(&mut input) {
             match state {
                 0 => {
                     white_panels.insert(pos, out == 1);

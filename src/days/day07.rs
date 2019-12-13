@@ -54,49 +54,39 @@ fn solve_b(computer: IntcodeComputer) -> i64 {
 
                 while comp5.is_running() {
                     if output1.is_none() {
-                        output1 = comp1
-                            .step(if input1.is_some() {
-                                &mut input1
-                            } else {
-                                &mut output5
-                            })
-                            .take();
+                        output1 = comp1.step(if input1.is_some() {
+                            &mut input1
+                        } else {
+                            &mut output5
+                        });
                     }
                     if output2.is_none() {
-                        output2 = comp2
-                            .step(if input2.is_some() {
-                                &mut input2
-                            } else {
-                                &mut output1
-                            })
-                            .take();
+                        output2 = comp2.step(if input2.is_some() {
+                            &mut input2
+                        } else {
+                            &mut output1
+                        });
                     }
                     if output3.is_none() {
-                        output3 = comp3
-                            .step(if input3.is_some() {
-                                &mut input3
-                            } else {
-                                &mut output2
-                            })
-                            .take();
+                        output3 = comp3.step(if input3.is_some() {
+                            &mut input3
+                        } else {
+                            &mut output2
+                        });
                     }
                     if output4.is_none() {
-                        output4 = comp4
-                            .step(if input4.is_some() {
-                                &mut input4
-                            } else {
-                                &mut output3
-                            })
-                            .take();
+                        output4 = comp4.step(if input4.is_some() {
+                            &mut input4
+                        } else {
+                            &mut output3
+                        });
                     }
                     if output5.is_none() {
-                        output5 = comp5
-                            .step(if input5.is_some() {
-                                &mut input5
-                            } else {
-                                &mut output4
-                            })
-                            .take();
+                        output5 = comp5.step(if input5.is_some() {
+                            &mut input5
+                        } else {
+                            &mut output4
+                        });
                     }
                 }
 

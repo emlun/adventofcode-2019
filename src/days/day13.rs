@@ -27,7 +27,7 @@ fn run(mut computer: IntcodeComputer) -> (usize, i64) {
 
     while computer.is_running() {
         let mut input: Option<i64> = Some(joystick);
-        if let Some(out) = computer.step(&mut input).take() {
+        if let Some(out) = computer.step(&mut input) {
             match state {
                 0 => output_x = out,
                 1 => output_y = out,
