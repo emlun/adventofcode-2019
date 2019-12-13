@@ -15,84 +15,99 @@ enum Tile {
     Ball,
 }
 
-fn run(mut computer: IntcodeComputer) -> (usize, i64) {
-    let mut world: HashMap<Point, Tile> = HashMap::new();
-    let mut state = 0;
-    let mut output_x = 0;
-    let mut output_y = 0;
-    let mut joystick = 0;
-    let mut score = 0;
-    let mut paddle_x = 0;
-    let mut ball_x = 0;
+struct State {
+    world: HashMap<Point, Tile>,
+    state: u8,
+    output_x: i64,
+    output_y: i64,
+    joystick: i64,
+    score: i64,
+    paddle_x: i64,
+    ball_x: i64,
+}
 
-    while computer.is_running() {
-        let mut input: Option<i64> = Some(joystick);
-        if let Some(out) = computer.step(&mut input) {
-            match state {
-                0 => output_x = out,
-                1 => output_y = out,
-                2 => {
-                    if (output_x, output_y) == (-1, 0) {
-                        score = out;
-                    } else {
-                        let output_tile_id = match out {
-                            0 => Tile::Empty,
-                            1 => Tile::Wall,
-                            2 => Tile::Block,
-                            3 => {
-                                paddle_x = output_x;
-                                Tile::Paddle
-                            }
-                            4 => {
-                                ball_x = output_x;
-                                Tile::Ball
-                            }
-                            _ => unreachable!(),
-                        };
-                        world.insert((output_x, output_y), output_tile_id);
-                    }
+impl State {
+    fn new() -> State {
+        State {
+            world: HashMap::new(),
+            state: 0,
+            output_x: 0,
+            output_y: 0,
+            joystick: 0,
+            score: 0,
+            paddle_x: 0,
+            ball_x: 0,
+        }
+    }
+}
+
+fn step_game(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
+    if let Some(out) = output {
+        match state.state {
+            0 => state.output_x = out,
+            1 => state.output_y = out,
+            2 => {
+                if (state.output_x, state.output_y) == (-1, 0) {
+                    state.score = out;
+                } else {
+                    let output_tile_id = match out {
+                        0 => Tile::Empty,
+                        1 => Tile::Wall,
+                        2 => Tile::Block,
+                        3 => {
+                            state.paddle_x = state.output_x;
+                            Tile::Paddle
+                        }
+                        4 => {
+                            state.ball_x = state.output_x;
+                            Tile::Ball
+                        }
+                        _ => unreachable!(),
+                    };
+                    state
+                        .world
+                        .insert((state.output_x, state.output_y), output_tile_id);
                 }
-                _ => unreachable!(),
-            };
+            }
+            _ => unreachable!(),
+        };
 
-            state = (state + 1) % 3;
+        state.state = (state.state + 1) % 3;
 
-            if ENABLE_OUTPUT {
-                let minx = *world.keys().map(|(x, _)| x).min().unwrap_or(&0);
-                let maxx = *world.keys().map(|(x, _)| x).max().unwrap_or(&0);
-                let miny = *world.keys().map(|(_, y)| y).min().unwrap_or(&0);
-                let maxy = *world.keys().map(|(_, y)| y).max().unwrap_or(&0);
+        if ENABLE_OUTPUT {
+            let minx = *state.world.keys().map(|(x, _)| x).min().unwrap_or(&0);
+            let maxx = *state.world.keys().map(|(x, _)| x).max().unwrap_or(&0);
+            let miny = *state.world.keys().map(|(_, y)| y).min().unwrap_or(&0);
+            let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
 
-                println!(
-                    "\n{}\n{}",
-                    score,
-                    (miny..=maxy)
-                        .rev()
-                        .map(|y| {
-                            (minx..=maxx)
-                                .map(|x| match *world.get(&(x, y)).unwrap_or(&Tile::Empty) {
+            println!(
+                "\n{}\n{}",
+                state.score,
+                (miny..=maxy)
+                    .rev()
+                    .map(|y| {
+                        (minx..=maxx)
+                            .map(
+                                |x| match *state.world.get(&(x, y)).unwrap_or(&Tile::Empty) {
                                     Tile::Empty => " ",
                                     Tile::Wall => "#",
                                     Tile::Block => "B",
                                     Tile::Paddle => "-",
                                     Tile::Ball => "o",
-                                })
-                                .collect::<Vec<&str>>()
-                                .join("")
-                        })
-                        .collect::<Vec<String>>()
-                        .join("\n")
-                );
-            }
-
-            joystick = sign(ball_x - paddle_x);
+                                },
+                            )
+                            .collect::<Vec<&str>>()
+                            .join("")
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n")
+            );
         }
+
+        state.joystick = sign(state.ball_x - state.paddle_x);
     }
 
-    (
-        world.values().filter(|tile| **tile == Tile::Block).count(),
-        score,
-    )
+    (Some(state.joystick), state)
 }
 
 fn sign(i: i64) -> i64 {
@@ -104,12 +119,17 @@ fn sign(i: i64) -> i64 {
 }
 
 fn solve_a(computer: IntcodeComputer) -> usize {
-    run(computer).0
+    computer
+        .run_with(Some(0), State::new(), step_game)
+        .world
+        .values()
+        .filter(|tile| **tile == Tile::Block)
+        .count()
 }
 
 fn solve_b(mut computer: IntcodeComputer) -> i64 {
     computer.prog[0] = 2;
-    run(computer).1
+    computer.run_with(Some(0), State::new(), step_game).score
 }
 
 pub fn solve(lines: &[String]) -> Solution {

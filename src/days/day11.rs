@@ -4,41 +4,51 @@ use std::collections::HashMap;
 
 type Point = (i64, i64);
 
-fn run(
-    mut computer: IntcodeComputer,
-    mut white_panels: HashMap<Point, bool>,
-) -> HashMap<Point, bool> {
-    let mut pos: Point = (0, 0);
-    let mut dir: Point = (0, 1);
-    let mut state = 0;
-
-    while computer.is_running() {
-        let mut input: Option<i64> = Some(if *white_panels.get(&pos).unwrap_or(&false) {
+fn run(computer: IntcodeComputer, white_panels: HashMap<Point, bool>) -> HashMap<Point, bool> {
+    fn get_input(white_panels: &HashMap<Point, bool>, pos: &Point) -> Option<i64> {
+        Some(if *white_panels.get(pos).unwrap_or(&false) {
             1
         } else {
             0
-        });
-        if let Some(out) = computer.step(&mut input) {
-            match state {
-                0 => {
-                    white_panels.insert(pos, out == 1);
-                }
-                1 => {
-                    dir = match out {
-                        0 => (-dir.1, dir.0),
-                        1 => (dir.1, -dir.0),
+        })
+    };
+
+    computer
+        .run_with(
+            get_input(&white_panels, &(0, 0)),
+            (white_panels, (0, 0), (0, 1), 0),
+            |output: Option<i64>,
+             (mut white_panels, mut pos, mut dir, mut state): (
+                HashMap<Point, bool>,
+                Point,
+                Point,
+                u8,
+            )| {
+                if let Some(out) = output {
+                    match state {
+                        0 => {
+                            white_panels.insert(pos, out == 1);
+                        }
+                        1 => {
+                            dir = match out {
+                                0 => (-dir.1, dir.0),
+                                1 => (dir.1, -dir.0),
+                                _ => unreachable!(),
+                            };
+                            pos = (pos.0 + dir.0, pos.1 + dir.1);
+                        }
                         _ => unreachable!(),
                     };
-                    pos = (pos.0 + dir.0, pos.1 + dir.1);
-                }
-                _ => unreachable!(),
-            };
 
-            state += 1;
-            state %= 2;
-        }
-    }
-    white_panels
+                    state = (state + 1) % 2;
+                }
+
+                let input = get_input(&white_panels, &pos);
+
+                (input, (white_panels, pos, dir, state))
+            },
+        )
+        .0
 }
 
 fn solve_a(computer: IntcodeComputer) -> usize {
