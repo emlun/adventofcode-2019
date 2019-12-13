@@ -1,26 +1,29 @@
 use std::convert::TryFrom;
 use std::convert::TryInto;
 
+type Word = i64;
+type Memory = Vec<Word>;
+
 #[derive(Clone)]
 pub struct IntcodeComputer {
     eip: usize,
-    pub prog: Vec<i64>,
-    relbase: i64,
+    pub prog: Memory,
+    relbase: Word,
 }
 
-const OP_ADD: i64 = 1;
-const OP_MULTIPLY: i64 = 2;
-const OP_INPUT: i64 = 3;
-const OP_OUTPUT: i64 = 4;
-const OP_JUMP_NONZERO: i64 = 5;
-const OP_JUMP_ZERO: i64 = 6;
-const OP_LESS: i64 = 7;
-const OP_EQ: i64 = 8;
-const OP_RELBASE: i64 = 9;
-const OP_HALT: i64 = 99;
+const OP_ADD: Word = 1;
+const OP_MULTIPLY: Word = 2;
+const OP_INPUT: Word = 3;
+const OP_OUTPUT: Word = 4;
+const OP_JUMP_NONZERO: Word = 5;
+const OP_JUMP_ZERO: Word = 6;
+const OP_LESS: Word = 7;
+const OP_EQ: Word = 8;
+const OP_RELBASE: Word = 9;
+const OP_HALT: Word = 99;
 
 impl IntcodeComputer {
-    pub fn new(program: Vec<i64>) -> IntcodeComputer {
+    pub fn new(program: Vec<Word>) -> IntcodeComputer {
         IntcodeComputer {
             eip: 0,
             prog: program,
@@ -28,21 +31,21 @@ impl IntcodeComputer {
         }
     }
 
-    pub fn step(&mut self, input: &mut Option<i64>) -> Option<i64> {
+    pub fn step(&mut self, input: &mut Option<Word>) -> Option<Word> {
         let instruction = self.prog[self.eip];
         let opcode = instruction % 100;
         let eip = self.eip;
         let relbase = self.relbase;
         let mut output = None;
 
-        fn ensure_size(prog: &mut Vec<i64>, size: usize) {
+        fn ensure_size(prog: &mut Memory, size: usize) {
             if size >= prog.len() {
                 prog.append(&mut (0..=0).cycle().take(size - prog.len() + 1).collect());
             }
         };
 
-        let get_addr = |prog: &mut Vec<i64>, offset: usize| -> usize {
-            let parmode_pow = 10i64.pow((offset + 1).try_into().unwrap());
+        let get_addr = |prog: &mut Memory, offset: usize| -> usize {
+            let parmode_pow = 10_i64.pow((offset + 1).try_into().unwrap());
             let out_addr = match (instruction / parmode_pow) % 10 {
                 0 => usize::try_from(prog[eip + offset]).unwrap(),
                 1 => eip + offset,
@@ -53,7 +56,7 @@ impl IntcodeComputer {
             out_addr
         };
 
-        let get_args = |prog: &mut Vec<i64>, num: usize| -> Vec<i64> {
+        let get_args = |prog: &mut Memory, num: usize| -> Memory {
             (1..=num)
                 .map(|i| {
                     let addr = get_addr(prog, i);
@@ -137,9 +140,9 @@ impl IntcodeComputer {
         output
     }
 
-    pub fn run<I>(mut self, input: I) -> Vec<i64>
+    pub fn run<I>(mut self, input: I) -> Vec<Word>
     where
-        I: IntoIterator<Item = i64>,
+        I: IntoIterator<Item = Word>,
     {
         let mut outputs = Vec::new();
         let mut inputs = input.into_iter();
@@ -157,12 +160,12 @@ impl IntcodeComputer {
 
     pub fn run_with<State, F>(
         mut self,
-        initial_input: Option<i64>,
+        initial_input: Option<Word>,
         initial_state: State,
         reducer: F,
     ) -> State
     where
-        F: Fn(Option<i64>, State) -> (Option<i64>, State),
+        F: Fn(Option<Word>, State) -> (Option<Word>, State),
     {
         let mut input = initial_input;
         let mut state = initial_state;
@@ -190,6 +193,6 @@ impl From<&[String]> for IntcodeComputer {
     }
 }
 
-pub fn parse_program(lines: &[String]) -> Vec<i64> {
+pub fn parse_program(lines: &[String]) -> Vec<Word> {
     lines[0].split(',').map(|s| s.parse().unwrap()).collect()
 }
