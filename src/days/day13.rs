@@ -40,6 +40,37 @@ impl State {
     }
 }
 
+fn print_state(state: &State) {
+    let minx = *state.world.keys().map(|(x, _)| x).min().unwrap_or(&0);
+    let maxx = *state.world.keys().map(|(x, _)| x).max().unwrap_or(&0);
+    let miny = *state.world.keys().map(|(_, y)| y).min().unwrap_or(&0);
+    let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
+
+    println!(
+        "\nScore: {}\n{}",
+        state.score,
+        (miny..=maxy)
+            .rev()
+            .rev()
+            .map(|y| {
+                (minx..=maxx)
+                    .map(
+                        |x| match *state.world.get(&(x, y)).unwrap_or(&Tile::Empty) {
+                            Tile::Empty => " ",
+                            Tile::Wall => "#",
+                            Tile::Block => "B",
+                            Tile::Paddle => "-",
+                            Tile::Ball => "o",
+                        },
+                    )
+                    .collect::<Vec<&str>>()
+                    .join("")
+            })
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
+}
+
 fn step_game(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
     if let Some(out) = output {
         match state.state {
@@ -74,34 +105,7 @@ fn step_game(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
         state.state = (state.state + 1) % 3;
 
         if ENABLE_OUTPUT {
-            let minx = *state.world.keys().map(|(x, _)| x).min().unwrap_or(&0);
-            let maxx = *state.world.keys().map(|(x, _)| x).max().unwrap_or(&0);
-            let miny = *state.world.keys().map(|(_, y)| y).min().unwrap_or(&0);
-            let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
-
-            println!(
-                "\n{}\n{}",
-                state.score,
-                (miny..=maxy)
-                    .rev()
-                    .rev()
-                    .map(|y| {
-                        (minx..=maxx)
-                            .map(
-                                |x| match *state.world.get(&(x, y)).unwrap_or(&Tile::Empty) {
-                                    Tile::Empty => " ",
-                                    Tile::Wall => "#",
-                                    Tile::Block => "B",
-                                    Tile::Paddle => "-",
-                                    Tile::Ball => "o",
-                                },
-                            )
-                            .collect::<Vec<&str>>()
-                            .join("")
-                    })
-                    .collect::<Vec<String>>()
-                    .join("\n")
-            );
+            print_state(&state);
         }
     }
 
