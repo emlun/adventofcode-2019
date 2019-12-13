@@ -8,6 +8,17 @@ pub struct IntcodeComputer {
     relbase: i64,
 }
 
+const OP_ADD: i64 = 1;
+const OP_MULTIPLY: i64 = 2;
+const OP_INPUT: i64 = 3;
+const OP_OUTPUT: i64 = 4;
+const OP_JUMP_NONZERO: i64 = 5;
+const OP_JUMP_ZERO: i64 = 6;
+const OP_LESS: i64 = 7;
+const OP_EQ: i64 = 8;
+const OP_RELBASE: i64 = 9;
+const OP_HALT: i64 = 99;
+
 impl IntcodeComputer {
     pub fn new(program: Vec<i64>) -> IntcodeComputer {
         IntcodeComputer {
@@ -52,19 +63,21 @@ impl IntcodeComputer {
         };
 
         self.eip = match opcode {
-            1 => {
+            OP_ADD => {
                 let args = get_args(&mut self.prog, 2);
                 let io = get_addr(&mut self.prog, 3);
                 self.prog[io] = args[0] + args[1];
                 self.eip + 4
             }
-            2 => {
+
+            OP_MULTIPLY => {
                 let args = get_args(&mut self.prog, 2);
                 let io = get_addr(&mut self.prog, 3);
                 self.prog[io] = args[0] * args[1];
                 self.eip + 4
             }
-            3 => {
+
+            OP_INPUT => {
                 let io = get_addr(&mut self.prog, 1);
                 if let Some(i) = input.take() {
                     self.prog[io] = i;
@@ -73,12 +86,14 @@ impl IntcodeComputer {
                     self.eip
                 }
             }
-            4 => {
+
+            OP_OUTPUT => {
                 let args = get_args(&mut self.prog, 1);
                 output = Some(args[0]);
                 self.eip + 2
             }
-            5 => {
+
+            OP_JUMP_NONZERO => {
                 let args = get_args(&mut self.prog, 2);
                 if args[0] != 0 {
                     args[1] as usize
@@ -86,7 +101,8 @@ impl IntcodeComputer {
                     self.eip + 3
                 }
             }
-            6 => {
+
+            OP_JUMP_ZERO => {
                 let args = get_args(&mut self.prog, 2);
                 if args[0] == 0 {
                     args[1] as usize
@@ -94,24 +110,28 @@ impl IntcodeComputer {
                     self.eip + 3
                 }
             }
-            7 => {
+
+            OP_LESS => {
                 let args = get_args(&mut self.prog, 2);
                 let io = get_addr(&mut self.prog, 3);
                 self.prog[io] = if args[0] < args[1] { 1 } else { 0 };
                 self.eip + 4
             }
-            8 => {
+
+            OP_EQ => {
                 let args = get_args(&mut self.prog, 2);
                 let io = get_addr(&mut self.prog, 3);
                 self.prog[io] = if args[0] == args[1] { 1 } else { 0 };
                 self.eip + 4
             }
-            9 => {
+
+            OP_RELBASE => {
                 let args = get_args(&mut self.prog, 1);
                 self.relbase += args[0];
                 self.eip + 2
             }
-            99 => self.eip,
+
+            OP_HALT => self.eip,
             _ => unreachable!(),
         };
         output
@@ -160,7 +180,7 @@ impl IntcodeComputer {
     }
 
     pub fn is_halted(&self) -> bool {
-        self.prog[self.eip] == 99
+        self.prog[self.eip] == OP_HALT
     }
 }
 
