@@ -6,6 +6,7 @@ use clap::Arg;
 mod common;
 mod crate_info;
 mod days;
+mod intcode;
 mod util;
 
 use crate::common::day_input_filename;
