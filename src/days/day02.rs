@@ -1,21 +1,19 @@
 use crate::common::Solution;
-use crate::intcode;
+use crate::intcode::parse_program;
+use crate::intcode::IntcodeComputer;
 use std::convert::TryInto;
 
-fn run(mut program: Vec<i64>) -> i64 {
-    let mut eip = 0;
-    while program[eip] != 99 {
-        let out = intcode::step(eip, program, &mut 0, &mut None, &mut None);
-        eip = out.0;
-        program = out.1;
+fn run(mut computer: IntcodeComputer) -> i64 {
+    while computer.is_running() {
+        computer.step(&mut None);
     }
-    program[0]
+    computer.prog[0]
 }
 
-fn solve_a(mut program: Vec<i64>) -> i64 {
-    program[1] = 12;
-    program[2] = 2;
-    run(program)
+fn solve_a(mut computer: IntcodeComputer) -> i64 {
+    computer.prog[1] = 12;
+    computer.prog[2] = 2;
+    run(computer)
 }
 
 #[allow(clippy::unreadable_literal)]
@@ -29,7 +27,7 @@ fn solve_b(program: Vec<i64>) -> i64 {
             let verb = verb.try_into().unwrap();
             prog[1] = noun;
             prog[2] = verb;
-            if run(prog) == B_OUTPUT_TARGET {
+            if run(IntcodeComputer::new(prog)) == B_OUTPUT_TARGET {
                 return 100 * noun + verb;
             }
         }
@@ -38,9 +36,9 @@ fn solve_b(program: Vec<i64>) -> i64 {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let program = intcode::parse(lines);
+    let program = parse_program(lines);
     (
-        solve_a(program.clone()).to_string(),
+        solve_a(IntcodeComputer::new(program.clone())).to_string(),
         solve_b(program).to_string(),
     )
 }

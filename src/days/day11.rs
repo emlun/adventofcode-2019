@@ -1,29 +1,22 @@
 use crate::common::Solution;
-use crate::intcode;
+use crate::intcode::IntcodeComputer;
 use std::collections::HashMap;
 
 type Point = (i64, i64);
 
-fn solve_a(mut program: Vec<i64>) -> usize {
+fn solve_a(mut computer: IntcodeComputer) -> usize {
     let mut white_panels: HashMap<Point, bool> = HashMap::new();
     let mut pos: Point = (0, 0);
     let mut dir: Point = (0, 1);
-    let mut eip = 0;
-    let mut relbase = 0;
     let mut state = 0;
 
-    loop {
-        let mut output: Option<i64> = None;
+    while computer.is_running() {
         let mut input: Option<i64> = Some(if *white_panels.get(&pos).unwrap_or(&false) {
             1
         } else {
             0
         });
-        let (eip2, prog2) = intcode::step(eip, program, &mut relbase, &mut output, &mut input);
-        eip = eip2;
-        program = prog2;
-        // dbg!(eip, &white_panels, input, output);
-        if let Some(out) = output {
+        if let Some(out) = computer.step(&mut input).take() {
             match state {
                 0 => {
                     white_panels.insert(pos, out == 1);
@@ -41,35 +34,25 @@ fn solve_a(mut program: Vec<i64>) -> usize {
 
             state += 1;
             state %= 2;
-        }
-        if program[eip] == 99 {
-            break;
         }
     }
     white_panels.values().count()
 }
 
-fn solve_b(mut program: Vec<i64>) -> String {
+fn solve_b(mut computer: IntcodeComputer) -> String {
     let mut white_panels: HashMap<Point, bool> = HashMap::new();
     let mut pos: Point = (0, 0);
     let mut dir: Point = (0, 1);
-    let mut eip = 0;
-    let mut relbase = 0;
     let mut state = 0;
     white_panels.insert(pos, true);
 
-    loop {
-        let mut output: Option<i64> = None;
+    while computer.is_running() {
         let mut input: Option<i64> = Some(if *white_panels.get(&pos).unwrap_or(&false) {
             1
         } else {
             0
         });
-        let (eip2, prog2) = intcode::step(eip, program, &mut relbase, &mut output, &mut input);
-        eip = eip2;
-        program = prog2;
-        // dbg!(eip, &white_panels, input, output);
-        if let Some(out) = output {
+        if let Some(out) = computer.step(&mut input).take() {
             match state {
                 0 => {
                     white_panels.insert(pos, out == 1);
@@ -87,9 +70,6 @@ fn solve_b(mut program: Vec<i64>) -> String {
 
             state += 1;
             state %= 2;
-        }
-        if program[eip] == 99 {
-            break;
         }
     }
 
@@ -120,6 +100,6 @@ fn solve_b(mut program: Vec<i64>) -> String {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let program = intcode::parse(lines);
-    (solve_a(program.clone()).to_string(), solve_b(program))
+    let computer: IntcodeComputer = lines.into();
+    (solve_a(computer.clone()).to_string(), solve_b(computer))
 }

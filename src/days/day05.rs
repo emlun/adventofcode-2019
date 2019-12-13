@@ -1,24 +1,12 @@
 use crate::common::Solution;
-use crate::intcode;
+use crate::intcode::IntcodeComputer;
 
-fn run(mut program: Vec<i64>, input: i64) -> Vec<i64> {
-    let mut outputs: Vec<i64> = Vec::new();
-    let mut input: Option<i64> = Some(input);
-    let mut output: Option<i64> = None;
-    let mut eip = 0;
-    while program[eip] != 99 {
-        let out = intcode::step(eip, program, &mut 0, &mut output, &mut input);
-        eip = out.0;
-        program = out.1;
-        if let Some(o) = output.take() {
-            outputs.push(o);
-        }
-    }
-    outputs
+fn run(computer: IntcodeComputer, input: i64) -> Vec<i64> {
+    computer.run(Some(input))
 }
 
-fn solve_a(program: Vec<i64>) -> Option<i64> {
-    let output = run(program, 1);
+fn solve_a(computer: IntcodeComputer) -> Option<i64> {
+    let output = run(computer, 1);
     if output
         .iter()
         .enumerate()
@@ -30,16 +18,16 @@ fn solve_a(program: Vec<i64>) -> Option<i64> {
     }
 }
 
-fn solve_b(program: Vec<i64>) -> i64 {
-    *run(program, 5).last().unwrap()
+fn solve_b(computer: IntcodeComputer) -> i64 {
+    *run(computer, 5).last().unwrap()
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let program = intcode::parse(lines);
+    let computer: IntcodeComputer = lines.into();
     (
-        solve_a(program.clone())
+        solve_a(computer.clone())
             .map(|i| i.to_string())
             .unwrap_or_else(|| "Failure!".to_string()),
-        solve_b(program).to_string(),
+        solve_b(computer).to_string(),
     )
 }

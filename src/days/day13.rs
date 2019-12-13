@@ -1,5 +1,5 @@
 use crate::common::Solution;
-use crate::intcode;
+use crate::intcode::IntcodeComputer;
 use std::collections::HashMap;
 
 type Point = (i64, i64);
@@ -15,10 +15,8 @@ enum Tile {
     Ball,
 }
 
-fn run(mut program: Vec<i64>) -> (usize, i64) {
+fn run(mut computer: IntcodeComputer) -> (usize, i64) {
     let mut world: HashMap<Point, Tile> = HashMap::new();
-    let mut eip = 0;
-    let mut relbase = 0;
     let mut state = 0;
     let mut output_x = 0;
     let mut output_y = 0;
@@ -27,13 +25,9 @@ fn run(mut program: Vec<i64>) -> (usize, i64) {
     let mut paddle_x = 0;
     let mut ball_x = 0;
 
-    loop {
-        let mut output: Option<i64> = None;
+    while computer.is_running() {
         let mut input: Option<i64> = Some(joystick);
-        let (eip2, prog2) = intcode::step(eip, program, &mut relbase, &mut output, &mut input);
-        eip = eip2;
-        program = prog2;
-        if let Some(out) = output {
+        if let Some(out) = computer.step(&mut input).take() {
             match state {
                 0 => output_x = out,
                 1 => output_y = out,
@@ -93,9 +87,6 @@ fn run(mut program: Vec<i64>) -> (usize, i64) {
 
             joystick = sign(ball_x - paddle_x);
         }
-        if program[eip] == 99 {
-            break;
-        }
     }
 
     (
@@ -112,19 +103,19 @@ fn sign(i: i64) -> i64 {
     }
 }
 
-fn solve_a(program: Vec<i64>) -> usize {
-    run(program).0
+fn solve_a(computer: IntcodeComputer) -> usize {
+    run(computer).0
 }
 
-fn solve_b(mut program: Vec<i64>) -> i64 {
-    program[0] = 2;
-    run(program).1
+fn solve_b(mut computer: IntcodeComputer) -> i64 {
+    computer.prog[0] = 2;
+    run(computer).1
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let program = intcode::parse(lines);
+    let computer: IntcodeComputer = lines.into();
     (
-        solve_a(program.clone()).to_string(),
-        solve_b(program).to_string(),
+        solve_a(computer.clone()).to_string(),
+        solve_b(computer).to_string(),
     )
 }
