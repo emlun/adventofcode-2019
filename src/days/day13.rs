@@ -84,6 +84,7 @@ fn step_game(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
                 state.score,
                 (miny..=maxy)
                     .rev()
+                    .rev()
                     .map(|y| {
                         (minx..=maxx)
                             .map(
