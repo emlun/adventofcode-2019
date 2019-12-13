@@ -1,40 +1,32 @@
 use crate::common::Solution;
+use crate::intcode;
+use std::convert::TryInto;
 
-fn step(eip: usize, mut prog: Vec<usize>) -> (usize, Vec<usize>) {
-    let a = prog[eip + 1];
-    let b = prog[eip + 2];
-    let o = prog[eip + 3];
-    match prog[eip] {
-        1 => prog[o] = prog[a] + prog[b],
-        2 => prog[o] = prog[a] * prog[b],
-        _ => unreachable!(),
-    }
-    (eip + 4, prog)
-}
-
-fn run(mut program: Vec<usize>) -> usize {
+fn run(mut program: Vec<i64>) -> i64 {
     let mut eip = 0;
     while program[eip] != 99 {
-        let out = step(eip, program);
+        let out = intcode::step(eip, program, &mut 0, &mut None, &mut None);
         eip = out.0;
         program = out.1;
     }
     program[0]
 }
 
-fn solve_a(mut program: Vec<usize>) -> usize {
+fn solve_a(mut program: Vec<i64>) -> i64 {
     program[1] = 12;
     program[2] = 2;
     run(program)
 }
 
 #[allow(clippy::unreadable_literal)]
-const B_OUTPUT_TARGET: usize = 19690720;
+const B_OUTPUT_TARGET: i64 = 19690720;
 
-fn solve_b(program: Vec<usize>) -> usize {
+fn solve_b(program: Vec<i64>) -> i64 {
     for noun in 0..program.len() {
         for verb in 0..program.len() {
             let mut prog = program.clone();
+            let noun = noun.try_into().unwrap();
+            let verb = verb.try_into().unwrap();
             prog[1] = noun;
             prog[2] = verb;
             if run(prog) == B_OUTPUT_TARGET {
@@ -46,7 +38,7 @@ fn solve_b(program: Vec<usize>) -> usize {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let program: Vec<usize> = lines[0].split(',').map(|s| s.parse().unwrap()).collect();
+    let program = intcode::parse(lines);
     (
         solve_a(program.clone()).to_string(),
         solve_b(program).to_string(),

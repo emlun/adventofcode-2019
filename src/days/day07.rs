@@ -1,102 +1,11 @@
 use crate::common::Solution;
+use crate::intcode;
 use crate::util::Permutations;
 
-fn step(
-    eip: usize,
-    mut prog: Vec<i32>,
-    output: &mut Option<i32>,
-    input: &mut Option<i32>,
-) -> (usize, Vec<i32>) {
-    let instruction = prog[eip];
-    let opcode = instruction % 100;
-
-    let get_args = |num: usize| {
-        let mut result = Vec::new();
-
-        let mut parmode_pow = 100;
-        for i in 1..=num {
-            let iarg = prog[eip + i];
-            let arg = if (instruction / parmode_pow) % 10 == 0 {
-                prog[iarg as usize]
-            } else {
-                iarg
-            };
-            result.push(arg);
-            parmode_pow *= 10;
-        }
-
-        result
-    };
-
-    let eip = match opcode {
-        1 => {
-            let args = get_args(2);
-            let io = prog[eip + 3] as usize;
-            prog[io] = args[0] + args[1];
-            eip + 4
-        }
-        2 => {
-            let args = get_args(2);
-            let io = prog[eip + 3] as usize;
-            prog[io] = args[0] * args[1];
-            eip + 4
-        }
-        3 => {
-            let io = prog[eip + 1] as usize;
-            if let Some(i) = input.take() {
-                prog[io] = i;
-                eip + 2
-            } else {
-                eip
-            }
-        }
-        4 => {
-            let args = get_args(1);
-            if output.is_none() {
-                output.replace(args[0]);
-                eip + 2
-            } else {
-                eip
-            }
-        }
-        5 => {
-            let args = get_args(2);
-            if args[0] != 0 {
-                args[1] as usize
-            } else {
-                eip + 3
-            }
-        }
-        6 => {
-            let args = get_args(2);
-            if args[0] == 0 {
-                args[1] as usize
-            } else {
-                eip + 3
-            }
-        }
-        7 => {
-            let args = get_args(2);
-            let io = prog[eip + 3] as usize;
-            prog[io] = if args[0] < args[1] { 1 } else { 0 };
-            eip + 4
-        }
-        8 => {
-            let args = get_args(2);
-            let io = prog[eip + 3] as usize;
-            prog[io] = if args[0] == args[1] { 1 } else { 0 };
-            eip + 4
-        }
-        99 => eip,
-        _ => unreachable!(),
-    };
-    (eip, prog)
-}
-
-fn run(mut program: Vec<i32>, input: (u8, i32)) -> Vec<i32> {
-    let mut output: Vec<i32> = Vec::new();
+fn run(mut program: Vec<i64>, input: (u8, i64)) -> Vec<i64> {
+    let mut output: Vec<i64> = Vec::new();
     let mut eip = 0;
-    let inpt = vec![i32::from(input.0), input.1];
+    let inpt = vec![i64::from(input.0), input.1];
     let mut input_iter = inpt.into_iter();
     let mut next_input = None;
     while program[eip] != 99 {
@@ -104,7 +13,7 @@ fn run(mut program: Vec<i32>, input: (u8, i32)) -> Vec<i32> {
             next_input = input_iter.next();
         }
         let mut outpt = None;
-        let out = step(eip, program, &mut outpt, &mut next_input);
+        let out = intcode::step(eip, program, &mut 0, &mut outpt, &mut next_input);
         if let Some(out) = outpt {
             output.push(out);
         }
@@ -114,7 +23,7 @@ fn run(mut program: Vec<i32>, input: (u8, i32)) -> Vec<i32> {
     output
 }
 
-fn solve_a(program: Vec<i32>) -> i32 {
+fn solve_a(program: Vec<i64>) -> i64 {
     let mut max_output = None;
 
     for perm in Permutations::from(0..=4) {
@@ -136,8 +45,8 @@ fn solve_a(program: Vec<i32>) -> i32 {
     max_output.unwrap()
 }
 
-fn solve_b(program: Vec<i32>) -> i32 {
-    let mut max_output: Option<i32> = None;
+fn solve_b(program: Vec<i64>) -> i64 {
+    let mut max_output: Option<i64> = None;
 
     for perm in Permutations::from(5..=9) {
         match perm.as_slice() {
@@ -154,17 +63,18 @@ fn solve_b(program: Vec<i32>) -> i32 {
                 let mut prog4 = program.clone();
                 let mut prog5 = program.clone();
 
-                let mut input: Option<i32> = Some(*i1);
-                let mut output1: Option<i32> = Some(*i2);
-                let mut output2: Option<i32> = Some(*i3);
-                let mut output3: Option<i32> = Some(*i4);
-                let mut output4: Option<i32> = Some(*i5);
-                let mut output5: Option<i32> = Some(0);
+                let mut input: Option<i64> = Some(*i1);
+                let mut output1: Option<i64> = Some(*i2);
+                let mut output2: Option<i64> = Some(*i3);
+                let mut output3: Option<i64> = Some(*i4);
+                let mut output4: Option<i64> = Some(*i5);
+                let mut output5: Option<i64> = Some(0);
 
                 while prog5[eip5] != 99 {
-                    let out1 = step(
+                    let out1 = intcode::step(
                         eip1,
                         prog1,
+                        &mut 0,
                         &mut output1,
                         if input.is_some() {
                             &mut input
@@ -175,19 +85,19 @@ fn solve_b(program: Vec<i32>) -> i32 {
                     eip1 = out1.0;
                     prog1 = out1.1;
 
-                    let out2 = step(eip2, prog2, &mut output2, &mut output1);
+                    let out2 = intcode::step(eip2, prog2, &mut 0, &mut output2, &mut output1);
                     eip2 = out2.0;
                     prog2 = out2.1;
 
-                    let out3 = step(eip3, prog3, &mut output3, &mut output2);
+                    let out3 = intcode::step(eip3, prog3, &mut 0, &mut output3, &mut output2);
                     eip3 = out3.0;
                     prog3 = out3.1;
 
-                    let out4 = step(eip4, prog4, &mut output4, &mut output3);
+                    let out4 = intcode::step(eip4, prog4, &mut 0, &mut output4, &mut output3);
                     eip4 = out4.0;
                     prog4 = out4.1;
 
-                    let out5 = step(eip5, prog5, &mut output5, &mut output4);
+                    let out5 = intcode::step(eip5, prog5, &mut 0, &mut output5, &mut output4);
                     eip5 = out5.0;
                     prog5 = out5.1;
                 }
@@ -205,7 +115,7 @@ fn solve_b(program: Vec<i32>) -> i32 {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let program: Vec<i32> = lines[0].split(',').map(|s| s.parse().unwrap()).collect();
+    let program = intcode::parse(lines);
     (
         solve_a(program.clone()).to_string(),
         solve_b(program).to_string(),

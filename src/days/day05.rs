@@ -1,100 +1,23 @@
 use crate::common::Solution;
+use crate::intcode;
 
-fn step(
-    eip: usize,
-    mut prog: Vec<i32>,
-    output: &mut Vec<i32>,
-    input: &mut dyn Iterator<Item = i32>,
-) -> (usize, Vec<i32>) {
-    let instruction = prog[eip];
-    let opcode = instruction % 100;
-
-    let get_args = |num: usize| {
-        let mut result = Vec::new();
-
-        let mut parmode_pow = 100;
-        for i in 1..=num {
-            let iarg = prog[eip + i];
-            let arg = if (instruction / parmode_pow) % 10 == 0 {
-                prog[iarg as usize]
-            } else {
-                iarg
-            };
-            result.push(arg);
-            parmode_pow *= 10;
-        }
-
-        result
-    };
-
-    let eip = match opcode {
-        1 => {
-            let args = get_args(2);
-            let io = prog[eip + 3] as usize;
-            prog[io] = args[0] + args[1];
-            eip + 4
-        }
-        2 => {
-            let args = get_args(2);
-            let io = prog[eip + 3] as usize;
-            prog[io] = args[0] * args[1];
-            eip + 4
-        }
-        3 => {
-            let io = prog[eip + 1] as usize;
-            prog[io] = input.next().unwrap();
-            eip + 2
-        }
-        4 => {
-            let args = get_args(1);
-            output.push(args[0]);
-            eip + 2
-        }
-        5 => {
-            let args = get_args(2);
-            if args[0] != 0 {
-                args[1] as usize
-            } else {
-                eip + 3
-            }
-        }
-        6 => {
-            let args = get_args(2);
-            if args[0] == 0 {
-                args[1] as usize
-            } else {
-                eip + 3
-            }
-        }
-        7 => {
-            let args = get_args(2);
-            let io = prog[eip + 3] as usize;
-            prog[io] = if args[0] < args[1] { 1 } else { 0 };
-            eip + 4
-        }
-        8 => {
-            let args = get_args(2);
-            let io = prog[eip + 3] as usize;
-            prog[io] = if args[0] == args[1] { 1 } else { 0 };
-            eip + 4
-        }
-        _ => unreachable!(),
-    };
-    (eip, prog)
-}
-
-fn run(mut program: Vec<i32>, input: i32) -> Vec<i32> {
-    let mut output: Vec<i32> = Vec::new();
+fn run(mut program: Vec<i64>, input: i64) -> Vec<i64> {
+    let mut outputs: Vec<i64> = Vec::new();
+    let mut input: Option<i64> = Some(input);
+    let mut output: Option<i64> = None;
     let mut eip = 0;
     while program[eip] != 99 {
-        let out = step(eip, program, &mut output, &mut vec![input].into_iter());
+        let out = intcode::step(eip, program, &mut 0, &mut output, &mut input);
         eip = out.0;
         program = out.1;
+        if let Some(o) = output.take() {
+            outputs.push(o);
+        }
     }
-    output
+    outputs
 }
 
-fn solve_a(program: Vec<i32>) -> Option<i32> {
+fn solve_a(program: Vec<i64>) -> Option<i64> {
     let output = run(program, 1);
     if output
         .iter()
@@ -107,12 +30,12 @@ fn solve_a(program: Vec<i32>) -> Option<i32> {
     }
 }
 
-fn solve_b(program: Vec<i32>) -> i32 {
+fn solve_b(program: Vec<i64>) -> i64 {
     *run(program, 5).last().unwrap()
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let program: Vec<i32> = lines[0].split(',').map(|s| s.parse().unwrap()).collect();
+    let program = intcode::parse(lines);
     (
         solve_a(program.clone())
             .map(|i| i.to_string())
