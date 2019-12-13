@@ -21,7 +21,6 @@ struct State {
     state: u8,
     output_x: i64,
     output_y: i64,
-    joystick: i64,
     score: i64,
     paddle_x: i64,
     ball_x: i64,
@@ -34,7 +33,6 @@ impl State {
             state: 0,
             output_x: 0,
             output_y: 0,
-            joystick: 0,
             score: 0,
             paddle_x: 0,
             ball_x: 0,
@@ -104,11 +102,10 @@ fn step_game(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
                     .join("\n")
             );
         }
-
-        state.joystick = sign(state.ball_x - state.paddle_x);
     }
 
-    (Some(state.joystick), state)
+    let joystick = sign(state.ball_x - state.paddle_x);
+    (Some(joystick), state)
 }
 
 fn solve_a(computer: IntcodeComputer) -> usize {
