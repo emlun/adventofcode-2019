@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::convert::TryInto;
 
 type Word = i64;
@@ -47,9 +46,9 @@ impl IntcodeComputer {
         let get_addr = |prog: &mut Memory, offset: usize| -> usize {
             let parmode_pow = 10_i64.pow((offset + 1).try_into().unwrap());
             let out_addr = match (instruction / parmode_pow) % 10 {
-                0 => usize::try_from(prog[eip + offset]).unwrap(),
+                0 => (prog[eip + offset]).try_into().unwrap(),
                 1 => eip + offset,
-                2 => usize::try_from(relbase + prog[eip + offset]).unwrap(),
+                2 => (relbase + prog[eip + offset]).try_into().unwrap(),
                 _ => unreachable!(),
             };
             ensure_size(prog, out_addr);
