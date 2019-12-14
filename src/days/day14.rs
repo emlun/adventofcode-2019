@@ -12,8 +12,7 @@ fn produce_everything<'a>(
 ) {
     while let Some((ingredient, needed)) = ingredients
         .iter_mut()
-        .filter(|(_, needed)| **needed > 0)
-        .find(|(k, _)| **k != "ORE")
+        .find(|(k, needed)| **k != "ORE" && **needed > 0)
     {
         let (producing, metaingredients) = formulae.get(ingredient).unwrap();
         let times = *needed / producing + (if *needed % producing == 0 { 0 } else { 1 });
