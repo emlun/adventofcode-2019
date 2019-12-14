@@ -13,8 +13,7 @@ fn produce_everything<'a>(
     while let Some((ingredient, needed)) = ingredients
         .iter_mut()
         .filter(|(_, needed)| **needed > 0)
-        .filter(|(k, _)| **k != "ORE")
-        .next()
+        .find(|(k, _)| **k != "ORE")
     {
         let (producing, metaingredients) = formulae.get(ingredient).unwrap();
         let times = *needed / producing + (if *needed % producing == 0 { 0 } else { 1 });
@@ -43,7 +42,7 @@ pub fn solve(lines: &[String]) -> Solution {
     let a_solution: i64 = *ingredients.get("ORE").unwrap();
 
     let mut b_solution: i64 = 1;
-    while ingredients.get("ORE").unwrap() < &1_000_000_000_000 {
+    while *ingredients.get("ORE").unwrap() < 1_000_000_000_000 {
         let additional_fuel = (1_000_000_000_000 - ingredients.get("ORE").unwrap()) / a_solution;
         if additional_fuel > 0 {
             b_solution += additional_fuel;
