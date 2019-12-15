@@ -156,16 +156,13 @@ fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State,
                     .unwrap()
                     + 1;
 
-                if !state.world.contains_key(&new_pos) {
-                    state.world.insert(
-                        new_pos,
-                        if output == 1 {
-                            Tile::Floor(dist)
-                        } else {
-                            Tile::Goal(dist)
-                        },
-                    );
-                }
+                state.world.entry(new_pos).or_insert_with(|| {
+                    if output == 1 {
+                        Tile::Floor(dist)
+                    } else {
+                        Tile::Goal(dist)
+                    }
+                });
 
                 state.unexplored.remove(&new_pos);
                 for unexplored_tile in &[
