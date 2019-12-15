@@ -172,8 +172,8 @@ fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State,
                     add(&state.pos, &state.dir),
                     add(&state.pos, &rotate_cw(&state.dir)),
                 ] {
-                    if !state.world.contains_key(&unexplored_tile) {
-                        state.unexplored.insert(add(&state.pos, &state.dir));
+                    if !state.world.contains_key(unexplored_tile) {
+                        state.unexplored.insert(*unexplored_tile);
                     }
                 }
                 state.dir = rotate_ccw(&state.dir);
