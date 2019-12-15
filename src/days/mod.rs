@@ -12,7 +12,7 @@ pub mod day11;
 pub mod day12;
 pub mod day13;
 pub mod day14;
-// pub mod day15;
+pub mod day15;
 // pub mod day16;
 // pub mod day17;
 // pub mod day18;
@@ -44,7 +44,7 @@ pub fn get_solver(day: u8) -> Option<fn(&[String]) -> crate::common::Solution> {
         12 => Some(day12::solve),
         13 => Some(day13::solve),
         14 => Some(day14::solve),
-        // 15 => Some(day15::solve),
+        15 => Some(day15::solve),
         // 16 => Some(day16::solve),
         // 17 => Some(day17::solve),
         // 18 => Some(day18::solve),
