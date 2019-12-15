@@ -152,7 +152,6 @@ fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State,
 
                 if output == 2 {
                     state.goal_pos = Some(state.pos);
-                    print_state(&state);
                 }
             }
             _ => unreachable!(),
@@ -173,9 +172,6 @@ fn solve_a(computer: IntcodeComputer) -> (State, u32) {
         step_build_map,
     );
 
-    println!("\n{}", finish.unexplored.len());
-    print_state(&finish);
-
     let goal_dist = match finish.world.get(&finish.goal_pos.unwrap()).unwrap() {
         Tile::Goal(dist) => *dist,
         _ => unreachable!(),
@@ -185,7 +181,6 @@ fn solve_a(computer: IntcodeComputer) -> (State, u32) {
         .flat_map(|pos| dist_at(&finish.world, &pos))
         .max()
         .unwrap();
-    println!("{} {}", goal_dist, dist_reduction);
 
     (finish, goal_dist - dist_reduction + 1)
 }
