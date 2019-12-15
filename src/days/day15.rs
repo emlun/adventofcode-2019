@@ -166,7 +166,7 @@ fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State,
     (Some(command), state, halt)
 }
 
-fn solve_a(computer: IntcodeComputer) -> u32 {
+fn solve_a(computer: IntcodeComputer) -> (State, u32) {
     let finish = computer.run_with_halt(
         Some(dir_to_cmd(State::new().dir)),
         State::new(),
@@ -187,19 +187,45 @@ fn solve_a(computer: IntcodeComputer) -> u32 {
         .unwrap();
     println!("{} {}", goal_dist, dist_reduction);
 
-    goal_dist - dist_reduction + 1
+    (finish, goal_dist - dist_reduction + 1)
 }
 
-fn solve_b(_: IntcodeComputer) -> i64 {
-    0
+fn solve_b(finish: State) -> u32 {
+    let mut heads: HashSet<Point> = HashSet::new();
+    let mut has_oxygen: HashSet<Point> = HashSet::new();
+    heads.insert(finish.goal_pos.unwrap());
+
+    let mut time = 0;
+
+    while !heads.is_empty() {
+        time += 1;
+
+        let new_heads = heads
+            .iter()
+            .flat_map(adjacent)
+            .filter(|pos| {
+                !has_oxygen.contains(pos)
+                    && match finish.world.get(pos) {
+                        Some(Tile::Floor(_)) => true,
+                        Some(Tile::Goal(_)) => true,
+                        _ => false,
+                    }
+            })
+            .collect();
+
+        for head in heads.drain() {
+            has_oxygen.insert(head);
+        }
+        heads = new_heads;
+    }
+
+    time - 1
 }
 
 pub fn solve(lines: &[String]) -> Solution {
     let computer: IntcodeComputer = lines.into();
-    (
-        solve_a(computer.clone()).to_string(),
-        solve_b(computer).to_string(),
-    )
+    let (a_finish, a_solution) = solve_a(computer);
+    (a_solution.to_string(), solve_b(a_finish).to_string())
 }
 
 #[cfg(test)]
@@ -208,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_rotate() {
-        assert_eq!(rotate_cw((1, 0)), (0, -1));
-        assert_eq!(rotate_ccw((1, 0)), (0, 1));
+        assert_eq!(rotate_cw(&(1, 0)), (0, -1));
+        assert_eq!(rotate_ccw(&(1, 0)), (0, 1));
     }
 }
