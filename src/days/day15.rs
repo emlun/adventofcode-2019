@@ -47,7 +47,6 @@ fn dir_to_cmd(dir: Point) -> i64 {
 
 struct State {
     world: HashMap<Point, Tile>,
-    start_pos: Point,
     goal_pos: Option<Point>,
     pos: Point,
     dir: Point,
@@ -61,7 +60,6 @@ impl State {
         world.insert(pos, Tile::Floor(0));
         State {
             world,
-            start_pos: pos,
             goal_pos: None,
             pos,
             dir: (0, 1),
@@ -157,14 +155,18 @@ fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State,
                     .min()
                     .unwrap()
                     + 1;
-                state.world.insert(
-                    new_pos,
-                    if output == 1 {
-                        Tile::Floor(dist)
-                    } else {
-                        Tile::Goal(dist)
-                    },
-                );
+
+                if !state.world.contains_key(&new_pos) {
+                    state.world.insert(
+                        new_pos,
+                        if output == 1 {
+                            Tile::Floor(dist)
+                        } else {
+                            Tile::Goal(dist)
+                        },
+                    );
+                }
+
                 state.unexplored.remove(&new_pos);
                 for unexplored_tile in &[
                     add(&state.pos, &state.dir),
@@ -207,17 +209,12 @@ fn solve_a(computer: IntcodeComputer) -> (State, u32) {
         Tile::Goal(dist) => *dist,
         _ => unreachable!(),
     };
-    let dist_reduction = adjacent(&finish.start_pos)
-        .into_iter()
-        .flat_map(|pos| dist_at(&finish.world, &pos))
-        .max()
-        .unwrap();
 
     if ENABLE_OUTPUT {
         print_distances(&finish);
     }
 
-    (finish, goal_dist - dist_reduction + 1)
+    (finish, goal_dist)
 }
 
 fn solve_b(finish: State) -> u32 {
