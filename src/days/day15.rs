@@ -86,7 +86,7 @@ fn print_state(state: &State) {
     let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
 
     println!(
-        "\n{}",
+        "{}",
         (miny..=maxy)
             .rev()
             .rev()
@@ -105,6 +105,33 @@ fn print_state(state: &State) {
                         }
                     })
                     .collect::<Vec<&str>>()
+                    .join("")
+            })
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
+}
+
+fn print_distances(state: &State) {
+    let minx = *state.world.keys().map(|(x, _)| x).min().unwrap_or(&0);
+    let maxx = *state.world.keys().map(|(x, _)| x).max().unwrap_or(&0);
+    let miny = *state.world.keys().map(|(_, y)| y).min().unwrap_or(&0);
+    let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
+
+    println!(
+        "{}",
+        (miny..=maxy)
+            .rev()
+            .rev()
+            .map(|y| {
+                (minx..=maxx)
+                    .map(|x| match state.world.get(&(x, y)) {
+                        None => "    ".to_string(),
+                        Some(Tile::Floor(dist)) => format!("{: >4}", dist),
+                        Some(Tile::Wall) => "    ".to_string(),
+                        Some(Tile::Goal(_)) => " XX ".to_string(),
+                    })
+                    .collect::<Vec<String>>()
                     .join("")
             })
             .collect::<Vec<String>>()
@@ -158,6 +185,10 @@ fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State,
         };
 
         if ENABLE_OUTPUT {
+            println!("\n{}", state.unexplored.len());
+            if state.unexplored.len() < 10 {
+                println!("{:?}", state.unexplored);
+            }
             print_state(&state);
         }
     }
@@ -181,6 +212,10 @@ fn solve_a(computer: IntcodeComputer) -> (State, u32) {
         .flat_map(|pos| dist_at(&finish.world, &pos))
         .max()
         .unwrap();
+
+    if ENABLE_OUTPUT {
+        print_distances(&finish);
+    }
 
     (finish, goal_dist - dist_reduction + 1)
 }
