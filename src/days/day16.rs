@@ -8,11 +8,11 @@ fn pattern_digit(pattern_num: usize, digit: usize) -> i8 {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let digits: Vec<u8> = lines[0].chars().map(|c| (c as u8) - 48).collect();
+    let digits: Vec<i8> = lines[0].chars().map(|c| (c as i8) - 48).collect();
 
     println!("{:?}", digits);
 
-    fn phase_digit(digits: &Vec<u8>, n: usize) -> u8 {
+    fn phase_digit(digits: &Vec<i8>, n: usize) -> i8 {
         let pattern = (0..).map(move |i| pattern_digit(n + 1, i));
 
         // println!(
@@ -25,18 +25,18 @@ pub fn solve(lines: &[String]) -> Solution {
             .iter()
             .zip(pattern)
             .map(|(a, b)| {
-                let c = *a as i32 * (b as i32);
+                let c = *a * b;
                 // dbg!(a, b, c);
-                c
+                c as i32
             })
             .sum::<i32>()
             .abs()
             % 10;
         // dbg!(d)
-        d as u8
+        d as i8
     }
 
-    fn phase(digits: &Vec<u8>) -> Vec<u8> {
+    fn phase(digits: &Vec<i8>) -> Vec<i8> {
         (0..digits.len()).map(|i| phase_digit(digits, i)).collect()
     };
 
@@ -44,7 +44,7 @@ pub fn solve(lines: &[String]) -> Solution {
     println!("{:?}", phase(&phase(&digits)));
     println!("{:?}", phase(&phase(&phase(&digits))));
 
-    fn transform(digits: &Vec<u8>, phases: usize) -> Vec<u8> {
+    fn transform(digits: &Vec<i8>, phases: usize) -> Vec<i8> {
         (0..phases).fold(digits.clone(), |digs, _| phase(&digs))
     }
 
