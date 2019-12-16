@@ -1,18 +1,19 @@
 use crate::common::Solution;
 
+const PATTERN_BASE: [i8; 4] = [0, 1, 0, -1];
+
+fn pattern_digit(pattern_num: usize, digit: usize) -> i8 {
+    let index = ((digit + 1) / pattern_num) % 4;
+    PATTERN_BASE[index]
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let digits: Vec<u8> = lines[0].chars().map(|c| (c as u8) - 48).collect();
 
     println!("{:?}", digits);
 
     fn phase_digit(digits: &Vec<u8>, n: usize) -> u8 {
-        let pattern = |n: usize| {
-            vec![0, 1, 0, -1]
-                .into_iter()
-                .cycle()
-                .flat_map(move |i| vec![i].into_iter().cycle().take(n + 1))
-                .skip(1)
-        };
+        let pattern = (0..).map(move |i| pattern_digit(n + 1, i));
 
         // println!(
         //     "\n{} {:?} {:?}",
@@ -22,9 +23,9 @@ pub fn solve(lines: &[String]) -> Solution {
         // );
         let d = digits
             .iter()
-            .zip(pattern(n))
+            .zip(pattern)
             .map(|(a, b)| {
-                let c = *a as i32 * b;
+                let c = *a as i32 * (b as i32);
                 // dbg!(a, b, c);
                 c
             })
