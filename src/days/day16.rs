@@ -38,12 +38,6 @@ fn transform(digits: &Vec<i8>, phases: usize) -> Vec<i8> {
 pub fn solve(lines: &[String]) -> Solution {
     let digits: Vec<i8> = lines[0].chars().map(|c| (c as i8) - 48).collect();
 
-    println!("{:?}", digits);
-
-    println!("{:?}", phase(&digits));
-    println!("{:?}", phase(&phase(&digits)));
-    println!("{:?}", phase(&phase(&phase(&digits))));
-
     let a_solution = transform(&digits, 100)
         .into_iter()
         .take(8)
