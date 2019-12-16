@@ -7,28 +7,24 @@ fn pattern_digit(pattern_num: usize, digit: usize) -> i8 {
     PATTERN_BASE[index]
 }
 
+fn sum_term(i: usize, digits: &Vec<i8>, pattern_num: usize) -> i32 {
+    (digits[i] * pattern_digit(pattern_num, i)) as i32
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let digits: Vec<i8> = lines[0].chars().map(|c| (c as i8) - 48).collect();
 
     println!("{:?}", digits);
 
     fn phase_digit(digits: &Vec<i8>, n: usize) -> i8 {
-        let pattern = (0..).map(move |i| pattern_digit(n + 1, i));
-
         // println!(
         //     "\n{} {:?} {:?}",
         //     n,
         //     digits,
         //     pattern(n).take(digits.len()).collect::<Vec<i8>>()
         // );
-        let d = digits
-            .iter()
-            .zip(pattern)
-            .map(|(a, b)| {
-                let c = *a * b;
-                // dbg!(a, b, c);
-                c as i32
-            })
+        let d = (0..digits.len())
+            .map(|i| sum_term(i, digits, n + 1))
             .sum::<i32>()
             .abs()
             % 10;
