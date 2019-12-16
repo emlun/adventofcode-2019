@@ -54,6 +54,6 @@ pub fn solve(lines: &[String]) -> Solution {
         .map(|d| d.to_string())
         .collect::<Vec<String>>()
         .join("");
-    let b_solution = "bar";
+    let b_solution = "";
     (a_solution.to_string(), b_solution.to_string())
 }
