@@ -206,13 +206,14 @@ fn is_path(world: &HashMap<Point, Tile>, pos: &Point) -> bool {
 }
 
 fn compress_route(route: Route) -> Route {
+    use Step::{F, L, R};
     route.into_iter().fold(Vec::new(), |mut rt, step| {
         if rt.len() > 0 {
             let endi = rt.len() - 1;
             match (&rt[endi], &step) {
-                (Step::F(f1), Step::F(f2)) => rt[endi] = Step::F(f1 + f2),
-                (Step::L(l1), Step::F(f2)) => rt[endi] = Step::L(l1 + f2),
-                (Step::R(r1), Step::F(f2)) => rt[endi] = Step::R(r1 + f2),
+                (F(f1), F(f2)) => rt[endi] = F(f1 + f2),
+                (L(l1), F(f2)) => rt[endi] = L(l1 + f2),
+                (R(r1), F(f2)) => rt[endi] = R(r1 + f2),
                 _ => rt.push(step),
             };
         } else {
