@@ -325,12 +325,14 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
         simplest_path(&finish_a.world, finish_a.robot_pos, finish_a.robot_dir)
     );
 
-    use Step::{L, R};
-    let my_segments = vec![
-        vec![R(12), L(8), R(6)],
-        vec![L(8), R(8), R(6), R(12)],
-        vec![R(12), L(6), R(6), R(8), R(6)],
-    ];
+    let my_segments = {
+        use Step::{L, R};
+        vec![
+            vec![R(12), L(8), R(6)],
+            vec![L(8), R(8), R(6), R(12)],
+            vec![R(12), L(6), R(6), R(8), R(6)],
+        ]
+    };
     let my_sequence = vec!['A', 'A', 'C', 'B', 'A', 'B', 'A', 'C', 'B', 'C'];
 
     let mut input_sequence = Vec::new();
