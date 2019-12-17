@@ -17,11 +17,11 @@ enum Tile {
     Path,
 }
 
-fn rotate_cw(dir: &Point) -> Point {
+fn rotate_ccw(dir: &Point) -> Point {
     (dir.1, -dir.0)
 }
 
-fn rotate_ccw(dir: &Point) -> Point {
+fn rotate_cw(dir: &Point) -> Point {
     (-dir.1, dir.0)
 }
 
@@ -55,20 +55,20 @@ impl State {
     }
 }
 
-fn intersections(state: &State) -> HashSet<Point> {
-    let minx = *state.world.keys().map(|(x, _)| x).min().unwrap_or(&0);
-    let maxx = *state.world.keys().map(|(x, _)| x).max().unwrap_or(&0);
-    let miny = *state.world.keys().map(|(_, y)| y).min().unwrap_or(&0);
-    let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
+fn intersections(world: &HashMap<Point, Tile>) -> HashSet<Point> {
+    let minx = *world.keys().map(|(x, _)| x).min().unwrap_or(&0);
+    let maxx = *world.keys().map(|(x, _)| x).max().unwrap_or(&0);
+    let miny = *world.keys().map(|(_, y)| y).min().unwrap_or(&0);
+    let maxy = *world.keys().map(|(_, y)| y).max().unwrap_or(&0);
 
     (miny..maxy)
         .flat_map(|y| {
             (minx..maxx).map(move |x| (x, y)).filter(|(x, y)| {
-                if state.world.get(&(*x, *y)).unwrap_or(&Tile::Empty) == &Tile::Path {
+                if world.get(&(*x, *y)).unwrap_or(&Tile::Empty) == &Tile::Path {
                     let num_adjacent = adjacent(&(*x, *y))
                         .into_iter()
                         .filter(|(xx, yy)| {
-                            state.world.get(&(*xx, *yy)).unwrap_or(&Tile::Empty) == &Tile::Path
+                            world.get(&(*xx, *yy)).unwrap_or(&Tile::Empty) == &Tile::Path
                         })
                         .count();
                     num_adjacent > 2
@@ -86,14 +86,32 @@ fn print_state(state: &State) {
     let miny = *state.world.keys().map(|(_, y)| y).min().unwrap_or(&0);
     let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
 
-    let intrsct: HashSet<Point> = intersections(state);
+    let intrsct: HashSet<Point> = intersections(&state.world);
 
     println!(
         "{}",
-        (miny..=maxy)
-            .rev()
-            .rev()
-            .map(|y| {
+        vec![format!(
+            "    {}",
+            (minx..=maxx)
+                .map(|x| (x.abs() % 100 / 10).to_string())
+                .collect::<Vec<String>>()
+                .join("")
+        )]
+        .into_iter()
+        .chain(
+            vec![format!(
+                "    {}",
+                (minx..=maxx)
+                    .map(|x| (x.abs() % 10).to_string())
+                    .collect::<Vec<String>>()
+                    .join("")
+            )]
+            .into_iter()
+        )
+        .chain((miny..=maxy).rev().rev().map(|y| {
+            format!(
+                "{: >3} {}",
+                y,
                 (minx..=maxx)
                     .map(|x| {
                         if (x, y) == state.robot_pos {
@@ -110,9 +128,10 @@ fn print_state(state: &State) {
                     })
                     .collect::<Vec<&str>>()
                     .join("")
-            })
-            .collect::<Vec<String>>()
-            .join("\n")
+            )
+        }))
+        .collect::<Vec<String>>()
+        .join("\n")
     );
 }
 
@@ -168,18 +187,110 @@ fn solve_a(computer: IntcodeComputer) -> (State, i64) {
 
     print_state(&finish);
 
-    let intrsct = intersections(&finish);
+    let intrsct = intersections(&finish.world);
     let solution = intrsct.into_iter().map(|(x, y)| x * y).sum::<i64>();
 
     (finish, solution)
 }
 
-fn solve_b(finish: State) -> u32 {
+type Route = Vec<Step>;
+#[derive(Debug)]
+enum Step {
+    F(usize),
+    R,
+    L,
+}
+
+fn is_path(world: &HashMap<Point, Tile>, pos: &Point) -> bool {
+    world.get(pos).unwrap_or(&Tile::Empty) == &Tile::Path
+}
+
+fn follow_path_to_next_intersection(
+    world: &HashMap<Point, Tile>,
+    intrsct: &HashSet<Point>,
+    start: Point,
+    start_dir: Point,
+) -> (Point, Route) {
+    let mut pos = start;
+    let mut dir = start_dir;
+    let mut route = Vec::new();
+    while !intrsct.contains(&pos) || pos == start {
+        let next = add(&pos, &dir);
+        if is_path(world, &next) {
+            route.push(Step::F(1));
+            pos = next;
+        } else {
+            let dir_left = rotate_ccw(&dir);
+            if is_path(world, &add(&pos, &dir_left)) {
+                route.push(Step::L);
+                dir = dir_left;
+            } else {
+                let dir_right = rotate_cw(&dir);
+                route.push(Step::R);
+                dir = dir_right;
+            }
+        }
+    }
+    (
+        pos,
+        route.into_iter().fold(Vec::new(), |mut rt, step| {
+            if rt.len() > 0 {
+                let endi = rt.len() - 1;
+                if let (Step::F(f1), Step::F(f2)) = (&rt[endi], &step) {
+                    rt[endi] = Step::F(f1 + f2);
+                } else {
+                    rt.push(step);
+                }
+            } else {
+                rt.push(step);
+            }
+            rt
+        }),
+    )
+}
+
+fn intersection_transfers(world: &HashMap<Point, Tile>) -> HashMap<Point, HashMap<Point, Route>> {
+    let intrsct = intersections(world);
+    intrsct
+        .iter()
+        .map(|start| {
+            let routes: HashMap<Point, Route> = vec![(1, 0), (0, 1), (-1, 0), (0, -1)]
+                .into_iter()
+                .filter(|dir| world.get(&add(&start, &dir)).unwrap_or(&Tile::Empty) == &Tile::Path)
+                .map(|dir| follow_path_to_next_intersection(world, &intrsct, *start, dir))
+                .collect();
+            (*start, routes)
+        })
+        .collect()
+}
+
+fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> u32 {
+    computer.prog[0] = 2;
+
+    while computer.is_running() {
+        let input_line = "";
+        break;
+    }
+
+    println!("{:?}", intersection_transfers(&finish_a.world));
+
     0
 }
 
 pub fn solve(lines: &[String]) -> Solution {
     let computer: IntcodeComputer = lines.into();
-    let (a_finish, a_solution) = solve_a(computer);
-    (a_solution.to_string(), solve_b(a_finish).to_string())
+    let (a_finish, a_solution) = solve_a(computer.clone());
+    let b_solution = solve_b(a_finish, computer);
+    (a_solution.to_string(), b_solution.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rotate() {
+        assert_eq!(rotate_cw(&(1, 0)), (0, 1));
+        assert_eq!(rotate_ccw(&(1, 0)), (0, -1));
+    }
 }
