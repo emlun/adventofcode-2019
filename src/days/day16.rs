@@ -1,6 +1,6 @@
 use crate::common::Solution;
 
-fn solve_a(digits: &Vec<i8>) -> String {
+fn solve_a(digits: &[i8]) -> String {
     const PATTERN_BASE: [i8; 4] = [0, 1, 0, -1];
 
     fn pattern_digit(pattern_num: usize, digit: usize) -> i8 {
@@ -8,11 +8,11 @@ fn solve_a(digits: &Vec<i8>) -> String {
         PATTERN_BASE[index]
     }
 
-    fn sum_term(i: usize, digits: &Vec<i8>, pattern_num: usize) -> i32 {
+    fn sum_term(i: usize, digits: &[i8], pattern_num: usize) -> i32 {
         (digits[i] * pattern_digit(pattern_num, i)) as i32
     }
 
-    fn phase_digit(digits: &Vec<i8>, n: usize) -> i8 {
+    fn phase_digit(digits: &[i8], n: usize) -> i8 {
         let d = (0..digits.len())
             .map(|i| sum_term(i, digits, n + 1))
             .sum::<i32>()
@@ -21,12 +21,12 @@ fn solve_a(digits: &Vec<i8>) -> String {
         d as i8
     }
 
-    fn phase(digits: &Vec<i8>) -> Vec<i8> {
+    fn phase(digits: &[i8]) -> Vec<i8> {
         (0..digits.len()).map(|i| phase_digit(digits, i)).collect()
     }
 
-    fn transform(digits: &Vec<i8>, phases: usize) -> Vec<i8> {
-        (0..phases).fold(digits.clone(), |digs, _| phase(&digs))
+    fn transform(digits: &[i8], phases: usize) -> Vec<i8> {
+        (0..phases).fold(digits.to_vec(), |digs, _| phase(&digs))
     }
 
     transform(&digits, 100)
@@ -37,7 +37,7 @@ fn solve_a(digits: &Vec<i8>) -> String {
         .join("")
 }
 
-fn solve_b(digits: &Vec<i8>) -> String {
+fn solve_b(digits: &[i8]) -> String {
     fn phase(mut digits: Vec<i8>) -> Vec<i8> {
         for i in (0..(digits.len() - 1)).rev() {
             digits[i] = (digits[i + 1] + digits[i]).abs() % 10;
