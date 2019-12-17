@@ -197,8 +197,8 @@ type Route = Vec<Step>;
 #[derive(Debug)]
 enum Step {
     F(usize),
-    R,
-    L,
+    R(usize),
+    L(usize),
 }
 
 fn is_path(world: &HashMap<Point, Tile>, pos: &Point) -> bool {
@@ -209,11 +209,12 @@ fn compress_route(route: Route) -> Route {
     route.into_iter().fold(Vec::new(), |mut rt, step| {
         if rt.len() > 0 {
             let endi = rt.len() - 1;
-            if let (Step::F(f1), Step::F(f2)) = (&rt[endi], &step) {
-                rt[endi] = Step::F(f1 + f2);
-            } else {
-                rt.push(step);
-            }
+            match (&rt[endi], &step) {
+                (Step::F(f1), Step::F(f2)) => rt[endi] = Step::F(f1 + f2),
+                (Step::L(l1), Step::F(f2)) => rt[endi] = Step::L(l1 + f2),
+                (Step::R(r1), Step::F(f2)) => rt[endi] = Step::R(r1 + f2),
+                _ => rt.push(step),
+            };
         } else {
             rt.push(step);
         }
@@ -238,11 +239,11 @@ fn follow_path_to_next_intersection(
         } else {
             let dir_left = rotate_ccw(&dir);
             if is_path(world, &add(&pos, &dir_left)) {
-                route.push(Step::L);
+                route.push(Step::L(0));
                 dir = dir_left;
             } else {
                 let dir_right = rotate_cw(&dir);
-                route.push(Step::R);
+                route.push(Step::R(0));
                 dir = dir_right;
             }
         }
@@ -275,12 +276,12 @@ fn simplest_path(
         } else {
             let dir_left = rotate_ccw(&dir);
             if is_path(world, &add(&pos, &dir_left)) {
-                route.push(Step::L);
+                route.push(Step::L(0));
                 dir = dir_left;
             } else {
                 let dir_right = rotate_cw(&dir);
                 if is_path(world, &add(&pos, &dir_right)) {
-                    route.push(Step::R);
+                    route.push(Step::R(0));
                     dir = dir_right;
                 } else if visited == paths {
                     return Some(compress_route(route));
@@ -307,13 +308,8 @@ fn intersection_transfers(world: &HashMap<Point, Tile>) -> HashMap<Point, Vec<(P
         .collect()
 }
 
-fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> u32 {
+fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
     computer.prog[0] = 2;
-
-    while computer.is_running() {
-        let input_line = "";
-        break;
-    }
 
     for (start, routes) in intersection_transfers(&finish_a.world) {
         for (end, route) in routes {
@@ -329,7 +325,57 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> u32 {
         simplest_path(&finish_a.world, finish_a.robot_pos, finish_a.robot_dir)
     );
 
-    0
+    use Step::{L, R};
+    let my_segments = vec![
+        vec![R(12), L(8), R(6)],
+        vec![L(8), R(8), R(6), R(12)],
+        vec![R(12), L(6), R(6), R(8), R(6)],
+    ];
+    let my_sequence = vec!['A', 'A', 'C', 'B', 'A', 'B', 'A', 'C', 'B', 'C'];
+
+    let mut input_sequence = Vec::new();
+    for cmd in my_sequence {
+        input_sequence.push(cmd as u8 as i64);
+        input_sequence.push(',' as u8 as i64);
+    }
+    input_sequence.remove(input_sequence.len() - 1);
+    input_sequence.push('\n' as u8 as i64);
+    for seg in my_segments {
+        for cmd in seg {
+            let chars: Vec<char> = match cmd {
+                Step::F(d) => d.to_string().chars().collect(),
+                Step::L(d) => vec!['L', ',']
+                    .into_iter()
+                    .chain(d.to_string().chars())
+                    .collect(),
+                Step::R(d) => vec!['R', ',']
+                    .into_iter()
+                    .chain(d.to_string().chars())
+                    .collect(),
+            };
+            let mut chars: Vec<i64> = chars.into_iter().map(|c| c as u8 as i64).collect();
+            input_sequence.append(&mut chars);
+            input_sequence.push(',' as u8 as i64);
+        }
+        input_sequence.remove(input_sequence.len() - 1);
+        input_sequence.push('\n' as u8 as i64);
+    }
+    input_sequence.push('n' as u8 as i64);
+    input_sequence.push('\n' as u8 as i64);
+
+    println!(
+        "{:?}",
+        input_sequence
+            .iter()
+            .map(|c| (*c as u8 as char).to_string())
+            .collect::<Vec<String>>()
+            .join("")
+    );
+    println!("{:?}", input_sequence);
+    let output = computer.run(input_sequence);
+    println!("{:?}", output);
+    let dust = output[output.len() - 1];
+    dust
 }
 
 pub fn solve(lines: &[String]) -> Solution {
