@@ -45,12 +45,8 @@ fn solve_b(digits: &Vec<i8>) -> String {
         digits
     }
 
-    fn transform(digits: Vec<i8>, times: usize) -> Vec<i8> {
-        if times == 0 {
-            digits
-        } else {
-            transform(phase(digits), times - 1)
-        }
+    fn transform(digits: Vec<i8>, phases: usize) -> Vec<i8> {
+        (0..phases).fold(digits, |digs, _| phase(digs))
     }
 
     let msg_offset: usize = digits
