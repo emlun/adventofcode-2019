@@ -214,7 +214,7 @@ fn follow_path_to_next_intersection(
     let mut pos = start;
     let mut dir = start_dir;
     let mut route = Vec::new();
-    while !intrsct.contains(&pos) || pos == start {
+    while !intrsct.contains(&pos) || route.is_empty() {
         let next = add(&pos, &dir);
         if is_path(world, &next) {
             route.push(Step::F(1));
@@ -249,12 +249,12 @@ fn follow_path_to_next_intersection(
     )
 }
 
-fn intersection_transfers(world: &HashMap<Point, Tile>) -> HashMap<Point, HashMap<Point, Route>> {
+fn intersection_transfers(world: &HashMap<Point, Tile>) -> HashMap<Point, Vec<(Point, Route)>> {
     let intrsct = intersections(world);
     intrsct
         .iter()
         .map(|start| {
-            let routes: HashMap<Point, Route> = vec![(1, 0), (0, 1), (-1, 0), (0, -1)]
+            let routes = vec![(1, 0), (0, 1), (-1, 0), (0, -1)]
                 .into_iter()
                 .filter(|dir| world.get(&add(&start, &dir)).unwrap_or(&Tile::Empty) == &Tile::Path)
                 .map(|dir| follow_path_to_next_intersection(world, &intrsct, *start, dir))
@@ -272,7 +272,14 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> u32 {
         break;
     }
 
-    println!("{:?}", intersection_transfers(&finish_a.world));
+    for (start, routes) in intersection_transfers(&finish_a.world) {
+        for (end, route) in routes {
+            println!(
+                "({: >2},{: >2}) => ({: >2},{: >2}) : {:?}",
+                start.0, start.1, end.0, end.1, route
+            );
+        }
+    }
 
     0
 }
