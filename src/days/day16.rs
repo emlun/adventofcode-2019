@@ -28,6 +28,21 @@ fn transform(digits: &Vec<i8>, phases: usize) -> Vec<i8> {
     (0..phases).fold(digits.clone(), |digs, _| phase(&digs))
 }
 
+fn b_phase(mut digits: Vec<i8>) -> Vec<i8> {
+    for i in (0..(digits.len() - 1)).rev() {
+        digits[i] = (digits[i + 1] + digits[i]).abs() % 10;
+    }
+    digits
+}
+
+fn b_transform(digits: Vec<i8>, times: usize) -> Vec<i8> {
+    if times == 0 {
+        digits
+    } else {
+        b_transform(b_phase(digits), times - 1)
+    }
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let digits: Vec<i8> = lines[0].chars().map(|c| (c as i8) - 48).collect();
 
@@ -51,21 +66,6 @@ pub fn solve(lines: &[String]) -> Solution {
             .take(digits.len() * 10000 - msg_offset)
             .copied()
             .collect();
-
-        fn b_phase(mut digits: Vec<i8>) -> Vec<i8> {
-            for i in (0..(digits.len() - 1)).rev() {
-                digits[i] = (digits[i + 1] + digits[i]).abs() % 10;
-            }
-            digits
-        }
-
-        fn b_transform(digits: Vec<i8>, times: usize) -> Vec<i8> {
-            if times == 0 {
-                digits
-            } else {
-                b_transform(b_phase(digits), times - 1)
-            }
-        }
 
         b_transform(digits, 100)
             .into_iter()
