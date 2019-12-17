@@ -205,6 +205,22 @@ fn is_path(world: &HashMap<Point, Tile>, pos: &Point) -> bool {
     world.get(pos).unwrap_or(&Tile::Empty) == &Tile::Path
 }
 
+fn compress_route(route: Route) -> Route {
+    route.into_iter().fold(Vec::new(), |mut rt, step| {
+        if rt.len() > 0 {
+            let endi = rt.len() - 1;
+            if let (Step::F(f1), Step::F(f2)) = (&rt[endi], &step) {
+                rt[endi] = Step::F(f1 + f2);
+            } else {
+                rt.push(step);
+            }
+        } else {
+            rt.push(step);
+        }
+        rt
+    })
+}
+
 fn follow_path_to_next_intersection(
     world: &HashMap<Point, Tile>,
     intrsct: &HashSet<Point>,
@@ -231,22 +247,49 @@ fn follow_path_to_next_intersection(
             }
         }
     }
-    (
-        pos,
-        route.into_iter().fold(Vec::new(), |mut rt, step| {
-            if rt.len() > 0 {
-                let endi = rt.len() - 1;
-                if let (Step::F(f1), Step::F(f2)) = (&rt[endi], &step) {
-                    rt[endi] = Step::F(f1 + f2);
-                } else {
-                    rt.push(step);
-                }
+    (pos, compress_route(route))
+}
+
+fn simplest_path(
+    world: &HashMap<Point, Tile>,
+    start_pos: Point,
+    start_dir: Point,
+) -> Option<Route> {
+    let mut pos = start_pos;
+    let mut dir = start_dir;
+    let mut route = Vec::new();
+    let paths: HashSet<Point> = world
+        .iter()
+        .filter(|(_, v)| **v == Tile::Path)
+        .map(|(k, _)| *k)
+        .collect();
+    let mut visited: HashSet<Point> = HashSet::new();
+    visited.insert(pos);
+
+    loop {
+        let next = add(&pos, &dir);
+        if is_path(world, &next) {
+            route.push(Step::F(1));
+            pos = next;
+            visited.insert(pos);
+        } else {
+            let dir_left = rotate_ccw(&dir);
+            if is_path(world, &add(&pos, &dir_left)) {
+                route.push(Step::L);
+                dir = dir_left;
             } else {
-                rt.push(step);
+                let dir_right = rotate_cw(&dir);
+                if is_path(world, &add(&pos, &dir_right)) {
+                    route.push(Step::R);
+                    dir = dir_right;
+                } else if visited == paths {
+                    return Some(compress_route(route));
+                } else {
+                    return None;
+                }
             }
-            rt
-        }),
-    )
+        }
+    }
 }
 
 fn intersection_transfers(world: &HashMap<Point, Tile>) -> HashMap<Point, Vec<(Point, Route)>> {
@@ -280,6 +323,11 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> u32 {
             );
         }
     }
+
+    println!(
+        "{:?}",
+        simplest_path(&finish_a.world, finish_a.robot_pos, finish_a.robot_dir)
+    );
 
     0
 }
