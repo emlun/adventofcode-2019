@@ -366,19 +366,8 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
     input_sequence.push('n' as u8 as i64);
     input_sequence.push('\n' as u8 as i64);
 
-    println!(
-        "{:?}",
-        input_sequence
-            .iter()
-            .map(|c| (*c as u8 as char).to_string())
-            .collect::<Vec<String>>()
-            .join("")
-    );
-    println!("{:?}", input_sequence);
     let output = computer.run(input_sequence);
-    println!("{:?}", output);
-    let dust = output[output.len() - 1];
-    dust
+    output[output.len() - 1]
 }
 
 pub fn solve(lines: &[String]) -> Solution {
