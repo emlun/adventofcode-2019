@@ -130,7 +130,7 @@ fn parse_world(lines: &[String]) -> (World2, Point) {
                     '.' => Floor(None),
                     '@' => {
                         player_pos = (x, y);
-                        Floor(None)
+                        Floor(Some(Key('@')))
                     }
                     a => Floor(Some(if a == a.to_ascii_uppercase() {
                         Door(a.to_ascii_lowercase())
@@ -160,15 +160,11 @@ fn bfs(world: &World2, start_pos: &Point) -> Option<State2> {
 
     let mut shortest_collections: HashMap<BTreeSet<char>, HashMap<char, usize>> = HashMap::new();
 
-    for (pos, (len, key)) in find_initial_keys(world, start_pos) {
-        let mut collected = BTreeSet::new();
-        collected.insert(key);
-        queue.push(State2 {
-            pos,
-            collected,
-            len,
-        });
-    }
+    queue.push(State2 {
+        pos: *start_pos,
+        collected: vec!['@'].into_iter().collect(),
+        len: 0,
+    });
 
     while let Some(state) = queue.pop() {
         if state.collected.len() == world.keys.len() {
@@ -216,29 +212,6 @@ fn bfs(world: &World2, start_pos: &Point) -> Option<State2> {
         }
     }
     None
-}
-
-fn find_initial_keys(world: &World2, start_pos: &Point) -> HashMap<Point, (usize, char)> {
-    let collected = BTreeSet::new();
-    let mut result: HashMap<Point, (usize, char)> = HashMap::new();
-    let mut visited = HashSet::new();
-    let mut queue: VecDeque<(Point, usize)> = VecDeque::new();
-    queue.push_back((*start_pos, 0));
-
-    while let Some((step, len)) = queue.pop_front() {
-        for next in adjacent(&step) {
-            if !visited.contains(&next) && can_walk2(world, &collected, &next) {
-                if let Floor(Some(Key(k))) = world.tiles[next.1][next.0] {
-                    result.insert(next, (len + 1, k));
-                }
-                queue.push_back((next, len + 1));
-            }
-        }
-
-        visited.insert(step);
-    }
-
-    result
 }
 
 fn solve_a(world: &World2, pos: Point) -> usize {
