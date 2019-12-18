@@ -135,7 +135,7 @@ fn can_walk2(world: &World2, collected: &BTreeSet<char>, pos: &Point) -> bool {
     }
 }
 
-fn bfs(world: &World2, start_pos: &Point) -> Option<State2> {
+fn dijkstra(world: &World2, start_pos: &Point) -> Option<State2> {
     let mut transfers: HashMap<BTreeSet<char>, HashMap<Point, Vec<(Point, usize, char)>>> =
         HashMap::new();
     let mut queue: BinaryHeap<State2> = BinaryHeap::new();
@@ -197,7 +197,7 @@ fn bfs(world: &World2, start_pos: &Point) -> Option<State2> {
 }
 
 fn solve_a(world: &World2, pos: Point) -> usize {
-    let found = bfs(world, &pos);
+    let found = dijkstra(world, &pos);
     found.unwrap().len
 }
 
