@@ -91,8 +91,6 @@ fn compute_transfers(
             visited.insert(step);
         }
 
-        partmap.sort_by_key(|(_, len, _)| *len);
-
         result.insert(*start_pos, partmap);
     }
 
