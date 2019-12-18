@@ -4,6 +4,7 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
+use std::rc::Rc;
 
 type Point = (usize, usize);
 
@@ -32,7 +33,7 @@ use Tile::{Floor, Wall};
 #[derive(Debug, Eq, Ord, PartialEq)]
 struct State {
     pub poss: Vec<Point>,
-    pub collected: BTreeSet<char>,
+    pub collected: Rc<BTreeSet<char>>,
     pub len: usize,
 }
 
@@ -138,15 +139,16 @@ fn dijkstra(
     start_positions: &Vec<Point>,
     start_collected: BTreeSet<char>,
 ) -> Option<State> {
-    let mut transfers: HashMap<BTreeSet<char>, HashMap<Point, Vec<(Point, usize, char)>>> =
+    let mut transfers: HashMap<Rc<BTreeSet<char>>, HashMap<Point, Vec<(Point, usize, char)>>> =
         HashMap::new();
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
 
-    let mut shortest_collections: HashMap<BTreeSet<char>, HashMap<char, usize>> = HashMap::new();
+    let mut shortest_collections: HashMap<Rc<BTreeSet<char>>, HashMap<char, usize>> =
+        HashMap::new();
 
     queue.push(State {
         poss: start_positions.clone(),
-        collected: start_collected,
+        collected: Rc::new(start_collected),
         len: 0,
     });
 
@@ -167,12 +169,12 @@ fn dijkstra(
                         t
                     } else {
                         let t = compute_transfers(world, &state.collected);
-                        transfers.insert(state.collected.clone(), t);
+                        transfers.insert(Rc::clone(&state.collected), t);
                         transfers.get(&state.collected).unwrap()
                     };
 
                     let shortcoll = shortest_collections
-                        .entry(state.collected.clone())
+                        .entry(Rc::clone(&state.collected))
                         .or_insert(HashMap::new())
                         .entry(*last_key)
                         .or_insert(state.len);
@@ -183,8 +185,8 @@ fn dijkstra(
 
                     for (next_point, len_to_next, next_key) in trns.get(&state.poss[posi]).unwrap()
                     {
-                        let mut collected = state.collected.clone();
-                        collected.insert(*next_key);
+                        let mut collected = Rc::clone(&state.collected);
+                        Rc::make_mut(&mut collected).insert(*next_key);
 
                         let mut poss = state.poss.clone();
                         poss[posi] = *next_point;
