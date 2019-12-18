@@ -133,7 +133,11 @@ fn can_walk2(world: &World2, collected: &BTreeSet<char>, pos: &Point) -> bool {
     }
 }
 
-fn dijkstra(world: &World2, start_positions: &Vec<Point>) -> Option<State2> {
+fn dijkstra(
+    world: &World2,
+    start_positions: &Vec<Point>,
+    start_collected: BTreeSet<char>,
+) -> Option<State2> {
     let mut transfers: HashMap<BTreeSet<char>, HashMap<Point, Vec<(Point, usize, char)>>> =
         HashMap::new();
     let mut queue: BinaryHeap<State2> = BinaryHeap::new();
@@ -142,7 +146,7 @@ fn dijkstra(world: &World2, start_positions: &Vec<Point>) -> Option<State2> {
 
     queue.push(State2 {
         poss: start_positions.clone(),
-        collected: vec!['@', '#', '$', '%'].into_iter().collect(),
+        collected: start_collected,
         len: 0,
     });
 
@@ -200,8 +204,8 @@ fn dijkstra(world: &World2, start_positions: &Vec<Point>) -> Option<State2> {
     None
 }
 
-fn solve_a(world: &World2, pos: Vec<Point>) -> usize {
-    let found = dijkstra(world, &pos);
+fn solve_a(world: &World2, pos: Vec<Point>, start_collected: BTreeSet<char>) -> usize {
+    let found = dijkstra(world, &pos, start_collected);
     found.unwrap().len
 }
 
@@ -260,7 +264,7 @@ fn print_state(world: &World2, state: &State2) {
 pub fn solve(lines: &[String]) -> Solution {
     let (mut world, pos) = parse_world(lines);
 
-    let a_solution = solve_a(&world, vec![pos]);
+    let a_solution = solve_a(&world, vec![pos], BTreeSet::new());
 
     world.tiles[pos.1][pos.0] = Tile::Wall;
     world.tiles[pos.1 - 1][pos.0] = Tile::Wall;
@@ -282,6 +286,6 @@ pub fn solve(lines: &[String]) -> Solution {
         (pos.0 + 1, pos.1 - 1),
     ];
 
-    let b_solution = solve_a(&world, pos);
+    let b_solution = solve_a(&world, pos, vec!['@', '#', '$', '%'].into_iter().collect());
     (a_solution.to_string(), b_solution.to_string())
 }
