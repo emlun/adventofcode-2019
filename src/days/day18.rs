@@ -31,7 +31,7 @@ use Tile::{Floor, Wall};
 
 #[derive(Debug, Eq, Ord, PartialEq)]
 struct State2 {
-    pub pos: (usize, usize),
+    pub poss: Vec<Point>,
     pub collected: BTreeSet<char>,
     pub len: usize,
 }
@@ -133,7 +133,7 @@ fn can_walk2(world: &World2, collected: &BTreeSet<char>, pos: &Point) -> bool {
     }
 }
 
-fn dijkstra(world: &World2, start_pos: &Point) -> Option<State2> {
+fn dijkstra(world: &World2, start_positions: &Vec<Point>) -> Option<State2> {
     let mut transfers: HashMap<BTreeSet<char>, HashMap<Point, Vec<(Point, usize, char)>>> =
         HashMap::new();
     let mut queue: BinaryHeap<State2> = BinaryHeap::new();
@@ -141,8 +141,8 @@ fn dijkstra(world: &World2, start_pos: &Point) -> Option<State2> {
     let mut shortest_collections: HashMap<BTreeSet<char>, HashMap<char, usize>> = HashMap::new();
 
     queue.push(State2 {
-        pos: *start_pos,
-        collected: vec!['@'].into_iter().collect(),
+        poss: start_positions.clone(),
+        collected: vec!['@', '#', '$', '%'].into_iter().collect(),
         len: 0,
     });
 
@@ -150,43 +150,49 @@ fn dijkstra(world: &World2, start_pos: &Point) -> Option<State2> {
         if state.collected.len() == world.keys.len() {
             return Some(state);
         } else {
-            let last_key: &char = world.keys.get(&state.pos).unwrap();
+            for posi in 0..state.poss.len() {
+                let last_key: &char = world.keys.get(&state.poss[posi]).unwrap();
 
-            if shortest_collections
-                .get(&state.collected)
-                .and_then(|stands| stands.get(&last_key))
-                .map(|len| *len > state.len)
-                .unwrap_or(true)
-            {
-                let trns = if let Some(t) = transfers.get(&state.collected) {
-                    t
-                } else {
-                    let t = compute_transfers(world, &state.collected);
-                    transfers.insert(state.collected.clone(), t);
-                    transfers.get(&state.collected).unwrap()
-                };
-
-                let shortcoll = shortest_collections
-                    .entry(state.collected.clone())
-                    .or_insert(HashMap::new())
-                    .entry(*last_key)
-                    .or_insert(state.len);
-
-                if state.len < *shortcoll {
-                    *shortcoll = state.len;
-                }
-
-                for (next_point, len_to_next, next_key) in trns.get(&state.pos).unwrap() {
-                    let mut collected = state.collected.clone();
-                    collected.insert(*next_key);
-
-                    let next_state = State2 {
-                        pos: *next_point,
-                        collected,
-                        len: state.len + len_to_next,
+                if shortest_collections
+                    .get(&state.collected)
+                    .and_then(|stands| stands.get(&last_key))
+                    .map(|len| *len > state.len)
+                    .unwrap_or(true)
+                {
+                    let trns = if let Some(t) = transfers.get(&state.collected) {
+                        t
+                    } else {
+                        let t = compute_transfers(world, &state.collected);
+                        transfers.insert(state.collected.clone(), t);
+                        transfers.get(&state.collected).unwrap()
                     };
 
-                    queue.push(next_state);
+                    let shortcoll = shortest_collections
+                        .entry(state.collected.clone())
+                        .or_insert(HashMap::new())
+                        .entry(*last_key)
+                        .or_insert(state.len);
+
+                    if state.len < *shortcoll {
+                        *shortcoll = state.len;
+                    }
+
+                    for (next_point, len_to_next, next_key) in trns.get(&state.poss[posi]).unwrap()
+                    {
+                        let mut collected = state.collected.clone();
+                        collected.insert(*next_key);
+
+                        let mut poss = state.poss.clone();
+                        poss[posi] = *next_point;
+
+                        let next_state = State2 {
+                            poss,
+                            collected,
+                            len: state.len + len_to_next,
+                        };
+
+                        queue.push(next_state);
+                    }
                 }
             }
         }
@@ -194,7 +200,7 @@ fn dijkstra(world: &World2, start_pos: &Point) -> Option<State2> {
     None
 }
 
-fn solve_a(world: &World2, pos: Point) -> usize {
+fn solve_a(world: &World2, pos: Vec<Point>) -> usize {
     let found = dijkstra(world, &pos);
     found.unwrap().len
 }
@@ -203,12 +209,79 @@ fn solve_a(world: &World2, pos: Point) -> usize {
 //     "".to_string()
 // }
 
+fn print_world(world: &World2) {
+    println!(
+        "{}",
+        world
+            .tiles
+            .iter()
+            .map(|row| row
+                .iter()
+                .map(|c| match c {
+                    Wall => '#'.to_string(),
+                    Floor(Some(Key(a))) => a.to_string(),
+                    Floor(Some(Door(a))) => a.to_ascii_uppercase().to_string(),
+                    Floor(None) => '.'.to_string(),
+                })
+                .collect::<Vec<String>>()
+                .join(""))
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
+}
+
+fn print_state(world: &World2, state: &State2) {
+    println!(
+        "{}",
+        world
+            .tiles
+            .iter()
+            .enumerate()
+            .map(|(r, row)| row
+                .iter()
+                .enumerate()
+                .map(|(c, tile)| if state.poss.contains(&(c, r)) {
+                    '@'.to_string()
+                } else {
+                    match tile {
+                        Wall => '#'.to_string(),
+                        Floor(Some(Key(a))) => a.to_string(),
+                        Floor(Some(Door(a))) => a.to_ascii_uppercase().to_string(),
+                        Floor(None) => '.'.to_string(),
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(""))
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
+}
+
 pub fn solve(lines: &[String]) -> Solution {
-    let (world, pos) = parse_world(lines);
+    let (mut world, pos) = parse_world(lines);
 
-    let a_solution = solve_a(&world, pos);
-    // let b_solution = solve_b(&world, pos);
+    let a_solution = solve_a(&world, vec![pos]);
 
-    let b_solution = "";
+    world.tiles[pos.1][pos.0] = Tile::Wall;
+    world.tiles[pos.1 - 1][pos.0] = Tile::Wall;
+    world.tiles[pos.1][pos.0 - 1] = Tile::Wall;
+    world.tiles[pos.1 + 1][pos.0] = Tile::Wall;
+    world.tiles[pos.1][pos.0 + 1] = Tile::Wall;
+    world.keys.remove(&pos);
+    world.keys.insert((pos.0 - 1, pos.1 - 1), '@');
+    world.keys.insert((pos.0 - 1, pos.1 + 1), '#');
+    world.keys.insert((pos.0 + 1, pos.1 + 1), '$');
+    world.keys.insert((pos.0 + 1, pos.1 - 1), '%');
+
+    print_world(&world);
+
+    let pos = vec![
+        (pos.0 - 1, pos.1 - 1),
+        (pos.0 - 1, pos.1 + 1),
+        (pos.0 + 1, pos.1 + 1),
+        (pos.0 + 1, pos.1 - 1),
+    ];
+
+    let b_solution = solve_a(&world, pos);
     (a_solution.to_string(), b_solution.to_string())
 }
