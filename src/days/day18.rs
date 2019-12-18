@@ -30,25 +30,25 @@ use Entity::{Door, Key};
 use Tile::{Floor, Wall};
 
 #[derive(Debug, Eq, Ord, PartialEq)]
-struct State2 {
+struct State {
     pub poss: Vec<Point>,
     pub collected: BTreeSet<char>,
     pub len: usize,
 }
 
-impl PartialOrd for State2 {
+impl PartialOrd for State {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(other.len.cmp(&self.len))
     }
 }
 
-struct World2 {
+struct World {
     tiles: Vec<Vec<Tile>>,
     keys: HashMap<Point, char>,
 }
 
-impl World2 {
-    fn new(tiles: Vec<Vec<Tile>>) -> World2 {
+impl World {
+    fn new(tiles: Vec<Vec<Tile>>) -> World {
         let mut keys = HashMap::new();
         for (r, row) in tiles.iter().enumerate() {
             for (c, tile) in row.iter().enumerate() {
@@ -57,12 +57,12 @@ impl World2 {
                 }
             }
         }
-        World2 { tiles, keys }
+        World { tiles, keys }
     }
 }
 
 fn compute_transfers(
-    world: &World2,
+    world: &World,
     collected: &BTreeSet<char>,
 ) -> HashMap<Point, Vec<(Point, usize, char)>> {
     let mut result: HashMap<Point, Vec<(Point, usize, char)>> = HashMap::new();
@@ -75,7 +75,7 @@ fn compute_transfers(
 
         while let Some((step, len)) = queue.pop_front() {
             for next in adjacent(&step) {
-                if !visited.contains(&next) && can_walk2(world, &collected, &next) {
+                if !visited.contains(&next) && can_walk(world, &collected, &next) {
                     if let Floor(Some(Key(k))) = world.tiles[next.1][next.0] {
                         if !collected.contains(&k) {
                             partmap.push((next, len + 1, k));
@@ -97,7 +97,7 @@ fn compute_transfers(
     result
 }
 
-fn parse_world(lines: &[String]) -> (World2, Point) {
+fn parse_world(lines: &[String]) -> (World, Point) {
     let mut player_pos = (0, 0);
     let world = lines
         .iter()
@@ -121,10 +121,10 @@ fn parse_world(lines: &[String]) -> (World2, Point) {
                 .collect()
         })
         .collect();
-    (World2::new(world), player_pos)
+    (World::new(world), player_pos)
 }
 
-fn can_walk2(world: &World2, collected: &BTreeSet<char>, pos: &Point) -> bool {
+fn can_walk(world: &World, collected: &BTreeSet<char>, pos: &Point) -> bool {
     match world.tiles[pos.1][pos.0] {
         Wall => false,
         Floor(None) => true,
@@ -134,17 +134,17 @@ fn can_walk2(world: &World2, collected: &BTreeSet<char>, pos: &Point) -> bool {
 }
 
 fn dijkstra(
-    world: &World2,
+    world: &World,
     start_positions: &Vec<Point>,
     start_collected: BTreeSet<char>,
-) -> Option<State2> {
+) -> Option<State> {
     let mut transfers: HashMap<BTreeSet<char>, HashMap<Point, Vec<(Point, usize, char)>>> =
         HashMap::new();
-    let mut queue: BinaryHeap<State2> = BinaryHeap::new();
+    let mut queue: BinaryHeap<State> = BinaryHeap::new();
 
     let mut shortest_collections: HashMap<BTreeSet<char>, HashMap<char, usize>> = HashMap::new();
 
-    queue.push(State2 {
+    queue.push(State {
         poss: start_positions.clone(),
         collected: start_collected,
         len: 0,
@@ -189,7 +189,7 @@ fn dijkstra(
                         let mut poss = state.poss.clone();
                         poss[posi] = *next_point;
 
-                        let next_state = State2 {
+                        let next_state = State {
                             poss,
                             collected,
                             len: state.len + len_to_next,
@@ -204,16 +204,36 @@ fn dijkstra(
     None
 }
 
-fn solve_a(world: &World2, pos: Vec<Point>, start_collected: BTreeSet<char>) -> usize {
-    let found = dijkstra(world, &pos, start_collected);
+fn solve_a(world: &World, pos: Vec<Point>) -> usize {
+    let found = dijkstra(world, &pos, vec!['@'].into_iter().collect());
     found.unwrap().len
 }
 
-// fn solve_b(world: &World2, pos: Point) -> String {
-//     "".to_string()
-// }
+fn solve_b(mut world: World, pos: Point) -> usize {
+    world.tiles[pos.1][pos.0] = Tile::Wall;
+    world.tiles[pos.1 - 1][pos.0] = Tile::Wall;
+    world.tiles[pos.1][pos.0 - 1] = Tile::Wall;
+    world.tiles[pos.1 + 1][pos.0] = Tile::Wall;
+    world.tiles[pos.1][pos.0 + 1] = Tile::Wall;
+    world.keys.remove(&pos);
+    world.keys.insert((pos.0 - 1, pos.1 - 1), '@');
+    world.keys.insert((pos.0 - 1, pos.1 + 1), '#');
+    world.keys.insert((pos.0 + 1, pos.1 + 1), '$');
+    world.keys.insert((pos.0 + 1, pos.1 - 1), '%');
 
-fn print_world(world: &World2) {
+    let pos = vec![
+        (pos.0 - 1, pos.1 - 1),
+        (pos.0 - 1, pos.1 + 1),
+        (pos.0 + 1, pos.1 + 1),
+        (pos.0 + 1, pos.1 - 1),
+    ];
+
+    let found = dijkstra(&world, &pos, vec!['@', '#', '$', '%'].into_iter().collect());
+    found.unwrap().len
+}
+
+#[allow(dead_code)]
+fn print_world(world: &World) {
     println!(
         "{}",
         world
@@ -234,7 +254,8 @@ fn print_world(world: &World2) {
     );
 }
 
-fn print_state(world: &World2, state: &State2) {
+#[allow(dead_code)]
+fn print_state(world: &World, state: &State) {
     println!(
         "{}",
         world
@@ -262,30 +283,8 @@ fn print_state(world: &World2, state: &State2) {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let (mut world, pos) = parse_world(lines);
-
-    let a_solution = solve_a(&world, vec![pos], BTreeSet::new());
-
-    world.tiles[pos.1][pos.0] = Tile::Wall;
-    world.tiles[pos.1 - 1][pos.0] = Tile::Wall;
-    world.tiles[pos.1][pos.0 - 1] = Tile::Wall;
-    world.tiles[pos.1 + 1][pos.0] = Tile::Wall;
-    world.tiles[pos.1][pos.0 + 1] = Tile::Wall;
-    world.keys.remove(&pos);
-    world.keys.insert((pos.0 - 1, pos.1 - 1), '@');
-    world.keys.insert((pos.0 - 1, pos.1 + 1), '#');
-    world.keys.insert((pos.0 + 1, pos.1 + 1), '$');
-    world.keys.insert((pos.0 + 1, pos.1 - 1), '%');
-
-    print_world(&world);
-
-    let pos = vec![
-        (pos.0 - 1, pos.1 - 1),
-        (pos.0 - 1, pos.1 + 1),
-        (pos.0 + 1, pos.1 + 1),
-        (pos.0 + 1, pos.1 - 1),
-    ];
-
-    let b_solution = solve_a(&world, pos, vec!['@', '#', '$', '%'].into_iter().collect());
+    let (world, pos) = parse_world(lines);
+    let a_solution = solve_a(&world, vec![pos]);
+    let b_solution = solve_b(world, pos);
     (a_solution.to_string(), b_solution.to_string())
 }
