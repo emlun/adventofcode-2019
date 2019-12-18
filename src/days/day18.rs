@@ -4,7 +4,6 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
-use std::rc::Rc;
 
 type Point = (usize, usize);
 
@@ -29,15 +28,6 @@ enum Tile {
 
 use Entity::{Door, Key};
 use Tile::{Floor, Wall};
-
-type World = Vec<Vec<Tile>>;
-
-#[derive(Debug)]
-struct State {
-    pub pos: (usize, usize),
-    pub collected: Option<char>,
-    pub parent: Option<Rc<State>>,
-}
 
 #[derive(Debug, Eq, Ord, PartialEq)]
 struct State2 {
@@ -68,47 +58,6 @@ impl World2 {
             }
         }
         World2 { tiles, keys }
-    }
-}
-
-fn has_collected(state: &State, key: &char) -> bool {
-    state
-        .collected
-        .map(|k| k == *key)
-        .or_else(|| state.parent.as_ref().map(|p| has_collected(p, key)))
-        .unwrap_or(false)
-}
-
-fn all_collected(state: &State) -> HashSet<char> {
-    let mut result = HashSet::new();
-    if let Some(key) = state.collected {
-        result.insert(key);
-    }
-    let mut state = state;
-    while let Some(parent) = state.parent.as_ref() {
-        state = parent;
-        if let Some(key) = state.collected {
-            result.insert(key);
-        }
-    }
-    result
-}
-
-fn is_redundant(a: &State) -> bool {
-    if a.collected.is_some() {
-        false
-    } else {
-        let mut parent = a.parent.as_ref();
-        while let Some(par) = parent {
-            if par.collected.is_some() {
-                break;
-            } else if par.pos == a.pos {
-                return true;
-            } else {
-                parent = par.parent.as_ref();
-            }
-        }
-        false
     }
 }
 
@@ -168,15 +117,6 @@ fn compute_transfers(
     result
 }
 
-fn num_steps(state: &State) -> usize {
-    state
-        .parent
-        .as_ref()
-        .map(|p| num_steps(&p))
-        .map(|s| s + 1)
-        .unwrap_or(0)
-}
-
 fn parse_world(lines: &[String]) -> (World2, Point) {
     let mut player_pos = (0, 0);
     let world = lines
@@ -202,15 +142,6 @@ fn parse_world(lines: &[String]) -> (World2, Point) {
         })
         .collect();
     (World2::new(world), player_pos)
-}
-
-fn can_walk(world: &World, state: &State, pos: &Point) -> bool {
-    match world[pos.1][pos.0] {
-        Wall => false,
-        Floor(None) => true,
-        Floor(Some(Key(_))) => true,
-        Floor(Some(Door(a))) => has_collected(state, &a),
-    }
 }
 
 fn can_walk2(world: &World2, collected: &BTreeSet<char>, pos: &Point) -> bool {
@@ -239,17 +170,7 @@ fn bfs(world: &World2, start_pos: &Point) -> Option<State2> {
         });
     }
 
-    // println!("{:?}", queue);
-
     while let Some(state) = queue.pop() {
-        println!(
-            "{} {} {} {}",
-            state.len,
-            state.collected.len(),
-            queue.len(),
-            transfers.len()
-        );
-
         if state.collected.len() == world.keys.len() {
             return Some(state);
         } else {
@@ -321,28 +242,7 @@ fn find_initial_keys(world: &World2, start_pos: &Point) -> HashMap<Point, (usize
 }
 
 fn solve_a(world: &World2, pos: Point) -> usize {
-    println!(
-        "{}",
-        world
-            .tiles
-            .iter()
-            .map(|row| row
-                .iter()
-                .map(|c| match c {
-                    Wall => '#'.to_string(),
-                    Floor(Some(Key(a))) => a.to_string(),
-                    Floor(Some(Door(a))) => a.to_ascii_uppercase().to_string(),
-                    Floor(None) => '.'.to_string(),
-                })
-                .collect::<Vec<String>>()
-                .join(""))
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
-
     let found = bfs(world, &pos);
-    println!("{:?}", found);
-
     found.unwrap().len
 }
 
