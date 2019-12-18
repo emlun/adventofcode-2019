@@ -61,24 +61,6 @@ impl World2 {
     }
 }
 
-#[derive(Eq)]
-struct UnorderedPair<T>
-where
-    T: Eq,
-    T: PartialEq,
-{
-    a: T,
-    b: T,
-}
-impl<T> PartialEq for UnorderedPair<T>
-where
-    T: Eq,
-{
-    fn eq(&self, other: &Self) -> bool {
-        (self.a == other.a && self.b == other.b) || (self.a == other.b && self.b == other.a)
-    }
-}
-
 fn compute_transfers(
     world: &World2,
     collected: &BTreeSet<char>,
