@@ -71,7 +71,7 @@ fn print_state(state: &State) {
     );
 }
 
-fn step_game(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
+fn step_game(output: Option<i64>, expects_input: bool, mut state: State) -> (Option<i64>, State) {
     if let Some(out) = output {
         match state.state {
             0 => state.output_x = out,
@@ -110,12 +110,20 @@ fn step_game(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
     }
 
     let joystick = sign(state.ball_x - state.paddle_x);
-    (Some(joystick), state)
+    (
+        if expects_input {
+            println!("{}", joystick);
+            Some(joystick)
+        } else {
+            None
+        },
+        state,
+    )
 }
 
 fn solve_a(computer: IntcodeComputer) -> usize {
     computer
-        .run_with(Some(0), State::new(), step_game)
+        .run_with_expect(Some(0), State::new(), step_game)
         .world
         .values()
         .filter(|tile| **tile == Tile::Block)
@@ -124,7 +132,9 @@ fn solve_a(computer: IntcodeComputer) -> usize {
 
 fn solve_b(mut computer: IntcodeComputer) -> i64 {
     computer.prog[0] = 2;
-    computer.run_with(Some(0), State::new(), step_game).score
+    computer
+        .run_with_expect(Some(0), State::new(), step_game)
+        .score
 }
 
 pub fn solve(lines: &[String]) -> Solution {
