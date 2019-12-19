@@ -85,22 +85,24 @@ fn solve_a(computer: IntcodeComputer) -> usize {
         .flat_map(|x| (0..50).map(move |y| ((x, y), comp.clone().run(vec![x, y])[0] == 1)))
         .collect();
 
-    println!(
-        "{}",
-        (0..50)
-            .map(|y| (0..50)
-                .map(|x| if *points.get(&(x, y)).unwrap() {
-                    "#"
-                } else if x == y {
-                    "+"
-                } else {
-                    "."
-                })
-                .collect::<Vec<&str>>()
-                .join(""))
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
+    if ENABLE_OUTPUT {
+        println!(
+            "{}",
+            (0..50)
+                .map(|y| (0..50)
+                    .map(|x| if *points.get(&(x, y)).unwrap() {
+                        "#"
+                    } else if x == y {
+                        "+"
+                    } else {
+                        "."
+                    })
+                    .collect::<Vec<&str>>()
+                    .join(""))
+                .collect::<Vec<String>>()
+                .join("\n")
+        );
+    }
 
     points.values().filter(|v| **v).count()
 }
