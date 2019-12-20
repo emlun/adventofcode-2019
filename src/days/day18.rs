@@ -54,6 +54,10 @@ struct KeySet {
 }
 
 impl KeySet {
+    fn new() -> Self {
+        KeySet { keys: 0 }
+    }
+
     fn insert(&mut self, key: KeyId) -> &mut Self {
         self.keys |= key.value;
         self
@@ -170,8 +174,7 @@ fn parse_world(lines: &[String]) -> (World, Point) {
                     '.' => Floor(None),
                     '@' => {
                         player_pos = (x, y);
-                        keys.insert((x, y), '{'.into());
-                        Floor(Some(Key('{'.into())))
+                        Floor(None)
                     }
                     a => Floor(Some(if a == a.to_ascii_uppercase() {
                         Door(a.into())
@@ -196,7 +199,7 @@ fn can_walk(world: &World, collected: KeySet, pos: &Point) -> bool {
     }
 }
 
-fn dijkstra(world: &World, start_positions: &Vec<Point>, start_collected: KeySet) -> Option<State> {
+fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
     let mut transfers: HashMap<(KeySet, Point), Vec<(Point, usize, KeyId)>> = HashMap::new();
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
 
@@ -204,7 +207,7 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>, start_collected: KeySet
 
     queue.push(State {
         poss: start_positions.clone(),
-        collected: start_collected,
+        collected: KeySet::new(),
         len: 0,
     });
 
@@ -213,22 +216,26 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>, start_collected: KeySet
             return Some(state);
         } else {
             for posi in 0..state.poss.len() {
-                let last_key: &KeyId = world.keys.get(&state.poss[posi]).unwrap();
-
-                if shortest_collections
-                    .get(&state.collected)
-                    .and_then(|stands| stands.get(&last_key))
+                let last_key: Option<&KeyId> = world.keys.get(&state.poss[posi]);
+                if last_key
+                    .and_then(|last_key| {
+                        shortest_collections
+                            .get(&state.collected)
+                            .and_then(|stands| stands.get(last_key))
+                    })
                     .map(|len| *len > state.len)
                     .unwrap_or(true)
                 {
-                    let shortcoll = shortest_collections
-                        .entry(state.collected)
-                        .or_insert(HashMap::new())
-                        .entry(*last_key)
-                        .or_insert(state.len);
+                    if let Some(last_key) = last_key {
+                        let shortcoll = shortest_collections
+                            .entry(state.collected)
+                            .or_insert(HashMap::new())
+                            .entry(*last_key)
+                            .or_insert(state.len);
 
-                    if state.len < *shortcoll {
-                        *shortcoll = state.len;
+                        if state.len < *shortcoll {
+                            *shortcoll = state.len;
+                        }
                     }
 
                     for (next_point, len_to_next, next_key) in transfers
@@ -259,7 +266,7 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>, start_collected: KeySet
 }
 
 fn solve_a(world: &World, pos: Vec<Point>) -> usize {
-    let found = dijkstra(world, &pos, vec!['{'].into_iter().collect());
+    let found = dijkstra(world, &pos);
     found.unwrap().len
 }
 
@@ -269,11 +276,6 @@ fn solve_b(mut world: World, pos: Point) -> usize {
     world.tiles[pos.1][pos.0 - 1] = Tile::Wall;
     world.tiles[pos.1 + 1][pos.0] = Tile::Wall;
     world.tiles[pos.1][pos.0 + 1] = Tile::Wall;
-    world.keys.remove(&pos);
-    world.keys.insert((pos.0 - 1, pos.1 - 1), '{'.into());
-    world.keys.insert((pos.0 - 1, pos.1 + 1), '|'.into());
-    world.keys.insert((pos.0 + 1, pos.1 + 1), '}'.into());
-    world.keys.insert((pos.0 + 1, pos.1 - 1), '~'.into());
 
     let pos = vec![
         (pos.0 - 1, pos.1 - 1),
@@ -282,7 +284,7 @@ fn solve_b(mut world: World, pos: Point) -> usize {
         (pos.0 + 1, pos.1 - 1),
     ];
 
-    let found = dijkstra(&world, &pos, vec!['{', '|', '}', '~'].into_iter().collect());
+    let found = dijkstra(&world, &pos);
     found.unwrap().len
 }
 
