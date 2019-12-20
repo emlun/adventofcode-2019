@@ -66,10 +66,6 @@ impl KeySet {
     fn contains(&self, key: KeyId) -> bool {
         self.keys & key.value != 0
     }
-
-    fn len_equals(&self, len: u32) -> bool {
-        self.keys == 2_u32.pow(len) - 1
-    }
 }
 
 impl<K> std::iter::FromIterator<K> for KeySet
@@ -101,7 +97,7 @@ impl PartialOrd for State {
 
 struct World {
     tiles: Vec<Vec<Tile>>,
-    keys: HashMap<Point, KeyId>,
+    keys: KeySet,
 }
 
 impl World {
@@ -162,7 +158,7 @@ fn compute_transfers(world: &World, collected: KeySet, pos: Point) -> Vec<(Point
 
 fn parse_world(lines: &[String]) -> (World, Point) {
     let mut player_pos = (0, 0);
-    let mut keys = HashMap::new();
+    let mut keys = KeySet::new();
     let tiles = lines
         .iter()
         .enumerate()
@@ -179,7 +175,7 @@ fn parse_world(lines: &[String]) -> (World, Point) {
                     a => Floor(Some(if a == a.to_ascii_uppercase() {
                         Door(a.into())
                     } else {
-                        keys.insert((x, y), a.into());
+                        keys.insert(a.into());
                         Key(a.into())
                     })),
                 })
@@ -212,7 +208,7 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
     });
 
     while let Some(state) = queue.pop() {
-        if state.collected.len_equals(world.keys.len() as u32) {
+        if state.collected == world.keys {
             return Some(state);
         } else {
             for posi in 0..state.poss.len() {
