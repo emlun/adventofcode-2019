@@ -281,28 +281,6 @@ fn solve_b(mut world: World, pos: Point) -> usize {
 }
 
 #[allow(dead_code)]
-fn print_world(world: &World) {
-    println!(
-        "{}",
-        world
-            .tiles
-            .iter()
-            .map(|row| row
-                .iter()
-                .map(|c| match c {
-                    Wall => '#'.to_string(),
-                    Floor(Some(Key(a))) => a.to_char().to_string(),
-                    Floor(Some(Door(a))) => a.to_char().to_ascii_uppercase().to_string(),
-                    Floor(None) => '.'.to_string(),
-                })
-                .collect::<Vec<String>>()
-                .join(""))
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
-}
-
-#[allow(dead_code)]
 fn print_state(world: &World, state: &State) {
     println!(
         "{}",
