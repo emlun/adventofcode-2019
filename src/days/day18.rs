@@ -136,7 +136,7 @@ impl World {
 }
 
 fn available_moves(world: &World, collected: KeySet, pos: Point) -> Vec<(Point, usize, KeyId)> {
-    let mut partmap: Vec<(Point, usize, KeyId)> = Vec::new();
+    let mut moves: Vec<(Point, usize, KeyId)> = Vec::new();
     let mut visited = HashSet::new();
     let mut queue: VecDeque<(Point, usize)> = VecDeque::new();
     queue.push_back((pos, 0));
@@ -146,7 +146,7 @@ fn available_moves(world: &World, collected: KeySet, pos: Point) -> Vec<(Point, 
             if !visited.contains(&next) && can_walk(world, collected, &next) {
                 if let Floor(Some(Key(k))) = world.tiles[next.1][next.0] {
                     if !collected.contains(k) {
-                        partmap.push((next, len + 1, k));
+                        moves.push((next, len + 1, k));
                     } else {
                         queue.push_back((next, len + 1));
                     }
@@ -159,7 +159,7 @@ fn available_moves(world: &World, collected: KeySet, pos: Point) -> Vec<(Point, 
         visited.insert(step);
     }
 
-    partmap
+    moves
 }
 
 fn parse_world(lines: &[String]) -> (World, Point) {
