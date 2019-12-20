@@ -196,9 +196,7 @@ fn can_walk(world: &World, collected: KeySet, pos: &Point) -> bool {
 }
 
 fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
-    let mut transfers: HashMap<(KeySet, Point), Vec<(Point, usize, KeyId)>> = HashMap::new();
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
-
     let mut shortest_paths: HashMap<(KeySet, Point), usize> = HashMap::new();
 
     queue.push(State {
@@ -218,22 +216,19 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
                 if state.len < *shortest {
                     *shortest = state.len;
 
-                    for (next_point, len_to_next, next_key) in transfers
-                        .entry((state.collected, state.poss[posi]))
-                        .or_insert_with(|| {
-                            compute_transfers(world, state.collected, state.poss[posi])
-                        })
+                    for (next_point, len_to_next, next_key) in
+                        compute_transfers(world, state.collected, state.poss[posi])
                     {
                         let mut collected = state.collected;
-                        collected.insert(*next_key);
+                        collected.insert(next_key);
 
                         let mut poss = state.poss.clone();
-                        poss[posi] = *next_point;
+                        poss[posi] = next_point;
 
                         queue.push(State {
                             poss,
                             collected,
-                            len: state.len + *len_to_next,
+                            len: state.len + len_to_next,
                         });
                     }
                 }
