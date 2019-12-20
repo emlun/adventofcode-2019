@@ -101,18 +101,6 @@ struct World {
 }
 
 impl World {
-    fn new(tiles: Vec<Vec<Tile>>) -> World {
-        let mut keys = HashMap::new();
-        for (r, row) in tiles.iter().enumerate() {
-            for (c, tile) in row.iter().enumerate() {
-                if let Floor(Some(Key(k))) = tile {
-                    keys.insert((c, r), KeyId::from(*k));
-                }
-            }
-        }
-        World { tiles, keys }
-    }
-
     #[allow(dead_code)]
     fn print_state(&self, state: &State) {
         println!(
@@ -179,7 +167,8 @@ fn compute_transfers(
 
 fn parse_world(lines: &[String]) -> (World, Point) {
     let mut player_pos = (0, 0);
-    let world = lines
+    let mut keys = HashMap::new();
+    let tiles = lines
         .iter()
         .enumerate()
         .map(|(y, line)| {
@@ -190,18 +179,21 @@ fn parse_world(lines: &[String]) -> (World, Point) {
                     '.' => Floor(None),
                     '@' => {
                         player_pos = (x, y);
+                        keys.insert((x, y), '{'.into());
                         Floor(Some(Key('{'.into())))
                     }
                     a => Floor(Some(if a == a.to_ascii_uppercase() {
                         Door(a.into())
                     } else {
+                        keys.insert((x, y), a.into());
                         Key(a.into())
                     })),
                 })
                 .collect()
         })
         .collect();
-    (World::new(world), player_pos)
+
+    (World { tiles, keys }, player_pos)
 }
 
 fn can_walk(world: &World, collected: KeySet, pos: &Point) -> bool {
