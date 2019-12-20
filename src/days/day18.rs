@@ -199,7 +199,7 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
     let mut transfers: HashMap<(KeySet, Point), Vec<(Point, usize, KeyId)>> = HashMap::new();
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
 
-    let mut shortest_paths: HashMap<KeySet, HashMap<Point, usize>> = HashMap::new();
+    let mut shortest_paths: HashMap<(KeySet, Point), usize> = HashMap::new();
 
     queue.push(State {
         poss: start_positions.clone(),
@@ -212,21 +212,11 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
             return Some(state);
         } else {
             for posi in 0..state.poss.len() {
-                if shortest_paths
-                    .get(&state.collected)
-                    .and_then(|stands| stands.get(&state.poss[posi]))
-                    .map(|len| *len > state.len)
-                    .unwrap_or(true)
-                {
-                    let shortcoll = shortest_paths
-                        .entry(state.collected)
-                        .or_insert(HashMap::new())
-                        .entry(state.poss[posi])
-                        .or_insert(state.len);
-
-                    if state.len < *shortcoll {
-                        *shortcoll = state.len;
-                    }
+                let shortest = shortest_paths
+                    .entry((state.collected, state.poss[posi]))
+                    .or_insert(state.len + 1);
+                if state.len < *shortest {
+                    *shortest = state.len;
 
                     for (next_point, len_to_next, next_key) in transfers
                         .entry((state.collected, state.poss[posi]))
