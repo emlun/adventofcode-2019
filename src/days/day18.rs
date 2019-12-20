@@ -230,13 +230,11 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
                         let mut poss = state.poss.clone();
                         poss[posi] = *next_point;
 
-                        let next_state = State {
+                        queue.push(State {
                             poss,
                             collected,
                             len: state.len + *len_to_next,
-                        };
-
-                        queue.push(next_state);
+                        });
                     }
                 }
             }
