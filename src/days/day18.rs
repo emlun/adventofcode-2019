@@ -271,7 +271,6 @@ fn solve_a(world: &World, pos: Vec<Point>) -> usize {
 }
 
 fn solve_b(mut world: World, pos: Point) -> usize {
-    world.tiles[pos.1][pos.0] = Tile::Wall;
     world.tiles[pos.1 - 1][pos.0] = Tile::Wall;
     world.tiles[pos.1][pos.0 - 1] = Tile::Wall;
     world.tiles[pos.1 + 1][pos.0] = Tile::Wall;
