@@ -112,6 +112,33 @@ impl World {
         }
         World { tiles, keys }
     }
+
+    #[allow(dead_code)]
+    fn print_state(&self, state: &State) {
+        println!(
+            "{}",
+            self.tiles
+                .iter()
+                .enumerate()
+                .map(|(r, row)| row
+                    .iter()
+                    .enumerate()
+                    .map(|(c, tile)| if state.poss.contains(&(c, r)) {
+                        '@'.to_string()
+                    } else {
+                        match tile {
+                            Wall => '#'.to_string(),
+                            Floor(Some(Key(a))) => a.to_char().to_string(),
+                            Floor(Some(Door(a))) => a.to_char().to_ascii_uppercase().to_string(),
+                            Floor(None) => '.'.to_string(),
+                        }
+                    })
+                    .collect::<Vec<String>>()
+                    .join(""))
+                .collect::<Vec<String>>()
+                .join("\n")
+        );
+    }
 }
 
 fn compute_transfers(
@@ -278,34 +305,6 @@ fn solve_b(mut world: World, pos: Point) -> usize {
 
     let found = dijkstra(&world, &pos, vec!['{', '|', '}', '~'].into_iter().collect());
     found.unwrap().len
-}
-
-#[allow(dead_code)]
-fn print_state(world: &World, state: &State) {
-    println!(
-        "{}",
-        world
-            .tiles
-            .iter()
-            .enumerate()
-            .map(|(r, row)| row
-                .iter()
-                .enumerate()
-                .map(|(c, tile)| if state.poss.contains(&(c, r)) {
-                    '@'.to_string()
-                } else {
-                    match tile {
-                        Wall => '#'.to_string(),
-                        Floor(Some(Key(a))) => a.to_char().to_string(),
-                        Floor(Some(Door(a))) => a.to_char().to_ascii_uppercase().to_string(),
-                        Floor(None) => '.'.to_string(),
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join(""))
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
 }
 
 pub fn solve(lines: &[String]) -> Solution {
