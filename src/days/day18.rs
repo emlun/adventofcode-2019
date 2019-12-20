@@ -129,7 +129,7 @@ impl World {
     }
 }
 
-fn compute_transfers(world: &World, collected: KeySet, pos: Point) -> Vec<(Point, usize, KeyId)> {
+fn available_moves(world: &World, collected: KeySet, pos: Point) -> Vec<(Point, usize, KeyId)> {
     let mut partmap: Vec<(Point, usize, KeyId)> = Vec::new();
     let mut visited = HashSet::new();
     let mut queue: VecDeque<(Point, usize)> = VecDeque::new();
@@ -217,7 +217,7 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
                     *shortest = state.len;
 
                     for (next_point, len_to_next, next_key) in
-                        compute_transfers(world, state.collected, state.poss[posi])
+                        available_moves(world, state.collected, state.poss[posi])
                     {
                         let mut collected = state.collected;
                         collected.insert(next_key);
