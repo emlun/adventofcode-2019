@@ -146,7 +146,6 @@ impl World {
                 {
                     let name_start = find_start_of_warp_name(&tiles, *pos);
                     let name = read_warp_name(&tiles, name_start);
-                    println!("{}", name);
                     warp_names.entry(name).or_insert_with(Vec::new).push(*pos);
                 }
             }
@@ -174,7 +173,6 @@ impl World {
             None
         }
 
-        println!("{:?}", warp_names);
         let start = walk_to_floor(&tiles, &warp_names.get("AA").unwrap()[0], None).unwrap();
         let goal = walk_to_floor(&tiles, &warp_names.get("ZZ").unwrap()[0], None).unwrap();
 
@@ -228,7 +226,6 @@ fn bfs(world: &World, levels: bool) -> Option<State> {
     let mut visited = HashSet::new();
 
     while let Some(state) = queue.pop_front() {
-        println!("{} {} {:?}", state.len, state.loc.level, state.loc.pos);
         if state.loc.pos == world.goal && state.loc.level == 0 {
             return Some(state);
         } else {
