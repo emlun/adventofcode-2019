@@ -129,40 +129,31 @@ impl World {
     }
 }
 
-fn compute_transfers(
-    world: &World,
-    collected: KeySet,
-) -> HashMap<Point, Vec<(Point, usize, KeyId)>> {
-    let mut result: HashMap<Point, Vec<(Point, usize, KeyId)>> = HashMap::new();
+fn compute_transfers(world: &World, collected: KeySet, pos: Point) -> Vec<(Point, usize, KeyId)> {
+    let mut partmap: Vec<(Point, usize, KeyId)> = Vec::new();
+    let mut visited = HashSet::new();
+    let mut queue: VecDeque<(Point, usize)> = VecDeque::new();
+    queue.push_back((pos, 0));
 
-    for start_pos in world.keys.keys() {
-        let mut partmap: Vec<(Point, usize, KeyId)> = Vec::new();
-        let mut visited = HashSet::new();
-        let mut queue: VecDeque<(Point, usize)> = VecDeque::new();
-        queue.push_back((*start_pos, 0));
-
-        while let Some((step, len)) = queue.pop_front() {
-            for next in adjacent(&step) {
-                if !visited.contains(&next) && can_walk(world, collected, &next) {
-                    if let Floor(Some(Key(k))) = world.tiles[next.1][next.0] {
-                        if !collected.contains(k) {
-                            partmap.push((next, len + 1, k));
-                        } else {
-                            queue.push_back((next, len + 1));
-                        }
+    while let Some((step, len)) = queue.pop_front() {
+        for next in adjacent(&step) {
+            if !visited.contains(&next) && can_walk(world, collected, &next) {
+                if let Floor(Some(Key(k))) = world.tiles[next.1][next.0] {
+                    if !collected.contains(k) {
+                        partmap.push((next, len + 1, k));
                     } else {
                         queue.push_back((next, len + 1));
                     }
+                } else {
+                    queue.push_back((next, len + 1));
                 }
             }
-
-            visited.insert(step);
         }
 
-        result.insert(*start_pos, partmap);
+        visited.insert(step);
     }
 
-    result
+    partmap
 }
 
 fn parse_world(lines: &[String]) -> (World, Point) {
@@ -206,7 +197,7 @@ fn can_walk(world: &World, collected: KeySet, pos: &Point) -> bool {
 }
 
 fn dijkstra(world: &World, start_positions: &Vec<Point>, start_collected: KeySet) -> Option<State> {
-    let mut transfers: HashMap<KeySet, HashMap<Point, Vec<(Point, usize, KeyId)>>> = HashMap::new();
+    let mut transfers: HashMap<(KeySet, Point), Vec<(Point, usize, KeyId)>> = HashMap::new();
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
 
     let mut shortest_collections: HashMap<KeySet, HashMap<KeyId, usize>> = HashMap::new();
@@ -230,14 +221,6 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>, start_collected: KeySet
                     .map(|len| *len > state.len)
                     .unwrap_or(true)
                 {
-                    let trns = if let Some(t) = transfers.get(&state.collected) {
-                        t
-                    } else {
-                        let t = compute_transfers(world, state.collected);
-                        transfers.insert(state.collected, t);
-                        transfers.get(&state.collected).unwrap()
-                    };
-
                     let shortcoll = shortest_collections
                         .entry(state.collected)
                         .or_insert(HashMap::new())
@@ -248,7 +231,11 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>, start_collected: KeySet
                         *shortcoll = state.len;
                     }
 
-                    for (next_point, len_to_next, next_key) in trns.get(&state.poss[posi]).unwrap()
+                    for (next_point, len_to_next, next_key) in transfers
+                        .entry((state.collected, state.poss[posi]))
+                        .or_insert_with(|| {
+                            compute_transfers(world, state.collected, state.poss[posi])
+                        })
                     {
                         let mut collected = state.collected;
                         collected.insert(*next_key);
@@ -259,7 +246,7 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>, start_collected: KeySet
                         let next_state = State {
                             poss,
                             collected,
-                            len: state.len + len_to_next,
+                            len: state.len + *len_to_next,
                         };
 
                         queue.push(next_state);
