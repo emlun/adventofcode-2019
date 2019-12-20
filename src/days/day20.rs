@@ -5,17 +5,17 @@ use std::collections::VecDeque;
 
 type Point = (i32, i32);
 
-fn adjacent(pos: &Point) -> Vec<Point> {
+fn adjacent(pos: Point) -> Vec<Point> {
     vec![
-        (pos.0 + 1, pos.1 + 0),
-        (pos.0 + 0, pos.1 + 1),
-        (pos.0 - 1, pos.1 + 0),
-        (pos.0 + 0, pos.1 - 1),
+        (pos.0 + 1, pos.1),
+        (pos.0, pos.1 + 1),
+        (pos.0 - 1, pos.1),
+        (pos.0, pos.1 - 1),
     ]
 }
 
 fn steps_from(world: &World, loc: &Loc, levels: bool) -> Vec<Loc> {
-    adjacent(&loc.pos)
+    adjacent(loc.pos)
         .into_iter()
         .flat_map(|next_pos| match world.tiles.get(&next_pos) {
             None => None,
@@ -113,7 +113,7 @@ impl World {
 
         fn find_start_of_warp_name(tiles: &HashMap<Point, Tile>, pos: Point) -> Point {
             let continuation = &[(pos.0 - 1, pos.1), (pos.0, pos.1 - 1)]
-                .into_iter()
+                .iter()
                 .flat_map(|next_pos| match tiles.get(&next_pos) {
                     Some(Tile::Warp(_)) => Some(find_start_of_warp_name(tiles, *next_pos)),
                     _ => None,
@@ -124,9 +124,9 @@ impl World {
 
         fn read_warp_name(tiles: &HashMap<Point, Tile>, pos: Point) -> String {
             let continuation = &[(pos.0 + 1, pos.1), (pos.0, pos.1 + 1)]
-                .into_iter()
+                .iter()
                 .flat_map(|next_pos| match tiles.get(&next_pos) {
-                    Some(Tile::Warp(n)) => Some(read_warp_name(tiles, *next_pos)),
+                    Some(Tile::Warp(_)) => Some(read_warp_name(tiles, *next_pos)),
                     _ => None,
                 })
                 .next();
@@ -140,7 +140,7 @@ impl World {
         let mut warp_names: HashMap<String, Vec<Point>> = HashMap::new();
         for (pos, tile) in tiles.iter() {
             if let Tile::Warp(_) = tile {
-                if adjacent(pos)
+                if adjacent(*pos)
                     .into_iter()
                     .any(|p| tiles.get(&p) == Some(&Tile::Floor))
                 {
@@ -153,7 +153,7 @@ impl World {
 
         fn walk_to_floor(
             tiles: &HashMap<Point, Tile>,
-            pos: &Point,
+            pos: Point,
             prev_pos: Option<&Point>,
         ) -> Option<Point> {
             for next_pos in adjacent(pos) {
@@ -161,7 +161,7 @@ impl World {
                     match tiles.get(&next_pos) {
                         Some(Tile::Floor) => return Some(next_pos),
                         Some(Tile::Warp(_)) => {
-                            let r = walk_to_floor(tiles, &next_pos, Some(pos));
+                            let r = walk_to_floor(tiles, next_pos, Some(&pos));
                             if r.is_some() {
                                 return r;
                             }
@@ -173,8 +173,8 @@ impl World {
             None
         }
 
-        let start = walk_to_floor(&tiles, &warp_names.get("AA").unwrap()[0], None).unwrap();
-        let goal = walk_to_floor(&tiles, &warp_names.get("ZZ").unwrap()[0], None).unwrap();
+        let start = walk_to_floor(&tiles, warp_names.get("AA").unwrap()[0], None).unwrap();
+        let goal = walk_to_floor(&tiles, warp_names.get("ZZ").unwrap()[0], None).unwrap();
 
         let warps = warp_names
             .into_iter()
@@ -184,14 +184,14 @@ impl World {
                     points[0],
                     Warp {
                         name: name.clone(),
-                        to: walk_to_floor(&tiles, &points[1], None).unwrap(),
+                        to: walk_to_floor(&tiles, points[1], None).unwrap(),
                     },
                 );
                 warps.insert(
                     points[1],
                     Warp {
                         name: name.clone(),
-                        to: walk_to_floor(&tiles, &points[0], None).unwrap(),
+                        to: walk_to_floor(&tiles, points[0], None).unwrap(),
                     },
                 );
                 warps
