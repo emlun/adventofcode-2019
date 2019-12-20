@@ -145,10 +145,10 @@ fn available_moves(world: &World, collected: KeySet, pos: Point) -> Vec<(Point, 
         for next in adjacent(&step) {
             if !visited.contains(&next) && can_walk(world, collected, &next) {
                 if let Floor(Some(Key(k))) = world.tiles[next.1][next.0] {
-                    if !collected.contains(k) {
-                        moves.push((next, len + 1, k));
-                    } else {
+                    if collected.contains(k) {
                         queue.push_back((next, len + 1));
+                    } else {
+                        moves.push((next, len + 1, k));
                     }
                 } else {
                     queue.push_back((next, len + 1));
