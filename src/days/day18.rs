@@ -215,15 +215,15 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
         if state.collected == world.keys {
             return Some(state);
         } else {
-            for posi in 0..state.poss.len() {
+            for (posi, pos) in state.poss.iter().enumerate() {
                 let shortest = shortest_paths
-                    .entry((state.collected, state.poss[posi]))
+                    .entry((state.collected, *pos))
                     .or_insert(state.len + 1);
                 if state.len < *shortest {
                     *shortest = state.len;
 
                     for (next_point, len_to_next, next_key) in
-                        available_moves(world, state.collected, state.poss[posi])
+                        available_moves(world, state.collected, *pos)
                     {
                         let collected = state.collected.with(next_key);
                         let mut poss = state.poss.clone();
