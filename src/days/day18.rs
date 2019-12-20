@@ -63,6 +63,12 @@ impl KeySet {
         self
     }
 
+    fn with(&self, key: KeyId) -> Self {
+        KeySet {
+            keys: self.keys | key.value,
+        }
+    }
+
     fn contains(&self, key: KeyId) -> bool {
         self.keys & key.value != 0
     }
@@ -219,9 +225,7 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
                     for (next_point, len_to_next, next_key) in
                         available_moves(world, state.collected, state.poss[posi])
                     {
-                        let mut collected = state.collected;
-                        collected.insert(next_key);
-
+                        let collected = state.collected.with(next_key);
                         let mut poss = state.poss.clone();
                         poss[posi] = next_point;
 
