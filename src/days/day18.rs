@@ -15,11 +15,13 @@ fn adjacent(pos: &Point) -> Vec<Point> {
     ]
 }
 
+#[derive(Eq, PartialEq)]
 enum Entity {
     Key(KeyId),
     Door(KeyId),
 }
 
+#[derive(Eq, PartialEq)]
 enum Tile {
     Floor(Option<Entity>),
     Wall,
@@ -88,19 +90,66 @@ where
     }
 }
 
-#[derive(Debug, Eq, Ord, PartialEq)]
-struct State {
-    pub poss: Vec<Point>,
-    pub collected: KeySet,
-    pub len: usize,
+#[derive(Eq, PartialEq)]
+struct State<'world> {
+    world: &'world World,
+    poss: Vec<Point>,
+    collected: KeySet,
+    len: usize,
 }
 
-impl PartialOrd for State {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(other.len.cmp(&self.len))
+impl<'world> State<'world> {
+    fn available_moves(&self, pos: Point) -> Vec<(Point, usize, KeyId)> {
+        let mut moves: Vec<(Point, usize, KeyId)> = Vec::new();
+        let mut visited = HashSet::new();
+        let mut queue: VecDeque<(Point, usize)> = VecDeque::new();
+        queue.push_back((pos, 0));
+
+        while let Some((step, len)) = queue.pop_front() {
+            for next in adjacent(&step) {
+                if !visited.contains(&next) && self.can_walk(&next) {
+                    let next_len = len + 1;
+                    if let Floor(Some(Key(k))) = self.world.tiles[next.1][next.0] {
+                        if self.collected.contains(k) {
+                            queue.push_back((next, next_len));
+                        } else {
+                            moves.push((next, next_len, k));
+                        }
+                    } else {
+                        queue.push_back((next, next_len));
+                    }
+                }
+            }
+
+            visited.insert(step);
+        }
+
+        moves
+    }
+
+    fn can_walk(&self, pos: &Point) -> bool {
+        match self.world.tiles[pos.1][pos.0] {
+            Wall => false,
+            Floor(None) => true,
+            Floor(Some(Key(_))) => true,
+            Floor(Some(Door(a))) => self.collected.contains(a),
+        }
     }
 }
 
+impl Ord for State<'_> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.len.cmp(&self.len)
+    }
+}
+
+impl PartialOrd for State<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Eq, PartialEq)]
 struct World {
     tiles: Vec<Vec<Tile>>,
     keys: KeySet,
@@ -135,34 +184,6 @@ impl World {
     }
 }
 
-fn available_moves(world: &World, collected: KeySet, pos: Point) -> Vec<(Point, usize, KeyId)> {
-    let mut moves: Vec<(Point, usize, KeyId)> = Vec::new();
-    let mut visited = HashSet::new();
-    let mut queue: VecDeque<(Point, usize)> = VecDeque::new();
-    queue.push_back((pos, 0));
-
-    while let Some((step, len)) = queue.pop_front() {
-        for next in adjacent(&step) {
-            if !visited.contains(&next) && can_walk(world, collected, &next) {
-                let next_len = len + 1;
-                if let Floor(Some(Key(k))) = world.tiles[next.1][next.0] {
-                    if collected.contains(k) {
-                        queue.push_back((next, next_len));
-                    } else {
-                        moves.push((next, next_len, k));
-                    }
-                } else {
-                    queue.push_back((next, next_len));
-                }
-            }
-        }
-
-        visited.insert(step);
-    }
-
-    moves
-}
-
 fn parse_world(lines: &[String]) -> (World, Point) {
     let mut player_pos = (0, 0);
     let mut keys = KeySet::new();
@@ -193,20 +214,12 @@ fn parse_world(lines: &[String]) -> (World, Point) {
     (World { tiles, keys }, player_pos)
 }
 
-fn can_walk(world: &World, collected: KeySet, pos: &Point) -> bool {
-    match world.tiles[pos.1][pos.0] {
-        Wall => false,
-        Floor(None) => true,
-        Floor(Some(Key(_))) => true,
-        Floor(Some(Door(a))) => collected.contains(a),
-    }
-}
-
-fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
+fn dijkstra<'world>(world: &'world World, start_positions: &Vec<Point>) -> Option<State<'world>> {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
     let mut shortest_paths: HashMap<(KeySet, Point), usize> = HashMap::new();
 
     queue.push(State {
+        world,
         poss: start_positions.clone(),
         collected: KeySet::new(),
         len: 0,
@@ -223,14 +236,13 @@ fn dijkstra(world: &World, start_positions: &Vec<Point>) -> Option<State> {
                 if state.len < *shortest {
                     *shortest = state.len;
 
-                    for (next_point, len_to_next, next_key) in
-                        available_moves(world, state.collected, *pos)
-                    {
+                    for (next_point, len_to_next, next_key) in state.available_moves(*pos) {
                         let collected = state.collected.with(next_key);
                         let mut poss = state.poss.clone();
                         poss[posi] = next_point;
 
                         queue.push(State {
+                            world,
                             poss,
                             collected,
                             len: state.len + len_to_next,
