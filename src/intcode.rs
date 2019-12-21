@@ -5,7 +5,7 @@ type Memory = Vec<Word>;
 
 #[derive(Clone)]
 pub struct IntcodeComputer {
-    eip: usize,
+    pub eip: usize,
     pub prog: Memory,
     relbase: Word,
 }
