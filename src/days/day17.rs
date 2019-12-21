@@ -208,7 +208,9 @@ fn is_path(world: &HashMap<Point, Tile>, pos: &Point) -> bool {
 fn compress_route(route: Route) -> Route {
     use Step::{F, L, R};
     route.into_iter().fold(Vec::new(), |mut rt, step| {
-        if rt.len() > 0 {
+        if rt.is_empty() {
+            rt.push(step);
+        } else {
             let endi = rt.len() - 1;
             match (&rt[endi], &step) {
                 (F(f1), F(f2)) => rt[endi] = F(f1 + f2),
@@ -216,8 +218,6 @@ fn compress_route(route: Route) -> Route {
                 (R(r1), F(f2)) => rt[endi] = R(r1 + f2),
                 _ => rt.push(step),
             };
-        } else {
-            rt.push(step);
         }
         rt
     })
@@ -339,10 +339,10 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
     let mut input_sequence = Vec::new();
     for cmd in my_sequence {
         input_sequence.push(cmd as u8 as i64);
-        input_sequence.push(',' as u8 as i64);
+        input_sequence.push(b',' as i64);
     }
     input_sequence.remove(input_sequence.len() - 1);
-    input_sequence.push('\n' as u8 as i64);
+    input_sequence.push(b'\n' as i64);
     for seg in my_segments {
         for cmd in seg {
             let chars: Vec<char> = match cmd {
@@ -358,13 +358,13 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
             };
             let mut chars: Vec<i64> = chars.into_iter().map(|c| c as u8 as i64).collect();
             input_sequence.append(&mut chars);
-            input_sequence.push(',' as u8 as i64);
+            input_sequence.push(b',' as i64);
         }
         input_sequence.remove(input_sequence.len() - 1);
-        input_sequence.push('\n' as u8 as i64);
+        input_sequence.push(b'\n' as i64);
     }
-    input_sequence.push('n' as u8 as i64);
-    input_sequence.push('\n' as u8 as i64);
+    input_sequence.push(b'n' as i64);
+    input_sequence.push(b'\n' as i64);
 
     let output = computer.run(input_sequence);
     output[output.len() - 1]
