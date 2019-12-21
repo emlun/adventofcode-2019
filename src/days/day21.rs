@@ -57,9 +57,8 @@ fn solve_a(computer: IntcodeComputer) -> i64 {
     simulate(
         computer,
         false,
-        "NOT C T
-AND D T
-OR T J
+        "NOT C J
+AND D J
 NOT A T
 OR T J
 ",
