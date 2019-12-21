@@ -14,7 +14,7 @@ struct State {
     walk_input: VecDeque<char>,
 }
 
-fn solve_a(mut computer: IntcodeComputer) -> i64 {
+fn solve_a(computer: IntcodeComputer) -> i64 {
     let finish = computer.run_with_expect(
         None,
         State {
