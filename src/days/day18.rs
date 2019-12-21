@@ -8,10 +8,10 @@ type Point = (usize, usize);
 
 fn adjacent(pos: &Point) -> Vec<Point> {
     vec![
-        (pos.0 + 1, pos.1 + 0),
-        (pos.0 + 0, pos.1 + 1),
-        (pos.0 - 1, pos.1 + 0),
-        (pos.0 + 0, pos.1 - 1),
+        (pos.0 + 1, pos.1),
+        (pos.0, pos.1 + 1),
+        (pos.0 - 1, pos.1),
+        (pos.0, pos.1 - 1),
     ]
 }
 
@@ -36,8 +36,8 @@ struct KeyId {
 }
 
 impl KeyId {
-    fn to_char(&self) -> char {
-        ((f64::from(self.value).log2().round() as u8) + ('a' as u8)) as char
+    fn to_char(self) -> char {
+        ((f64::from(self.value).log2().round() as u8) + b'a') as char
     }
 }
 
@@ -65,13 +65,13 @@ impl KeySet {
         self
     }
 
-    fn with(&self, key: KeyId) -> Self {
+    fn with(self, key: KeyId) -> Self {
         KeySet {
             keys: self.keys | key.value,
         }
     }
 
-    fn contains(&self, key: KeyId) -> bool {
+    fn contains(self, key: KeyId) -> bool {
         self.keys & key.value != 0
     }
 }
@@ -213,13 +213,13 @@ fn parse_world(lines: &[String]) -> (World, Point) {
     (World { tiles, keys }, player_pos)
 }
 
-fn dijkstra<'world>(world: &'world World, start_positions: &Vec<Point>) -> Option<State<'world>> {
+fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<State<'world>> {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
     let mut shortest_paths: HashMap<(KeySet, Point), usize> = HashMap::new();
 
     queue.push(State {
         world,
-        poss: start_positions.clone(),
+        poss: start_positions.to_vec(),
         collected: KeySet::new(),
         len: 0,
     });
@@ -254,8 +254,8 @@ fn dijkstra<'world>(world: &'world World, start_positions: &Vec<Point>) -> Optio
     None
 }
 
-fn solve_a(world: &World, pos: Vec<Point>) -> usize {
-    let found = dijkstra(world, &pos);
+fn solve_a(world: &World, pos: Point) -> usize {
+    let found = dijkstra(world, &[pos]);
     found.unwrap().len
 }
 
@@ -278,7 +278,7 @@ fn solve_b(mut world: World, pos: Point) -> usize {
 
 pub fn solve(lines: &[String]) -> Solution {
     let (world, pos) = parse_world(lines);
-    let a_solution = solve_a(&world, vec![pos]);
+    let a_solution = solve_a(&world, pos);
     let b_solution = solve_b(world, pos);
     (a_solution.to_string(), b_solution.to_string())
 }
