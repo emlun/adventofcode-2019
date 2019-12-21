@@ -2,32 +2,19 @@ use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
 use std::collections::VecDeque;
 
-enum ScriptOp {
-    And,
-    Or,
-    Not,
-}
-
 struct State {
     output: Vec<i64>,
     script_input: VecDeque<char>,
     walk_input: VecDeque<char>,
 }
 
-fn solve_a(computer: IntcodeComputer) -> i64 {
+fn simulate(computer: IntcodeComputer, run: bool, script: &str) -> i64 {
     let finish = computer.run_with_expect(
         None,
         State {
             output: Vec::new(),
-            script_input: "NOT C T
-AND D T
-OR T J
-NOT A T
-OR T J
-"
-            .chars()
-            .collect(),
-            walk_input: "WALK\n".chars().collect(),
+            script_input: script.chars().collect(),
+            walk_input: if run { "RUN\n" } else { "WALK\n" }.chars().collect(),
         },
         |output, expects_input, mut state| -> (Option<i64>, State) {
             if let Some(o) = output {
@@ -50,25 +37,40 @@ OR T J
         },
     );
 
-    println!("{:?}", finish.output);
-    println!(
-        "{}",
-        finish
-            .output
-            .iter()
-            .map(|i| *i as u8 as char)
-            .collect::<String>()
-    );
+    if finish.output.contains(&(b'D' as i64)) {
+        println!("{:?}", finish.output);
+        println!(
+            "{}",
+            finish
+                .output
+                .iter()
+                .map(|i| *i as u8 as char)
+                .collect::<String>()
+        );
+        -1
+    } else {
+        *finish.output.last().unwrap()
+    }
+}
 
-    *finish.output.last().unwrap()
+fn solve_a(computer: IntcodeComputer) -> i64 {
+    simulate(
+        computer,
+        false,
+        "NOT C T
+AND D T
+OR T J
+NOT A T
+OR T J
+",
+    )
 }
 
 fn solve_b(computer: IntcodeComputer) -> i64 {
-    let finish = computer.run_with_expect(
-        None,
-        State {
-            output: Vec::new(),
-            script_input: "NOT A T
+    simulate(
+        computer,
+        true,
+        "NOT A T
 OR T J
 NOT B T
 OR T J
@@ -78,43 +80,8 @@ AND E T
 OR H T
 AND T J
 AND D J
-"
-            .chars()
-            .collect(),
-            walk_input: "RUN\n".chars().collect(),
-        },
-        |output, expects_input, mut state| -> (Option<i64>, State) {
-            if let Some(o) = output {
-                state.output.push(o);
-            }
-
-            if expects_input {
-                let input = state
-                    .script_input
-                    .pop_front()
-                    .or_else(|| state.walk_input.pop_front());
-                if input.is_some() {
-                    (input.map(|i| i as u8 as i64), state)
-                } else {
-                    unreachable!()
-                }
-            } else {
-                (None, state)
-            }
-        },
-    );
-
-    println!("{:?}", finish.output);
-    println!(
-        "{}",
-        finish
-            .output
-            .iter()
-            .map(|i| *i as u8 as char)
-            .collect::<String>()
-    );
-
-    *finish.output.last().unwrap()
+",
+    )
 }
 
 pub fn solve(lines: &[String]) -> Solution {
