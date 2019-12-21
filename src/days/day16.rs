@@ -78,5 +78,5 @@ pub fn solve(lines: &[String]) -> Solution {
     let digits: Vec<i8> = lines[0].chars().map(|c| (c as i8) - 48).collect();
     let a_solution = solve_a(&digits);
     let b_solution = solve_b(&digits);
-    (a_solution.to_string(), b_solution.to_string())
+    (a_solution, b_solution)
 }

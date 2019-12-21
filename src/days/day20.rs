@@ -190,7 +190,7 @@ impl World {
                 warps.insert(
                     points[1],
                     Warp {
-                        name: name.clone(),
+                        name,
                         to: walk_to_floor(&tiles, points[0], None).unwrap(),
                     },
                 );
