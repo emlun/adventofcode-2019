@@ -69,13 +69,11 @@ fn solve_b(computer: IntcodeComputer) -> i64 {
     simulate(
         computer,
         true,
-        "NOT A T
-OR T J
-NOT B T
-OR T J
-NOT C T
-OR T J
-AND E T
+        "OR A J
+AND B J
+AND C J
+NOT J J
+OR E T
 OR H T
 AND T J
 AND D J
