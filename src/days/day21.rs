@@ -1,55 +1,23 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
-use std::collections::VecDeque;
-
-struct State {
-    output: Vec<i64>,
-    script_input: VecDeque<char>,
-    walk_input: VecDeque<char>,
-}
 
 fn simulate(computer: IntcodeComputer, run: bool, script: &str) -> i64 {
-    let finish = computer.run_with_expect(
-        None,
-        State {
-            output: Vec::new(),
-            script_input: script.chars().collect(),
-            walk_input: if run { "RUN\n" } else { "WALK\n" }.chars().collect(),
-        },
-        |output, expects_input, mut state| -> (Option<i64>, State) {
-            if let Some(o) = output {
-                state.output.push(o);
-            }
+    let walk_input = if run { "RUN\n" } else { "WALK\n" };
+    let input = script
+        .chars()
+        .chain(walk_input.chars())
+        .map(|i| i as u8 as i64);
+    let output = computer.run(input);
 
-            if expects_input {
-                let input = state
-                    .script_input
-                    .pop_front()
-                    .or_else(|| state.walk_input.pop_front());
-                if input.is_some() {
-                    (input.map(|i| i as u8 as i64), state)
-                } else {
-                    unreachable!()
-                }
-            } else {
-                (None, state)
-            }
-        },
-    );
-
-    if finish.output.contains(&(b'D' as i64)) {
-        println!("{:?}", finish.output);
+    if output.contains(&(b'D' as i64)) {
+        println!("{:?}", output);
         println!(
             "{}",
-            finish
-                .output
-                .iter()
-                .map(|i| *i as u8 as char)
-                .collect::<String>()
+            output.iter().map(|i| *i as u8 as char).collect::<String>()
         );
         -1
     } else {
-        *finish.output.last().unwrap()
+        *output.last().unwrap()
     }
 }
 
