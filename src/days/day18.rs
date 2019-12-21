@@ -30,7 +30,7 @@ enum Tile {
 use Entity::{Door, Key};
 use Tile::{Floor, Wall};
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 struct KeyId {
     value: u32,
 }
@@ -50,7 +50,7 @@ impl From<char> for KeyId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 struct KeySet {
     keys: u32,
 }
