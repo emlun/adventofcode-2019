@@ -91,6 +91,12 @@ where
 }
 
 #[derive(Eq, PartialEq)]
+struct World {
+    tiles: Vec<Vec<Tile>>,
+    keys: KeySet,
+}
+
+#[derive(Eq, PartialEq)]
 struct State<'world> {
     world: &'world World,
     poss: Vec<Point>,
@@ -135,38 +141,19 @@ impl<'world> State<'world> {
             Floor(Some(Door(a))) => self.collected.contains(a),
         }
     }
-}
 
-impl Ord for State<'_> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.len.cmp(&self.len)
-    }
-}
-
-impl PartialOrd for State<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-#[derive(Eq, PartialEq)]
-struct World {
-    tiles: Vec<Vec<Tile>>,
-    keys: KeySet,
-}
-
-impl World {
     #[allow(dead_code)]
-    fn print_state(&self, state: &State) {
+    fn print_state(&self) {
         println!(
             "{}",
-            self.tiles
+            self.world
+                .tiles
                 .iter()
                 .enumerate()
                 .map(|(r, row)| row
                     .iter()
                     .enumerate()
-                    .map(|(c, tile)| if state.poss.contains(&(c, r)) {
+                    .map(|(c, tile)| if self.poss.contains(&(c, r)) {
                         '@'.to_string()
                     } else {
                         match tile {
@@ -181,6 +168,18 @@ impl World {
                 .collect::<Vec<String>>()
                 .join("\n")
         );
+    }
+}
+
+impl Ord for State<'_> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.len.cmp(&self.len)
+    }
+}
+
+impl PartialOrd for State<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
