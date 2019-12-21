@@ -25,12 +25,13 @@ fn solve_a(computer: IntcodeComputer) -> i64 {
     simulate(
         computer,
         false,
-        // !A || (!C && D)
-        // (must jump now) || ((jump coming up) && (can land))
-        "NOT A J
-NOT C T
-AND D T
-OR T J
+        // (!A || !B || !C) && D = !(A && B && C) && D
+        // (must jump) && (can land)
+        "OR A J
+AND B J
+AND C J
+NOT J J
+AND D J
 ",
     )
 }
