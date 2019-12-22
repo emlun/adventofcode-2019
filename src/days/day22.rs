@@ -8,6 +8,16 @@ enum Deck {
     Deal(Box<Deck>, usize, usize),
 }
 
+fn modinv(n: usize, modulus: usize) -> usize {
+    let mut ninv = 1;
+    let mut n1 = n;
+    while n1 != 1 {
+        ninv = n1;
+        n1 = (ninv * n) % modulus;
+    }
+    ninv
+}
+
 impl Deck {
     fn len(&self) -> usize {
         match self {
@@ -31,11 +41,9 @@ impl Deck {
     }
 
     fn deal(self, n: usize) -> Self {
-        let bign = self.len();
-        let mut ninv = n;
-        while (ninv * n) % bign != 1 {
-            ninv = (ninv * n) % bign;
-        }
+        let modulus = self.len();
+        let ninv = modinv(n, modulus);
+        println!("Inverse of {} mod {} is {}", n, modulus, ninv);
         Self::Deal(Box::new(self), n, ninv)
     }
 
