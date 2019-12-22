@@ -9,13 +9,15 @@ enum Deck {
 }
 
 fn modinv(n: usize, modulus: usize) -> usize {
-    let mut ninv = 1;
-    let mut n1 = n;
-    while n1 != 1 {
-        ninv = n1;
-        n1 = (ninv * n) % modulus;
+    modpow(n, modulus - 2, modulus)
+}
+
+fn modpow(base: usize, exp: usize, modulus: usize) -> usize {
+    let mut result = 1;
+    for _ in 0..exp {
+        result = (result * base) % modulus;
     }
-    ninv
+    result
 }
 
 impl Deck {
@@ -111,51 +113,6 @@ mod tests {
         let deck = Deck::new(10).cut(3);
         let output: Vec<usize> = (0..10).map(|i| deck.get(i)).collect();
         assert_eq!(output, vec![3, 4, 5, 6, 7, 8, 9, 0, 1, 2]);
-    }
-
-    #[test]
-    fn deal() {
-        let deck = Deck::new(10).deal(3);
-        let output: Vec<usize> = (0..10).map(|i| deck.get(i)).collect();
-        assert_eq!(output, vec![0, 7, 4, 1, 8, 5, 2, 9, 6, 3]);
-    }
-
-    #[test]
-    fn example1() {
-        let deck = Deck::new(10).deal(7).stack().stack();
-        let output: Vec<usize> = (0..10).map(|i| deck.get(i)).collect();
-        assert_eq!(output, vec![0, 3, 6, 9, 2, 5, 8, 1, 4, 7]);
-    }
-
-    #[test]
-    fn example2() {
-        let deck = Deck::new(10).cut(6).deal(7).stack();
-        let output: Vec<usize> = (0..10).map(|i| deck.get(i)).collect();
-        assert_eq!(output, vec![3, 0, 7, 4, 1, 8, 5, 2, 9, 6]);
-    }
-
-    #[test]
-    fn example3() {
-        let deck = Deck::new(10).deal(7).deal(9).cut(-2);
-        let output: Vec<usize> = (0..10).map(|i| deck.get(i)).collect();
-        assert_eq!(output, vec![6, 3, 0, 7, 4, 1, 8, 5, 2, 9]);
-    }
-
-    #[test]
-    fn example4() {
-        let deck = Deck::new(10)
-            .stack()
-            .cut(-2)
-            .deal(7)
-            .cut(8)
-            .cut(-4)
-            .deal(7)
-            .cut(3)
-            .deal(9)
-            .deal(3)
-            .cut(-1);
-        let output: Vec<usize> = (0..10).map(|i| deck.get(i)).collect();
-        assert_eq!(output, vec![9, 2, 5, 8, 1, 4, 7, 0, 3, 6]);
     }
 
     #[test]
