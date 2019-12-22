@@ -57,27 +57,6 @@ impl Deck {
         Self::Deal(Box::new(self), n, ninv, l)
     }
 
-    // fn simplify(self) -> Self {
-    //     match self {
-    //         Self::Initial(_) => self,
-    //         Self::Stack(sub) => {
-    //             if let Self::Stack(deck) = *sub {
-    //                 deck.simplify()
-    //             } else {
-    //                 Self::Stack(Box::new(sub.simplify()))
-    //             }
-    //         }
-    //         Self::Cut(sub, n1) => {
-    //             if let Self::Cut(deck, n2) = *sub {
-    //                 Self::Cut(Box::new(deck.simplify()), n1 + n2)
-    //             } else {
-    //                 Self::Cut(Box::new(sub.simplify()), n1)
-    //             }
-    //         }
-    //         Self::Deal(sub, n, ninv) => Self::Deal(Box::new(sub.simplify()), n, ninv),
-    //     }
-    // }
-
     fn get(&self, index: u128) -> u128 {
         match self {
             Self::Initial(_) => index,
