@@ -12,10 +12,16 @@ fn modinv(n: usize, modulus: usize) -> usize {
     modpow(n, modulus - 2, modulus)
 }
 
-fn modpow(base: usize, exp: usize, modulus: usize) -> usize {
+fn modpow(mut base: usize, mut exp: usize, modulus: usize) -> usize {
     let mut result = 1;
-    for _ in 0..exp {
-        result = (result * base) % modulus;
+    base %= modulus;
+
+    while exp > 0 {
+        if exp & 1 == 1 {
+            result = result * base % modulus;
+        }
+        exp >>= 1;
+        base = base * base % modulus;
     }
     result
 }
