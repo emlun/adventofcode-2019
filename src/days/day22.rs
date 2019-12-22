@@ -5,7 +5,7 @@ enum Deck {
     Initial(usize),
     Stack(Box<Deck>),
     Cut(Box<Deck>, isize),
-    Deal(Box<Deck>, usize),
+    Deal(Box<Deck>, usize, usize),
 }
 
 impl Deck {
@@ -14,7 +14,7 @@ impl Deck {
             Self::Initial(len) => *len,
             Self::Stack(deck) => deck.len(),
             Self::Cut(deck, _) => deck.len(),
-            Self::Deal(deck, _) => deck.len(),
+            Self::Deal(deck, _, _) => deck.len(),
         }
     }
 
@@ -31,7 +31,12 @@ impl Deck {
     }
 
     fn deal(self, n: usize) -> Self {
-        Self::Deal(Box::new(self), n)
+        let bign = self.len();
+        let mut ninv = n;
+        while (ninv * n) % bign != 1 {
+            ninv = (ninv * n) % bign;
+        }
+        Self::Deal(Box::new(self), n, ninv)
     }
 
     fn get(&self, index: usize) -> usize {
@@ -41,13 +46,8 @@ impl Deck {
             Self::Cut(deck, n) => {
                 deck.get((index as isize + n + self.len() as isize) as usize % self.len())
             }
-            Self::Deal(deck, n) => {
-                for i in 0..self.len() {
-                    if (i * n) % self.len() == index {
-                        return deck.get(i);
-                    }
-                }
-                unreachable!()
+            Self::Deal(deck, _, ninv) => {
+                return deck.get((index * ninv) % self.len());
             }
         }
     }
