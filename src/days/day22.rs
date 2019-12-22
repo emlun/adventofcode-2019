@@ -3,9 +3,9 @@ use crate::common::Solution;
 #[derive(Debug)]
 enum Deck {
     Initial(u128),
-    Stack(Box<Deck>),
-    Cut(Box<Deck>, isize),
-    Deal(Box<Deck>, u128, u128),
+    Stack(Box<Deck>, u128),
+    Cut(Box<Deck>, i128, u128),
+    Deal(Box<Deck>, u128, u128, u128),
 }
 
 fn modinv(n: u128, modulus: u128) -> u128 {
@@ -30,9 +30,9 @@ impl Deck {
     fn len(&self) -> u128 {
         match self {
             Self::Initial(len) => *len,
-            Self::Stack(deck) => deck.len(),
-            Self::Cut(deck, _) => deck.len(),
-            Self::Deal(deck, _, _) => deck.len(),
+            Self::Stack(_, len) => *len,
+            Self::Cut(_, _, len) => *len,
+            Self::Deal(_, _, _, len) => *len,
         }
     }
 
@@ -41,17 +41,20 @@ impl Deck {
     }
 
     fn stack(self) -> Self {
-        Self::Stack(Box::new(self))
+        let l = self.len();
+        Self::Stack(Box::new(self), l)
     }
 
-    fn cut(self, n: isize) -> Self {
-        Self::Cut(Box::new(self), n)
+    fn cut(self, n: i128) -> Self {
+        let l = self.len();
+        Self::Cut(Box::new(self), n, l)
     }
 
     fn deal(self, n: u128) -> Self {
+        let l = self.len();
         let modulus = self.len();
         let ninv = modinv(n, modulus);
-        Self::Deal(Box::new(self), n, ninv)
+        Self::Deal(Box::new(self), n, ninv, l)
     }
 
     // fn simplify(self) -> Self {
@@ -78,11 +81,9 @@ impl Deck {
     fn get(&self, index: u128) -> u128 {
         match self {
             Self::Initial(_) => index,
-            Self::Stack(deck) => deck.get(deck.len() - index - 1),
-            Self::Cut(deck, n) => {
-                deck.get((index as isize + n + self.len() as isize) as u128 % self.len())
-            }
-            Self::Deal(deck, _, ninv) => deck.get((index * ninv) % self.len()),
+            Self::Stack(deck, len) => deck.get(len - index - 1),
+            Self::Cut(deck, n, len) => deck.get((index as i128 + n + *len as i128) as u128 % len),
+            Self::Deal(deck, _, ninv, len) => deck.get((index * ninv) % len),
         }
     }
 
@@ -92,11 +93,11 @@ impl Deck {
         } else {
             let i = match self {
                 Self::Initial(_) => index,
-                Self::Stack(deck) => deck.get(deck.len() - index - 1),
-                Self::Cut(deck, n) => {
-                    deck.get((index as isize + n + self.len() as isize) as u128 % self.len())
+                Self::Stack(deck, len) => deck.get(len - index - 1),
+                Self::Cut(deck, n, len) => {
+                    deck.get((index as i128 + *n + *len as i128) as u128 % len)
                 }
-                Self::Deal(deck, _, ninv) => deck.get((index * ninv) % self.len()),
+                Self::Deal(deck, _, ninv, len) => deck.get((index * ninv) % len),
             };
             self.get_repeated(i, depth - 1)
         }
