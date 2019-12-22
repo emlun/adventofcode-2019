@@ -69,9 +69,7 @@ impl Deck {
     }
 }
 
-fn solve_a(lines: &[String]) -> usize {
-    let mut deck: Deck = Deck::new(10007);
-
+fn shuffle(lines: &[String], mut deck: Deck) -> Deck {
     for line in lines {
         if &line[0..3] == "cut" {
             deck = deck.cut(line[4..].parse().unwrap());
@@ -82,12 +80,13 @@ fn solve_a(lines: &[String]) -> usize {
         }
     }
 
-    // let output: Vec<usize> = (0..deck.len()).map(|i| deck.get(i)).collect();
-    // println!("{:?}", deck);
-    // println!("{:?}", output);
+    deck
+}
+
+fn solve_a(lines: &[String]) -> usize {
+    let deck: Deck = shuffle(lines, Deck::new(10007));
 
     for i in 0..deck.len() {
-        println!("{}", i);
         if deck.get(i) == 2019 {
             return i;
         }
@@ -96,10 +95,14 @@ fn solve_a(lines: &[String]) -> usize {
     unreachable!()
 }
 
+fn solve_b(lines: &[String]) -> usize {
+    let deck: Deck = shuffle(lines, Deck::new(119315717514047));
+    deck.get(2020)
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let a_solution = solve_a(lines);
-    // let b_solution = solve_b(&world);
-    let b_solution = "";
+    let b_solution = solve_b(lines);
     (a_solution.to_string(), b_solution.to_string())
 }
 
