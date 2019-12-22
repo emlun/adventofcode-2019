@@ -51,9 +51,29 @@ impl Deck {
     fn deal(self, n: u128) -> Self {
         let modulus = self.len();
         let ninv = modinv(n, modulus);
-        println!("Inverse of {} mod {} is {}", n, modulus, ninv);
         Self::Deal(Box::new(self), n, ninv)
     }
+
+    // fn simplify(self) -> Self {
+    //     match self {
+    //         Self::Initial(_) => self,
+    //         Self::Stack(sub) => {
+    //             if let Self::Stack(deck) = *sub {
+    //                 deck.simplify()
+    //             } else {
+    //                 Self::Stack(Box::new(sub.simplify()))
+    //             }
+    //         }
+    //         Self::Cut(sub, n1) => {
+    //             if let Self::Cut(deck, n2) = *sub {
+    //                 Self::Cut(Box::new(deck.simplify()), n1 + n2)
+    //             } else {
+    //                 Self::Cut(Box::new(sub.simplify()), n1)
+    //             }
+    //         }
+    //         Self::Deal(sub, n, ninv) => Self::Deal(Box::new(sub.simplify()), n, ninv),
+    //     }
+    // }
 
     fn get(&self, index: u128) -> u128 {
         match self {
@@ -62,9 +82,23 @@ impl Deck {
             Self::Cut(deck, n) => {
                 deck.get((index as isize + n + self.len() as isize) as u128 % self.len())
             }
-            Self::Deal(deck, _, ninv) => {
-                return deck.get((index * ninv) % self.len());
-            }
+            Self::Deal(deck, _, ninv) => deck.get((index * ninv) % self.len()),
+        }
+    }
+
+    fn get_repeated(&self, index: u128, depth: u128) -> u128 {
+        if depth == 0 {
+            index
+        } else {
+            let i = match self {
+                Self::Initial(_) => index,
+                Self::Stack(deck) => deck.get(deck.len() - index - 1),
+                Self::Cut(deck, n) => {
+                    deck.get((index as isize + n + self.len() as isize) as u128 % self.len())
+                }
+                Self::Deal(deck, _, ninv) => deck.get((index * ninv) % self.len()),
+            };
+            self.get_repeated(i, depth - 1)
         }
     }
 }
@@ -96,8 +130,35 @@ fn solve_a(lines: &[String]) -> u128 {
 }
 
 fn solve_b(lines: &[String]) -> u128 {
-    let deck: Deck = shuffle(lines, Deck::new(119315717514047));
-    deck.get(2020)
+    let once_deck: Deck = shuffle(lines, Deck::new(119315717514047));
+
+    let mut shuffle_times: u128 = 101741582076661;
+
+    for depth in 0..100 {
+        let current = once_deck.get_repeated(2020, depth);
+        println!("{} {}", depth, current);
+    }
+
+    println!(
+        "{} {}",
+        2,
+        once_deck.get_repeated(once_deck.get_repeated(2020, 4), 4)
+    );
+
+    let mut multi_deck: Deck = Deck::new(119315717514047);
+    let mut prev = 2020;
+    let mut d: u128 = 0;
+    multi_deck = shuffle(lines, multi_deck);
+    for depth in 0..1000 {
+        let current = multi_deck.get_repeated(prev, depth * depth * depth);
+        d += depth * depth * depth;
+        prev = current;
+        println!("{} {} {}", depth, d, current);
+        // multi_deck = shuffle(lines, multi_deck);
+    }
+
+    // multi_deck.get(2020)
+    0
 }
 
 pub fn solve(lines: &[String]) -> Solution {
