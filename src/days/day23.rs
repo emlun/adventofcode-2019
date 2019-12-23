@@ -79,26 +79,12 @@ fn solve_b(template: &IntcodeComputer) -> i64 {
     }
 
     loop {
-        // println!("NAT: {:?}", nat_buffer);
-        // for (compi, computer) in computers.iter_mut().enumerate() {
-        //     println!(
-        //         "{} {} {} {:?} {} {}",
-        //         compi,
-        //         input_buffers[compi].len(),
-        //         packet_queues[compi].len(),
-        //         computers_stalled[compi],
-        //         computer.eip,
-        //         computer.prog[computer.eip],
-        //     );
-        // }
-
         let network_idle = computers.iter().enumerate().all(|(compi, _)| {
             computers_stalled[compi] > 1
                 && packet_queues[compi].is_empty()
                 && input_buffers[compi].is_empty()
         });
         if network_idle {
-            println!("NAT Triggered {:?}", nat_buffer);
             if let Some(packet) = nat_buffer.as_ref() {
                 if Some(packet.y) == last_nat_y {
                     return packet.y;
@@ -142,7 +128,6 @@ fn solve_b(template: &IntcodeComputer) -> i64 {
 
                     if addr == 255 {
                         nat_buffer = Some(packet);
-                        println!("NAT received {:?}", nat_buffer);
                     } else {
                         packet_queues[addr].push_back(packet);
                     }
