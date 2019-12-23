@@ -119,6 +119,11 @@ fn day21(b: &mut Bencher) {
 }
 
 #[bench]
+fn day22(b: &mut Bencher) {
+    run_bench(22, b);
+}
+
+#[bench]
 fn day23(b: &mut Bencher) {
     run_bench(23, b);
 }

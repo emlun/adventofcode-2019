@@ -148,6 +148,11 @@ fn day21() -> Result<(), std::io::Error> {
 }
 
 #[test]
+fn day22() -> Result<(), std::io::Error> {
+    test_day(22, "4775", "37889219674304")
+}
+
+#[test]
 fn day23() -> Result<(), std::io::Error> {
     test_day(23, "18513", "13286")
 }
