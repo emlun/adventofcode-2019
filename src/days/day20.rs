@@ -38,11 +38,11 @@ fn steps_from(world: &World, loc: &Loc, levels: bool) -> Vec<Loc> {
                     }
                 } else {
                     let next_level = if levels {
-                        if next_pos.0 == (world.outer_warp_ring.0).0
+                        let is_outer_warp = next_pos.0 == (world.outer_warp_ring.0).0
                             || next_pos.0 == (world.outer_warp_ring.1).0
                             || next_pos.1 == (world.outer_warp_ring.0).1
-                            || next_pos.1 == (world.outer_warp_ring.1).1
-                        {
+                            || next_pos.1 == (world.outer_warp_ring.1).1;
+                        if is_outer_warp {
                             if loc.level == 0 {
                                 None
                             } else {
