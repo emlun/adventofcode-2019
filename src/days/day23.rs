@@ -8,7 +8,6 @@ const NUM_COMPUTERS: usize = 50;
 struct Packet {
     x: i64,
     y: i64,
-    addr: usize,
 }
 
 fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
@@ -77,7 +76,7 @@ fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
                     let addr = output_buffers[compi].pop_front().unwrap() as usize;
                     let x = output_buffers[compi].pop_front().unwrap();
                     let y = output_buffers[compi].pop_front().unwrap();
-                    let packet = Packet { x, y, addr };
+                    let packet = Packet { x, y };
 
                     if addr == 255 {
                         if a_solution.is_none() {
