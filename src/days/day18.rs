@@ -147,46 +147,45 @@ impl<'world> Navigation<'world> {
                         let next_len = proute.len + 1;
 
                         match &self.world.tiles[next_pos.1][next_pos.0] {
-                            Floor(entity) => match entity {
-                                Some(Key(k)) => {
-                                    let collected = proute.collected_keys.with(*k);
-                                    moves.push(Route {
-                                        to: next_pos,
-                                        len: next_len,
-                                        collected_keys: collected,
-                                        prerequired_keys: proute.prerequired_keys,
-                                    });
+                            Floor(None) => {
+                                queue.push_back(PartialRoute {
+                                    pos: next_pos,
+                                    collected_keys: proute.collected_keys,
+                                    prerequired_keys: proute.prerequired_keys,
+                                    len: next_len,
+                                });
 
-                                    visited.insert((next_pos, proute.prerequired_keys));
-                                }
+                                visited.insert((next_pos, proute.prerequired_keys));
+                            }
 
-                                Some(Door(k)) => {
-                                    let prereq = if proute.collected_keys.contains(*k) {
-                                        proute.prerequired_keys
-                                    } else {
-                                        proute.prerequired_keys.with(*k)
-                                    };
-                                    queue.push_back(PartialRoute {
-                                        pos: next_pos,
-                                        collected_keys: proute.collected_keys,
-                                        prerequired_keys: prereq,
-                                        len: next_len,
-                                    });
+                            Floor(Some(Key(k))) => {
+                                let collected = proute.collected_keys.with(*k);
+                                moves.push(Route {
+                                    to: next_pos,
+                                    len: next_len,
+                                    collected_keys: collected,
+                                    prerequired_keys: proute.prerequired_keys,
+                                });
 
-                                    visited.insert((next_pos, prereq));
-                                }
+                                visited.insert((next_pos, proute.prerequired_keys));
+                            }
 
-                                None => {
-                                    queue.push_back(PartialRoute {
-                                        pos: next_pos,
-                                        collected_keys: proute.collected_keys,
-                                        prerequired_keys: proute.prerequired_keys,
-                                        len: next_len,
-                                    });
+                            Floor(Some(Door(k))) => {
+                                let prereq = if proute.collected_keys.contains(*k) {
+                                    proute.prerequired_keys
+                                } else {
+                                    proute.prerequired_keys.with(*k)
+                                };
+                                queue.push_back(PartialRoute {
+                                    pos: next_pos,
+                                    collected_keys: proute.collected_keys,
+                                    prerequired_keys: prereq,
+                                    len: next_len,
+                                });
 
-                                    visited.insert((next_pos, proute.prerequired_keys));
-                                }
-                            },
+                                visited.insert((next_pos, prereq));
+                            }
+
                             Wall => {}
                         }
                     }
