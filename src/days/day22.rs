@@ -19,6 +19,7 @@ fn modpow(mut base: u128, mut exp: u128, modulus: u128) -> u128 {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 enum Deck {
     Initial(u128),
     Stack(Box<Deck>, u128),
@@ -26,6 +27,7 @@ enum Deck {
     Deal(Box<Deck>, u128, u128),
 }
 
+#[allow(dead_code)]
 impl Deck {
     fn len(&self) -> u128 {
         match self {
@@ -110,6 +112,34 @@ impl Deck {
             }
         }
     }
+
+    fn as_polynomial(modulus: u128, lines: &[String]) -> ModPolynomial {
+        lines.iter().fold(
+            ModPolynomial {
+                k: vec![0, 1],
+                modulus,
+            },
+            |poly, line| {
+                if &line[0..3] == "cut" {
+                    let n: i128 = line[4..].parse().unwrap();
+                    poly.compose_deg1(&ModPolynomial {
+                        k: vec![(modulus as i128 + n) as u128 % modulus, 1],
+                        modulus,
+                    })
+                } else if &line[0..9] == "deal with" {
+                    poly.compose_deg1(&ModPolynomial {
+                        k: vec![0, modinv(line[20..].parse().unwrap(), modulus)],
+                        modulus,
+                    })
+                } else {
+                    poly.compose_deg1(&ModPolynomial {
+                        k: vec![modulus - 1, modulus - 1],
+                        modulus,
+                    })
+                }
+            },
+        )
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -169,17 +199,12 @@ impl ModPolynomial {
 }
 
 fn solve_a(lines: &[String]) -> u128 {
-    Deck::new(10007)
-        .shuffle(lines)
-        .simplify()
-        .invert()
-        .apply(2019)
+    Deck::as_polynomial(10007, lines).invert().apply(2019)
 }
 
 #[allow(clippy::unreadable_literal)]
 fn solve_b(lines: &[String]) -> u128 {
-    let deck: Deck = Deck::new(119315717514047).shuffle(lines);
-    let poly: ModPolynomial = deck.simplify();
+    let poly = Deck::as_polynomial(119315717514047, lines);
     poly.self_composed_deg1(101741582076661).apply(2020)
 }
 
@@ -396,7 +421,7 @@ mod tests {
         .map(|s| s.to_string())
         .collect();
         let mut deck: Deck = Deck::new(119315717514047);
-        let poly: ModPolynomial = Deck::new(119315717514047).shuffle(&lines).simplify();
+        let poly: ModPolynomial = Deck::as_polynomial(119315717514047, &lines);
         let init = 2020;
 
         for i in 0..100 {
