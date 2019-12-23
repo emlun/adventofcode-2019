@@ -1,13 +1,5 @@
 use crate::common::Solution;
 
-#[derive(Debug)]
-enum Deck {
-    Initial(u128),
-    Stack(Box<Deck>, u128),
-    Cut(Box<Deck>, u128, u128),
-    Deal(Box<Deck>, u128, u128, u128),
-}
-
 fn modinv(n: u128, modulus: u128) -> u128 {
     modpow(n, modulus - 2, modulus)
 }
@@ -24,6 +16,107 @@ fn modpow(mut base: u128, mut exp: u128, modulus: u128) -> u128 {
         base = base * base % modulus;
     }
     result
+}
+
+#[derive(Debug)]
+enum Deck {
+    Initial(u128),
+    Stack(Box<Deck>, u128),
+    Cut(Box<Deck>, u128, u128),
+    Deal(Box<Deck>, u128, u128, u128),
+}
+
+impl Deck {
+    fn len(&self) -> u128 {
+        match self {
+            Self::Initial(len) => *len,
+            Self::Stack(_, len) => *len,
+            Self::Cut(_, _, len) => *len,
+            Self::Deal(_, _, _, len) => *len,
+        }
+    }
+
+    fn new(len: u128) -> Self {
+        Self::Initial(len)
+    }
+
+    fn stack(self) -> Self {
+        let l = self.len();
+        Self::Stack(Box::new(self), l)
+    }
+
+    fn cut(self, n: i128) -> Self {
+        let l = self.len();
+        Self::Cut(Box::new(self), (l as i128 + n) as u128 % l, l)
+    }
+
+    fn deal(self, n: u128) -> Self {
+        let l = self.len();
+        let modulus = self.len();
+        let ninv = modinv(n, modulus);
+        Self::Deal(Box::new(self), n, ninv, l)
+    }
+
+    fn get(&self, index: u128) -> u128 {
+        match self {
+            Self::Initial(_) => index,
+            Self::Stack(deck, len) => deck.get(len - index - 1),
+            Self::Cut(deck, n, len) => deck.get((index + n) % len),
+            Self::Deal(deck, _, ninv, len) => deck.get((index * ninv) % len),
+        }
+    }
+
+    fn shuffle(self, lines: &[String]) -> Deck {
+        let mut deck = self;
+        for line in lines {
+            if &line[0..3] == "cut" {
+                deck = deck.cut(line[4..].parse().unwrap());
+            } else if &line[0..9] == "deal with" {
+                deck = deck.deal(line[20..].parse().unwrap());
+            } else {
+                deck = deck.stack();
+            }
+        }
+        deck
+    }
+
+    fn simplify(&self) -> ModPolynomial {
+        match self {
+            Self::Initial(len) => ModPolynomial {
+                k: vec![0, 1],
+                modulus: *len,
+            },
+            Self::Stack(deck, len) => {
+                let me = ModPolynomial {
+                    k: vec![len - 1, len - 1],
+                    modulus: *len,
+                };
+                deck.simplify().compose_deg1(&me)
+            }
+            Self::Cut(deck, n, len) => {
+                let me = ModPolynomial {
+                    k: vec![*n, 1],
+                    modulus: *len,
+                };
+                deck.simplify().compose_deg1(&me)
+            }
+            Self::Deal(deck, _, ninv, len) => {
+                let me = ModPolynomial {
+                    k: vec![0, *ninv],
+                    modulus: *len,
+                };
+                deck.simplify().compose_deg1(&me)
+            }
+        }
+    }
+
+    fn get_repeated(&self, index: u128, depth: u128) -> u128 {
+        if depth == 0 {
+            index
+        } else {
+            self.get_repeated(self.get(index), depth - 1)
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -74,101 +167,8 @@ impl ModPolynomial {
     }
 }
 
-impl Deck {
-    fn len(&self) -> u128 {
-        match self {
-            Self::Initial(len) => *len,
-            Self::Stack(_, len) => *len,
-            Self::Cut(_, _, len) => *len,
-            Self::Deal(_, _, _, len) => *len,
-        }
-    }
-
-    fn new(len: u128) -> Self {
-        Self::Initial(len)
-    }
-
-    fn stack(self) -> Self {
-        let l = self.len();
-        Self::Stack(Box::new(self), l)
-    }
-
-    fn cut(self, n: i128) -> Self {
-        let l = self.len();
-        Self::Cut(Box::new(self), (l as i128 + n) as u128 % l, l)
-    }
-
-    fn deal(self, n: u128) -> Self {
-        let l = self.len();
-        let modulus = self.len();
-        let ninv = modinv(n, modulus);
-        Self::Deal(Box::new(self), n, ninv, l)
-    }
-
-    fn get(&self, index: u128) -> u128 {
-        match self {
-            Self::Initial(_) => index,
-            Self::Stack(deck, len) => deck.get(len - index - 1),
-            Self::Cut(deck, n, len) => deck.get((index + n) % len),
-            Self::Deal(deck, _, ninv, len) => deck.get((index * ninv) % len),
-        }
-    }
-
-    fn simplify(&self) -> ModPolynomial {
-        match self {
-            Self::Initial(len) => ModPolynomial {
-                k: vec![0, 1],
-                modulus: *len,
-            },
-            Self::Stack(deck, len) => {
-                let me = ModPolynomial {
-                    k: vec![len - 1, len - 1],
-                    modulus: *len,
-                };
-                deck.simplify().compose_deg1(&me)
-            }
-            Self::Cut(deck, n, len) => {
-                let me = ModPolynomial {
-                    k: vec![*n, 1],
-                    modulus: *len,
-                };
-                deck.simplify().compose_deg1(&me)
-            }
-            Self::Deal(deck, _, ninv, len) => {
-                let me = ModPolynomial {
-                    k: vec![0, *ninv],
-                    modulus: *len,
-                };
-                deck.simplify().compose_deg1(&me)
-            }
-        }
-    }
-
-    fn get_repeated(&self, index: u128, depth: u128) -> u128 {
-        if depth == 0 {
-            index
-        } else {
-            self.get_repeated(self.get(index), depth - 1)
-        }
-    }
-}
-
-fn shuffle(lines: &[String], mut deck: Deck) -> Deck {
-    for line in lines {
-        if &line[0..3] == "cut" {
-            deck = deck.cut(line[4..].parse().unwrap());
-        } else if &line[0..9] == "deal with" {
-            deck = deck.deal(line[20..].parse().unwrap());
-        } else {
-            deck = deck.stack();
-        }
-    }
-
-    deck
-}
-
 fn solve_a(lines: &[String]) -> u128 {
-    let deck: Deck = shuffle(lines, Deck::new(10007));
+    let deck: Deck = Deck::new(10007).shuffle(lines);
 
     for i in 0..deck.len() {
         if deck.get(i) == 2019 {
@@ -180,61 +180,8 @@ fn solve_a(lines: &[String]) -> u128 {
 }
 
 fn solve_b(lines: &[String]) -> u128 {
-    let once_deck: Deck = shuffle(lines, Deck::new(119315717514047));
-
-    for depth in 0..100 {
-        let current = once_deck.get_repeated(2020, depth);
-        println!("{} {}", depth, current);
-    }
-
-    println!();
-
-    let poly: ModPolynomial = once_deck.simplify();
-    let mut prev = 2020;
-    for depth in 1..100 {
-        let current = once_deck.get(prev);
-        let polyout = poly.apply(prev);
-        // d += depth * depth * depth;
-        prev = current;
-        // if depth % 1_000_000 == 0 {
-        println!(
-            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
-            depth,
-            current,
-            polyout,
-            poly.self_composed_deg1(1).apply(prev),
-            poly.self_composed_deg1(2).apply(prev),
-            poly.self_composed_deg1(3).apply(prev),
-            poly.self_composed_deg1(4).apply(prev),
-            poly.self_composed_deg1(5).apply(prev),
-            poly.self_composed_deg1(6).apply(prev),
-            poly.self_composed_deg1(7).apply(prev),
-            poly.self_composed_deg1(8).apply(prev),
-            poly.self_composed_deg1(9).apply(prev),
-            poly.self_composed_deg1(10).apply(prev),
-            poly.self_composed_deg1(11).apply(prev),
-            poly.self_composed_deg1(12).apply(prev),
-            poly.self_composed_deg1(13).apply(prev),
-            poly.self_composed_deg1(14).apply(prev),
-            poly.self_composed_deg1(15).apply(prev),
-            poly.self_composed_deg1(16).apply(prev),
-        );
-        // }
-        // assert_eq!(anti, prev);
-        // multi_deck = shuffle(lines, multi_deck);
-    }
-
-    let mut multi_deck: Deck = Deck::new(119315717514047);
-    for i in 0..100 {
-        assert_eq!(once_deck.get_repeated(2020, i), multi_deck.get(2020));
-        assert_eq!(
-            once_deck.get_repeated(2020, i),
-            poly.self_composed_deg1(i).apply(2020)
-        );
-        assert_eq!(multi_deck.get(2020), poly.self_composed_deg1(i).apply(2020));
-        multi_deck = shuffle(&lines, multi_deck);
-    }
-
+    let deck: Deck = Deck::new(119315717514047).shuffle(lines);
+    let poly: ModPolynomial = deck.simplify();
     poly.self_composed_deg1(101741582076661).apply(2020)
 }
 
@@ -247,6 +194,7 @@ pub fn solve(lines: &[String]) -> Solution {
 #[cfg(test)]
 mod tests {
     use super::Deck;
+    use super::ModPolynomial;
 
     fn testit(deck: Deck, expected: Vec<u128>) {
         let poly = deck.simplify();
@@ -432,5 +380,36 @@ mod tests {
             Deck::new(13).deal(12),
             vec![0, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
         );
+    }
+
+    #[test]
+    fn repeated_polynomial() {
+        let lines: Vec<String> = [
+            "cut -7812",
+            "deal with increment 55",
+            "cut -3909",
+            "deal with increment 51",
+            "deal into new stack",
+            "deal with increment 4",
+            "cut -77",
+            "deal with increment 26",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+        let once_deck: Deck = Deck::new(119315717514047).shuffle(&lines);
+        let poly: ModPolynomial = once_deck.simplify();
+        let mut multi_deck: Deck = Deck::new(119315717514047);
+        let init = 2020;
+
+        for i in 0..100 {
+            assert_eq!(once_deck.get_repeated(init, i), multi_deck.get(init));
+            assert_eq!(
+                once_deck.get_repeated(init, i),
+                poly.self_composed_deg1(i).apply(init)
+            );
+            assert_eq!(multi_deck.get(init), poly.self_composed_deg1(i).apply(init));
+            multi_deck = multi_deck.shuffle(&lines);
+        }
     }
 }
