@@ -55,15 +55,13 @@ fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
                 if let Some(i) = input_buffers[compi].pop_front() {
                     computers_stalled[compi] = 0;
                     Some(i)
+                } else if let Some(packet) = packet_queues[compi].pop_front() {
+                    computers_stalled[compi] = 0;
+                    input_buffers[compi].push_back(packet.y);
+                    Some(packet.x)
                 } else {
-                    if let Some(packet) = packet_queues[compi].pop_front() {
-                        computers_stalled[compi] = 0;
-                        input_buffers[compi].push_back(packet.y);
-                        Some(packet.x)
-                    } else {
-                        computers_stalled[compi] += 1;
-                        None
-                    }
+                    computers_stalled[compi] += 1;
+                    None
                 }
             } else {
                 None
