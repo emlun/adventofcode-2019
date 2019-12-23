@@ -23,7 +23,7 @@ enum Deck {
     Initial(u128),
     Stack(Box<Deck>, u128),
     Cut(Box<Deck>, u128, u128),
-    Deal(Box<Deck>, u128, u128, u128),
+    Deal(Box<Deck>, u128, u128),
 }
 
 impl Deck {
@@ -32,7 +32,7 @@ impl Deck {
             Self::Initial(len) => *len,
             Self::Stack(_, len) => *len,
             Self::Cut(_, _, len) => *len,
-            Self::Deal(_, _, _, len) => *len,
+            Self::Deal(_, _, len) => *len,
         }
     }
 
@@ -54,7 +54,7 @@ impl Deck {
         let l = self.len();
         let modulus = self.len();
         let ninv = modinv(n, modulus);
-        Self::Deal(Box::new(self), n, ninv, l)
+        Self::Deal(Box::new(self), ninv, l)
     }
 
     #[allow(dead_code)]
@@ -63,7 +63,7 @@ impl Deck {
             Self::Initial(_) => index,
             Self::Stack(deck, len) => deck.get(len - index - 1),
             Self::Cut(deck, n, len) => deck.get((index + n) % len),
-            Self::Deal(deck, _, ninv, len) => deck.get((index * ninv) % len),
+            Self::Deal(deck, ninv, len) => deck.get((index * ninv) % len),
         }
     }
 
@@ -101,7 +101,7 @@ impl Deck {
                 };
                 deck.simplify().compose_deg1(&me)
             }
-            Self::Deal(deck, _, ninv, len) => {
+            Self::Deal(deck, ninv, len) => {
                 let me = ModPolynomial {
                     k: vec![0, *ninv],
                     modulus: *len,
