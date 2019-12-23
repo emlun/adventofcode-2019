@@ -60,15 +60,9 @@ impl KeySet {
         KeySet { keys: 0 }
     }
 
-    fn insert(&mut self, key: KeyId) -> &mut Self {
+    fn with(mut self, key: KeyId) -> Self {
         self.keys |= key.value;
         self
-    }
-
-    fn with(self, key: KeyId) -> Self {
-        KeySet {
-            keys: self.keys | key.value,
-        }
     }
 
     fn contains(self, key: KeyId) -> bool {
@@ -202,7 +196,7 @@ fn parse_world(lines: &[String]) -> (World, Point) {
                     a => Floor(Some(if a == a.to_ascii_uppercase() {
                         Door(a.into())
                     } else {
-                        keys.insert(a.into());
+                        keys = keys.with(a.into());
                         Key(a.into())
                     })),
                 })
