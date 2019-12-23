@@ -122,20 +122,12 @@ impl Deck {
             |poly, line| {
                 if &line[0..3] == "cut" {
                     let n: i128 = line[4..].parse().unwrap();
-                    poly.compose_deg1(&ModPolynomial {
-                        k: vec![(modulus as i128 + n) as u128 % modulus, 1],
-                        modulus,
-                    })
+                    poly.compose_deg1_raw((modulus as i128 + n) as u128 % modulus, 1)
                 } else if &line[0..9] == "deal with" {
-                    poly.compose_deg1(&ModPolynomial {
-                        k: vec![0, modinv(line[20..].parse().unwrap(), modulus)],
-                        modulus,
-                    })
+                    let ninv = modinv(line[20..].parse().unwrap(), modulus);
+                    poly.compose_deg1_raw(0, ninv)
                 } else {
-                    poly.compose_deg1(&ModPolynomial {
-                        k: vec![modulus - 1, modulus - 1],
-                        modulus,
-                    })
+                    poly.compose_deg1_raw(modulus - 1, modulus - 1)
                 }
             },
         )
@@ -156,41 +148,46 @@ impl ModPolynomial {
         })
     }
 
-    fn invert(&self) -> ModPolynomial {
+    fn invert(mut self) -> ModPolynomial {
         let kinv = modinv(self.k[1], self.modulus);
-        ModPolynomial {
-            k: vec![((self.modulus - self.k[0]) * kinv) % self.modulus, kinv],
-            modulus: self.modulus,
-        }
+        self.k[0] = ((self.modulus - self.k[0]) * kinv) % self.modulus;
+        self.k[1] = kinv;
+        self
     }
 
-    fn compose_deg1(&self, other: &ModPolynomial) -> ModPolynomial {
+    fn compose_deg1(self, other: &ModPolynomial) -> ModPolynomial {
         assert_eq!(self.k.len(), 2);
         assert_eq!(other.k.len(), 2);
         assert_eq!(self.modulus, other.modulus);
-        ModPolynomial {
-            k: vec![
-                (self.k[0] + self.k[1] * other.k[0]) % self.modulus,
-                (self.k[1] * other.k[1]) % self.modulus,
-            ],
-            modulus: self.modulus,
-        }
+        self.compose_deg1_raw(other.k[0], other.k[1])
     }
 
-    fn self_composed_deg1(&self, mut times: u128) -> ModPolynomial {
+    fn compose_deg1_raw(mut self, k_0: u128, k_1: u128) -> ModPolynomial {
+        assert_eq!(self.k.len(), 2);
+        self.k[0] = (self.k[0] + self.k[1] * k_0) % self.modulus;
+        self.k[1] = (self.k[1] * k_1) % self.modulus;
+        self
+    }
+
+    fn self_composed_once_deg1(self) -> ModPolynomial {
+        let k_0 = self.k[0];
+        let k_1 = self.k[1];
+        self.compose_deg1_raw(k_0, k_1)
+    }
+
+    fn self_composed_deg1(self, mut times: u128) -> ModPolynomial {
         assert_eq!(self.k.len(), 2);
 
-        let mut composed = ModPolynomial {
-            k: vec![0, 1],
-            modulus: self.modulus,
-        };
         let mut self_pow2 = self.clone();
+        let mut composed = self;
+        composed.k[0] = 0;
+        composed.k[1] = 1;
 
         while times > 0 {
             if times % 2 == 1 {
                 composed = composed.compose_deg1(&self_pow2);
             }
-            self_pow2 = self_pow2.compose_deg1(&self_pow2);
+            self_pow2 = self_pow2.self_composed_once_deg1();
             times >>= 1;
         }
 
@@ -425,7 +422,10 @@ mod tests {
         let init = 2020;
 
         for i in 0..100 {
-            assert_eq!(deck.get(init), poly.self_composed_deg1(i).apply(init));
+            assert_eq!(
+                deck.get(init),
+                poly.clone().self_composed_deg1(i).apply(init)
+            );
             deck = deck.shuffle(&lines);
         }
     }
