@@ -207,6 +207,10 @@ impl IntcodeComputer {
     pub fn is_halted(&self) -> bool {
         self.prog[self.eip] == OP_HALT
     }
+
+    pub fn expects_input(&self) -> bool {
+        self.prog[self.eip] == OP_INPUT
+    }
 }
 
 impl From<&[String]> for IntcodeComputer {
