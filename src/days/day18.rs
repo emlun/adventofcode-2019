@@ -141,9 +141,10 @@ impl<'world> Navigation<'world> {
 
             while let Some(proute) = queue.pop_front() {
                 for next_pos in adjacent(&proute.pos) {
-                    if !visited.iter().any(|&(pos, prereq)| {
+                    let pos_visited_with_fewer_keys = visited.iter().any(|&(pos, prereq)| {
                         pos == next_pos && proute.prerequired_keys.contains_all(prereq)
-                    }) {
+                    });
+                    if !pos_visited_with_fewer_keys {
                         let next_len = proute.len + 1;
 
                         match &self.world.tiles[next_pos.1][next_pos.0] {
