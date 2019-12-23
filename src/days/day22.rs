@@ -113,7 +113,7 @@ impl Deck {
         }
     }
 
-    fn as_polynomial(modulus: u128, lines: &[String]) -> ModPolynomial {
+    fn polynomial_for(modulus: u128, lines: &[String]) -> ModPolynomial {
         lines.iter().fold(
             ModPolynomial {
                 k: vec![0, 1],
@@ -196,12 +196,12 @@ impl ModPolynomial {
 }
 
 fn solve_a(lines: &[String]) -> u128 {
-    Deck::as_polynomial(10007, lines).invert().apply(2019)
+    Deck::polynomial_for(10007, lines).invert().apply(2019)
 }
 
 #[allow(clippy::unreadable_literal)]
 fn solve_b(lines: &[String]) -> u128 {
-    let poly = Deck::as_polynomial(119315717514047, lines);
+    let poly = Deck::polynomial_for(119315717514047, lines);
     poly.self_composed_deg1(101741582076661).apply(2020)
 }
 
@@ -418,7 +418,7 @@ mod tests {
         .map(|s| s.to_string())
         .collect();
         let mut deck: Deck = Deck::new(119315717514047);
-        let poly: ModPolynomial = Deck::as_polynomial(119315717514047, &lines);
+        let poly: ModPolynomial = Deck::polynomial_for(119315717514047, &lines);
         let init = 2020;
 
         for i in 0..100 {
