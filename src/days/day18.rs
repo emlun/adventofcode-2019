@@ -159,11 +159,10 @@ impl<'world> Navigation<'world> {
                             }
 
                             Floor(Some(Key(k))) => {
-                                let collected = proute.collected_keys.with(*k);
                                 moves.push(Route {
                                     to: next_pos,
                                     len: next_len,
-                                    collected_keys: collected,
+                                    collected_keys: proute.collected_keys.with(*k),
                                     prerequired_keys: proute.prerequired_keys,
                                 });
 
