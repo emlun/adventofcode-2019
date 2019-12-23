@@ -171,6 +171,7 @@ fn solve_a(lines: &[String]) -> u128 {
     unreachable!()
 }
 
+#[allow(clippy::unreadable_literal)]
 fn solve_b(lines: &[String]) -> u128 {
     let deck: Deck = Deck::new(119315717514047).shuffle(lines);
     let poly: ModPolynomial = deck.simplify();
