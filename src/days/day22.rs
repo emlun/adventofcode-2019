@@ -1,7 +1,7 @@
 use crate::common::Solution;
 
-fn modinv(n: u128, modulus: u128) -> u128 {
-    modpow(n, modulus - 2, modulus)
+fn modinv(n: u128, prime_modulus: u128) -> u128 {
+    modpow(n, prime_modulus - 2, prime_modulus)
 }
 
 fn modpow(mut base: u128, mut exp: u128, modulus: u128) -> u128 {
