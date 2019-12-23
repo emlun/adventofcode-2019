@@ -109,14 +109,6 @@ impl Deck {
             }
         }
     }
-
-    fn get_repeated(&self, index: u128, depth: u128) -> u128 {
-        if depth == 0 {
-            index
-        } else {
-            self.get_repeated(self.get(index), depth - 1)
-        }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -397,19 +389,13 @@ mod tests {
         .iter()
         .map(|s| s.to_string())
         .collect();
-        let once_deck: Deck = Deck::new(119315717514047).shuffle(&lines);
-        let poly: ModPolynomial = once_deck.simplify();
-        let mut multi_deck: Deck = Deck::new(119315717514047);
+        let mut deck: Deck = Deck::new(119315717514047);
+        let poly: ModPolynomial = Deck::new(119315717514047).shuffle(&lines).simplify();
         let init = 2020;
 
         for i in 0..100 {
-            assert_eq!(once_deck.get_repeated(init, i), multi_deck.get(init));
-            assert_eq!(
-                once_deck.get_repeated(init, i),
-                poly.self_composed_deg1(i).apply(init)
-            );
-            assert_eq!(multi_deck.get(init), poly.self_composed_deg1(i).apply(init));
-            multi_deck = multi_deck.shuffle(&lines);
+            assert_eq!(deck.get(init), poly.self_composed_deg1(i).apply(init));
+            deck = deck.shuffle(&lines);
         }
     }
 }
