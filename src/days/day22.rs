@@ -57,6 +57,7 @@ impl Deck {
         Self::Deal(Box::new(self), n, ninv, l)
     }
 
+    #[allow(dead_code)]
     fn get(&self, index: u128) -> u128 {
         match self {
             Self::Initial(_) => index,
@@ -125,6 +126,14 @@ impl ModPolynomial {
         })
     }
 
+    fn invert(&self) -> ModPolynomial {
+        let kinv = modinv(self.k[1], self.modulus);
+        ModPolynomial {
+            k: vec![((self.modulus - self.k[0]) * kinv) % self.modulus, kinv],
+            modulus: self.modulus,
+        }
+    }
+
     fn compose_deg1(&self, other: &ModPolynomial) -> ModPolynomial {
         assert_eq!(self.k.len(), 2);
         assert_eq!(other.k.len(), 2);
@@ -160,15 +169,11 @@ impl ModPolynomial {
 }
 
 fn solve_a(lines: &[String]) -> u128 {
-    let deck: Deck = Deck::new(10007).shuffle(lines);
-
-    for i in 0..deck.len() {
-        if deck.get(i) == 2019 {
-            return i;
-        }
-    }
-
-    unreachable!()
+    Deck::new(10007)
+        .shuffle(lines)
+        .simplify()
+        .invert()
+        .apply(2019)
 }
 
 #[allow(clippy::unreadable_literal)]
