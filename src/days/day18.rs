@@ -65,8 +65,17 @@ impl KeySet {
         self
     }
 
+    fn union(mut self, keys: KeySet) -> Self {
+        self.keys |= keys.keys;
+        self
+    }
+
     fn contains(self, key: KeyId) -> bool {
         self.keys & key.value != 0
+    }
+
+    fn contains_all(self, keys: KeySet) -> bool {
+        self.keys & keys.keys == keys.keys
     }
 }
 
@@ -84,10 +93,111 @@ where
     }
 }
 
+impl std::fmt::Debug for KeySet {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "{:b}", self.keys)
+    }
+}
+
 #[derive(Eq, PartialEq)]
 struct World {
     tiles: Vec<Vec<Tile>>,
     keys: KeySet,
+}
+
+struct Navigation<'world> {
+    world: &'world World,
+    moves: HashMap<Point, Vec<Route>>,
+}
+
+#[derive(Debug)]
+struct Route {
+    to: Point,
+    collected_keys: KeySet,
+    prerequired_keys: KeySet,
+    len: usize,
+}
+
+impl<'world> Navigation<'world> {
+    fn available_moves(&mut self, from: Point) -> &Vec<Route> {
+        if self.moves.get(&from).is_none() {
+            let mut moves: Vec<Route> = Vec::new();
+            let mut visited: HashSet<(Point, KeySet)> = HashSet::new();
+            let mut queue: VecDeque<PartialRoute> = VecDeque::new();
+            queue.push_back(PartialRoute {
+                pos: from,
+                collected_keys: KeySet::new(),
+                prerequired_keys: KeySet::new(),
+                len: 0,
+            });
+
+            #[derive(Debug)]
+            struct PartialRoute {
+                pos: Point,
+                collected_keys: KeySet,
+                prerequired_keys: KeySet,
+                len: usize,
+            }
+
+            while let Some(proute) = queue.pop_front() {
+                for next_pos in adjacent(&proute.pos) {
+                    if !visited.iter().any(|&(pos, prereq)| {
+                        pos == next_pos && proute.prerequired_keys.contains_all(prereq)
+                    }) {
+                        let next_len = proute.len + 1;
+
+                        match &self.world.tiles[next_pos.1][next_pos.0] {
+                            Floor(entity) => match entity {
+                                Some(Key(k)) => {
+                                    let collected = proute.collected_keys.with(*k);
+                                    moves.push(Route {
+                                        to: next_pos,
+                                        len: next_len,
+                                        collected_keys: collected,
+                                        prerequired_keys: proute.prerequired_keys,
+                                    });
+
+                                    visited.insert((next_pos, proute.prerequired_keys));
+                                }
+
+                                Some(Door(k)) => {
+                                    let prereq = if proute.collected_keys.contains(*k) {
+                                        proute.prerequired_keys
+                                    } else {
+                                        proute.prerequired_keys.with(*k)
+                                    };
+                                    queue.push_back(PartialRoute {
+                                        pos: next_pos,
+                                        collected_keys: proute.collected_keys,
+                                        prerequired_keys: prereq,
+                                        len: next_len,
+                                    });
+
+                                    visited.insert((next_pos, prereq));
+                                }
+
+                                None => {
+                                    queue.push_back(PartialRoute {
+                                        pos: next_pos,
+                                        collected_keys: proute.collected_keys,
+                                        prerequired_keys: proute.prerequired_keys,
+                                        len: next_len,
+                                    });
+
+                                    visited.insert((next_pos, proute.prerequired_keys));
+                                }
+                            },
+                            Wall => {}
+                        }
+                    }
+                }
+            }
+
+            self.moves.insert(from, moves);
+        }
+
+        self.moves.get(&from).unwrap()
+    }
 }
 
 #[derive(Eq, PartialEq)]
@@ -99,43 +209,6 @@ struct State<'world> {
 }
 
 impl<'world> State<'world> {
-    fn available_moves(&self, pos: Point) -> Vec<(Point, usize, KeyId)> {
-        let mut moves: Vec<(Point, usize, KeyId)> = Vec::new();
-        let mut visited = HashSet::new();
-        let mut queue: VecDeque<(Point, usize)> = VecDeque::new();
-        queue.push_back((pos, 0));
-
-        while let Some((step, len)) = queue.pop_front() {
-            for next in adjacent(&step) {
-                if !visited.contains(&next) && self.can_walk(&next) {
-                    let next_len = len + 1;
-                    if let Floor(Some(Key(k))) = self.world.tiles[next.1][next.0] {
-                        if self.collected.contains(k) {
-                            queue.push_back((next, next_len));
-                        } else {
-                            moves.push((next, next_len, k));
-                        }
-                    } else {
-                        queue.push_back((next, next_len));
-                    }
-                }
-            }
-
-            visited.insert(step);
-        }
-
-        moves
-    }
-
-    fn can_walk(&self, pos: &Point) -> bool {
-        match self.world.tiles[pos.1][pos.0] {
-            Wall => false,
-            Floor(None) => true,
-            Floor(Some(Key(_))) => true,
-            Floor(Some(Door(a))) => self.collected.contains(a),
-        }
-    }
-
     #[allow(dead_code)]
     fn print_state(&self) {
         println!(
@@ -211,6 +284,11 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
     let mut shortest_paths: HashMap<(KeySet, Point), usize> = HashMap::new();
 
+    let mut navigation = Navigation {
+        world: &world,
+        moves: HashMap::new(),
+    };
+
     queue.push(State {
         world,
         poss: start_positions.to_vec(),
@@ -229,16 +307,20 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
                 if state.len < *shortest {
                     *shortest = state.len;
 
-                    for (next_point, len_to_next, next_key) in state.available_moves(*pos) {
-                        let collected = state.collected.with(next_key);
+                    for route in navigation
+                        .available_moves(*pos)
+                        .iter()
+                        .filter(|route| state.collected.contains_all(route.prerequired_keys))
+                    {
+                        let collected = state.collected.union(route.collected_keys);
                         let mut poss = state.poss.clone();
-                        poss[posi] = next_point;
+                        poss[posi] = route.to;
 
                         queue.push(State {
                             world,
                             poss,
                             collected,
-                            len: state.len + len_to_next,
+                            len: state.len + route.len,
                         });
                     }
                 }
