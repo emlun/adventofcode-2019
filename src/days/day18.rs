@@ -120,6 +120,14 @@ struct Route {
 
 impl<'world> Navigation<'world> {
     fn available_moves(&mut self, from: Point) -> &Vec<Route> {
+        #[derive(Debug)]
+        struct PartialRoute {
+            pos: Point,
+            collected_keys: KeySet,
+            prerequired_keys: KeySet,
+            len: usize,
+        }
+
         if self.moves.get(&from).is_none() {
             let mut moves: Vec<Route> = Vec::new();
             let mut visited: HashSet<(Point, KeySet)> = HashSet::new();
@@ -130,14 +138,6 @@ impl<'world> Navigation<'world> {
                 prerequired_keys: KeySet::new(),
                 len: 0,
             });
-
-            #[derive(Debug)]
-            struct PartialRoute {
-                pos: Point,
-                collected_keys: KeySet,
-                prerequired_keys: KeySet,
-                len: usize,
-            }
 
             while let Some(proute) = queue.pop_front() {
                 for next_pos in adjacent(&proute.pos) {
