@@ -212,7 +212,7 @@ impl World {
     }
 }
 
-fn bfs(world: &World, levels: bool) -> Option<State> {
+fn bfs(world: &World, levels: bool) -> usize {
     let mut queue: VecDeque<State> = VecDeque::new();
 
     queue.push_back(State {
@@ -227,7 +227,7 @@ fn bfs(world: &World, levels: bool) -> Option<State> {
 
     while let Some(state) = queue.pop_front() {
         if state.loc.pos == world.goal && state.loc.level == 0 {
-            return Some(state);
+            return state.len;
         } else {
             visited.insert(state.loc);
             for next_loc in steps_from(world, &state.loc, levels) {
@@ -241,17 +241,16 @@ fn bfs(world: &World, levels: bool) -> Option<State> {
             }
         }
     }
-    None
+
+    unreachable!()
 }
 
 fn solve_a(world: &World) -> usize {
-    let found = bfs(world, false);
-    found.unwrap().len
+    bfs(world, false)
 }
 
 fn solve_b(world: &World) -> usize {
-    let found = bfs(world, true);
-    found.unwrap().len
+    bfs(world, true)
 }
 
 pub fn solve(lines: &[String]) -> Solution {
