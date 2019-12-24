@@ -3,21 +3,18 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 fn parse(lines: &[String]) -> Vec<Vec<bool>> {
-    lines
+    [".....".to_string()]
         .iter()
-        .map(|line| line.chars().map(|c| c == '#').collect())
+        .chain(lines.iter())
+        .chain([".....".to_string()].iter())
+        .map(|line| {
+            ".".chars()
+                .chain(line.chars())
+                .chain(".".chars())
+                .map(|c| c == '#')
+                .collect()
+        })
         .collect()
-}
-
-fn parse_a(lines: &[String]) -> Vec<Vec<bool>> {
-    let mut state = parse(lines);
-    for row in state.iter_mut() {
-        row.insert(0, false);
-        row.push(false);
-    }
-    state.insert(0, vec![false; 7]);
-    state.push(vec![false; 7]);
-    state
 }
 
 fn print_state(state: &Vec<Vec<bool>>) {
@@ -34,39 +31,21 @@ fn print_state(state: &Vec<Vec<bool>>) {
     println!("{}", s);
 }
 
+#[allow(dead_code)]
 fn print_levels(state: &HashMap<i32, Vec<Vec<bool>>>) {
     let minl = *state.keys().min().unwrap();
     let maxl = *state.keys().max().unwrap();
     for level in minl..=maxl {
-        let s: String = state
-            .get(&level)
-            .unwrap()
-            .iter()
-            .map(|row| {
-                row.iter()
-                    .map(|c| if *c { "#" } else { "." }.to_string())
-                    .collect::<Vec<String>>()
-                    .join("")
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-        println!("\nLevel {}:\n{}", level, s);
+        println!("\nLevel {}", level);
+        print_state(&state.get(&level).unwrap());
     }
 }
 
 fn score(state: &Vec<Vec<bool>>) -> u128 {
-    state
-        .iter()
+    (1..=5)
+        .flat_map(|y| (1..=5).map(move |x| (x, y)))
         .enumerate()
-        .filter(|(y, _)| *y > 0 && *y < 6)
-        .flat_map(|(_, vy)| {
-            vy.iter()
-                .enumerate()
-                .filter(|(x, _)| *x > 0 && *x < 6)
-                .map(|(_, vx)| vx)
-        })
-        .enumerate()
-        .map(|(i, v)| if *v { 1 << i } else { 0 })
+        .map(|(i, (x, y))| if state[y][x] { 1 << i } else { 0 })
         .sum()
 }
 
@@ -95,7 +74,7 @@ fn empty_level() -> Vec<Vec<bool>> {
 }
 
 fn update_b(
-    mut state: HashMap<i32, Vec<Vec<bool>>>,
+    state: HashMap<i32, Vec<Vec<bool>>>,
     mut next_state: HashMap<i32, Vec<Vec<bool>>>,
 ) -> (HashMap<i32, Vec<Vec<bool>>>, HashMap<i32, Vec<Vec<bool>>>) {
     let maxi = 5;
@@ -163,12 +142,6 @@ fn update_b(
                     .iter()
                     .map(|(x2, y2)| count_neighbors(&state, &empty_lvl, x, y, level, *x2, *y2))
                     .sum();
-                // println!(
-                //     "Cell {}:{:?} has {} live neighbors",
-                //     level,
-                //     (x, y),
-                //     neighbors
-                // );
                 next_state.entry(level).or_insert_with(empty_level)[y][x] =
                     if state.get(&level).unwrap_or(&empty_lvl)[y][x] {
                         neighbors == 1
@@ -181,10 +154,7 @@ fn update_b(
     (next_state, state)
 }
 
-fn solve_a(lines: &[String]) -> u128 {
-    let initial_state = parse_a(lines);
-    print_state(&initial_state);
-
+fn solve_a(initial_state: &Vec<Vec<bool>>) -> u128 {
     let mut state = initial_state.clone();
     let mut tmp = initial_state.clone();
     let mut seen: HashSet<u128> = HashSet::new();
@@ -194,23 +164,18 @@ fn solve_a(lines: &[String]) -> u128 {
             break sc;
         }
         seen.insert(sc);
-        // println!();
-        // print_state(&state);
         let o = update(state, tmp);
         state = o.0;
         tmp = o.1;
     }
 }
 
-fn solve_b(lines: &[String]) -> usize {
-    let initial_state = parse_a(lines);
+fn solve_b(initial_state: Vec<Vec<bool>>) -> usize {
     let mut state: HashMap<i32, Vec<Vec<bool>>> = HashMap::new();
     state.insert(0, initial_state);
     let mut tmp = state.clone();
 
     for _ in 0..200 {
-        println!();
-        print_levels(&state);
         let o = update_b(state, tmp);
         state = o.0;
         tmp = o.1;
@@ -225,7 +190,8 @@ fn solve_b(lines: &[String]) -> usize {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let a_solution = solve_a(lines);
-    let b_solution = solve_b(lines);
+    let initial_state = parse(lines);
+    let a_solution = solve_a(&initial_state);
+    let b_solution = solve_b(initial_state);
     (a_solution.to_string(), b_solution.to_string())
 }
