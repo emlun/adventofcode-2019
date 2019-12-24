@@ -129,6 +129,11 @@ fn day23(b: &mut Bencher) {
 }
 
 #[bench]
+fn day24(b: &mut Bencher) {
+    run_bench(24, b);
+}
+
+#[bench]
 fn days_all(b: &mut Bencher) {
     let solvers_and_inputs: Vec<(fn(&[String]) -> Solution, Vec<String>)> = days::all_numbers()
         .into_iter()
