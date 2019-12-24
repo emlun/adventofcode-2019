@@ -17,7 +17,7 @@ fn parse(lines: &[String]) -> Vec<Vec<bool>> {
         .collect()
 }
 
-fn print_state(state: &Vec<Vec<bool>>) {
+fn print_state(state: &[Vec<bool>]) {
     let s: String = state
         .iter()
         .map(|row| {
@@ -41,7 +41,7 @@ fn print_levels(state: &HashMap<i32, Vec<Vec<bool>>>) {
     }
 }
 
-fn score(state: &Vec<Vec<bool>>) -> u128 {
+fn score(state: &[Vec<bool>]) -> u128 {
     (1..=5)
         .flat_map(|y| (1..=5).map(move |x| (x, y)))
         .enumerate()
@@ -73,11 +73,14 @@ fn empty_level() -> Vec<Vec<bool>> {
     vec![vec![false; 7]; 7]
 }
 
+type State = Vec<Vec<bool>>;
+type LevelsState = HashMap<i32, State>;
+
 fn update_b(
-    state: HashMap<i32, Vec<Vec<bool>>>,
-    mut next_state: HashMap<i32, Vec<Vec<bool>>>,
+    state: LevelsState,
+    mut next_state: LevelsState,
     empty_lvl: &Vec<Vec<bool>>,
-) -> (HashMap<i32, Vec<Vec<bool>>>, HashMap<i32, Vec<Vec<bool>>>) {
+) -> (LevelsState, LevelsState) {
     let maxi = 5;
     let lmin = state.keys().min().unwrap();
     let lmax = state.keys().max().unwrap();
@@ -89,7 +92,7 @@ fn update_b(
                 }
 
                 fn count_neighbors(
-                    state: &HashMap<i32, Vec<Vec<bool>>>,
+                    state: &LevelsState,
                     empty_lvl: &Vec<Vec<bool>>,
                     of_x: usize,
                     of_y: usize,
@@ -154,9 +157,9 @@ fn update_b(
     (next_state, state)
 }
 
-fn solve_a(initial_state: &Vec<Vec<bool>>) -> u128 {
+fn solve_a(initial_state: Vec<Vec<bool>>) -> u128 {
     let mut state = initial_state.clone();
-    let mut tmp = initial_state.clone();
+    let mut tmp = initial_state;
     let mut seen: HashSet<u128> = HashSet::new();
     loop {
         let sc = score(&state);
@@ -192,7 +195,7 @@ fn solve_b(initial_state: Vec<Vec<bool>>) -> usize {
 
 pub fn solve(lines: &[String]) -> Solution {
     let initial_state = parse(lines);
-    let a_solution = solve_a(&initial_state);
+    let a_solution = solve_a(initial_state.clone());
     let b_solution = solve_b(initial_state);
     (a_solution.to_string(), b_solution.to_string())
 }
