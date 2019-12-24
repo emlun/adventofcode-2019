@@ -74,17 +74,57 @@ fn empty_level() -> Vec<Vec<bool>> {
 }
 
 type State = Vec<Vec<bool>>;
-type LevelsState = HashMap<i32, State>;
 
-fn update_b(
-    state: LevelsState,
-    mut next_state: LevelsState,
-    empty_lvl: &Vec<Vec<bool>>,
-) -> (LevelsState, LevelsState) {
+#[derive(Clone)]
+struct LevelsState {
+    levels: Vec<State>,
+    empty_level: State,
+    min_level: i32,
+    max_level: i32,
+}
+
+impl LevelsState {
+    fn new(state: State) -> Self {
+        LevelsState {
+            levels: vec![state],
+            empty_level: empty_level(),
+            min_level: 0,
+            max_level: 0,
+        }
+    }
+
+    fn get(&self, level: i32) -> &State {
+        let index = Self::level_to_index(level);
+        if index < self.levels.len() {
+            &self.levels[index]
+        } else {
+            &self.empty_level
+        }
+    }
+
+    fn get_mut(&mut self, level: i32) -> &mut State {
+        let index = Self::level_to_index(level);
+        if self.levels.len() <= index {
+            self.levels
+                .append(&mut (self.levels.len()..=index).map(|_| empty_level()).collect());
+        }
+        if level < self.min_level {
+            self.min_level = level;
+        }
+        if level > self.max_level {
+            self.max_level = level;
+        }
+        &mut self.levels[index]
+    }
+
+    fn level_to_index(level: i32) -> usize {
+        level.abs() as usize * 2 - ((level < 0) as usize)
+    }
+}
+
+fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, LevelsState) {
     let maxi = 5;
-    let lmin = state.keys().min().unwrap();
-    let lmax = state.keys().max().unwrap();
-    for level in (lmin - 1)..=(lmax + 1) {
+    for level in (state.min_level - 1)..=(state.max_level + 1) {
         for y in 1..=maxi {
             for x in 1..=maxi {
                 if x == 3 && y == 3 {
@@ -93,7 +133,6 @@ fn update_b(
 
                 fn count_neighbors(
                     state: &LevelsState,
-                    empty_lvl: &Vec<Vec<bool>>,
                     of_x: usize,
                     of_y: usize,
                     of_level: i32,
@@ -105,7 +144,7 @@ fn update_b(
                         (0, _) | (6, _) | (_, 0) | (_, 6) => of_level - 1,
                         _ => of_level,
                     };
-                    let lvl = state.get(&lv).unwrap_or(empty_lvl);
+                    let lvl = state.get(lv);
 
                     match (at_x, at_y, of_x, of_y) {
                         (3, 3, 2, _) => (1..=5).filter(|y| lvl[*y][1]).count(),
@@ -122,14 +161,13 @@ fn update_b(
 
                 let neighbors: usize = [(x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)]
                     .iter()
-                    .map(|(x2, y2)| count_neighbors(&state, empty_lvl, x, y, level, *x2, *y2))
+                    .map(|(x2, y2)| count_neighbors(&state, x, y, level, *x2, *y2))
                     .sum();
-                next_state.entry(level).or_insert_with(empty_level)[y][x] =
-                    if state.get(&level).unwrap_or(empty_lvl)[y][x] {
-                        neighbors == 1
-                    } else {
-                        neighbors == 1 || neighbors == 2
-                    };
+                next_state.get_mut(level)[y][x] = if state.get(level)[y][x] {
+                    neighbors == 1
+                } else {
+                    neighbors == 1 || neighbors == 2
+                };
             }
         }
     }
@@ -153,19 +191,18 @@ fn solve_a(initial_state: Vec<Vec<bool>>) -> u128 {
 }
 
 fn solve_b(initial_state: Vec<Vec<bool>>) -> usize {
-    let mut state: HashMap<i32, Vec<Vec<bool>>> = HashMap::new();
-    state.insert(0, initial_state);
+    let mut state = LevelsState::new(initial_state);
     let mut tmp = state.clone();
-    let empty_lvl = empty_level();
 
     for _ in 0..200 {
-        let o = update_b(state, tmp, &empty_lvl);
+        let o = update_b(state, tmp);
         state = o.0;
         tmp = o.1;
     }
 
     state
-        .values()
+        .levels
+        .iter()
         .flat_map(|grid| grid.iter())
         .flat_map(|row| row.iter())
         .filter(|v| **v)
