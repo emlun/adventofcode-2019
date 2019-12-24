@@ -100,44 +100,23 @@ fn update_b(
                     at_x: usize,
                     at_y: usize,
                 ) -> usize {
-                    let lv = if at_x == 3 && at_y == 3 {
-                        of_level + 1
-                    } else if at_x == 0 || at_x == 6 || at_y == 0 || at_y == 6 {
-                        of_level - 1
-                    } else {
-                        of_level
+                    let lv = match (at_x, at_y) {
+                        (3, 3) => of_level + 1,
+                        (0, _) | (6, _) | (_, 0) | (_, 6) => of_level - 1,
+                        _ => of_level,
                     };
                     let lvl = state.get(&lv).unwrap_or(empty_lvl);
 
-                    if at_x == 3 && at_y == 3 {
-                        if of_x == 2 {
-                            (1..=5).filter(|y| lvl[*y][1]).count()
-                        } else if of_x == 4 {
-                            (1..=5).filter(|y| lvl[*y][5]).count()
-                        } else if of_y == 2 {
-                            (1..=5).filter(|x| lvl[1][*x]).count()
-                        } else if of_y == 4 {
-                            (1..=5).filter(|x| lvl[5][*x]).count()
-                        } else {
-                            unreachable!()
-                        }
-                    } else {
-                        let cell = if at_x == 0 {
-                            lvl[3][2]
-                        } else if at_x == 6 {
-                            lvl[3][4]
-                        } else if at_y == 0 {
-                            lvl[2][3]
-                        } else if at_y == 6 {
-                            lvl[4][3]
-                        } else {
-                            lvl[at_y][at_x]
-                        };
-                        if cell {
-                            1
-                        } else {
-                            0
-                        }
+                    match (at_x, at_y, of_x, of_y) {
+                        (3, 3, 2, _) => (1..=5).filter(|y| lvl[*y][1]).count(),
+                        (3, 3, 4, _) => (1..=5).filter(|y| lvl[*y][5]).count(),
+                        (3, 3, _, 2) => (1..=5).filter(|x| lvl[1][*x]).count(),
+                        (3, 3, _, 4) => (1..=5).filter(|x| lvl[5][*x]).count(),
+                        (0, _, _, _) => lvl[3][2] as usize,
+                        (6, _, _, _) => lvl[3][4] as usize,
+                        (_, 0, _, _) => lvl[2][3] as usize,
+                        (_, 6, _, _) => lvl[4][3] as usize,
+                        _ => lvl[at_y][at_x] as usize,
                     }
                 }
 
