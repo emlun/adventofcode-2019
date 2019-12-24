@@ -76,11 +76,11 @@ fn empty_level() -> Vec<Vec<bool>> {
 fn update_b(
     state: HashMap<i32, Vec<Vec<bool>>>,
     mut next_state: HashMap<i32, Vec<Vec<bool>>>,
+    empty_lvl: &Vec<Vec<bool>>,
 ) -> (HashMap<i32, Vec<Vec<bool>>>, HashMap<i32, Vec<Vec<bool>>>) {
     let maxi = 5;
     let lmin = state.keys().min().unwrap();
     let lmax = state.keys().max().unwrap();
-    let empty_lvl = empty_level();
     for level in (lmin - 1)..=(lmax + 1) {
         for y in 1..=maxi {
             for x in 1..=maxi {
@@ -140,10 +140,10 @@ fn update_b(
 
                 let neighbors: usize = [(x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)]
                     .iter()
-                    .map(|(x2, y2)| count_neighbors(&state, &empty_lvl, x, y, level, *x2, *y2))
+                    .map(|(x2, y2)| count_neighbors(&state, empty_lvl, x, y, level, *x2, *y2))
                     .sum();
                 next_state.entry(level).or_insert_with(empty_level)[y][x] =
-                    if state.get(&level).unwrap_or(&empty_lvl)[y][x] {
+                    if state.get(&level).unwrap_or(empty_lvl)[y][x] {
                         neighbors == 1
                     } else {
                         neighbors == 1 || neighbors == 2
@@ -174,9 +174,10 @@ fn solve_b(initial_state: Vec<Vec<bool>>) -> usize {
     let mut state: HashMap<i32, Vec<Vec<bool>>> = HashMap::new();
     state.insert(0, initial_state);
     let mut tmp = state.clone();
+    let empty_lvl = empty_level();
 
     for _ in 0..200 {
-        let o = update_b(state, tmp);
+        let o = update_b(state, tmp, &empty_lvl);
         state = o.0;
         tmp = o.1;
     }
