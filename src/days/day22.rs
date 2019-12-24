@@ -156,14 +156,14 @@ impl ModPolynomial {
     }
 
     fn compose_deg1(self, other: &ModPolynomial) -> ModPolynomial {
-        assert_eq!(self.k.len(), 2);
-        assert_eq!(other.k.len(), 2);
-        assert_eq!(self.modulus, other.modulus);
+        debug_assert_eq!(self.k.len(), 2);
+        debug_assert_eq!(other.k.len(), 2);
+        debug_assert_eq!(self.modulus, other.modulus);
         self.compose_deg1_raw(other.k[0], other.k[1])
     }
 
     fn compose_deg1_raw(mut self, k_0: u128, k_1: u128) -> ModPolynomial {
-        assert_eq!(self.k.len(), 2);
+        debug_assert_eq!(self.k.len(), 2);
         self.k[0] = (self.k[0] + self.k[1] * k_0) % self.modulus;
         self.k[1] = (self.k[1] * k_1) % self.modulus;
         self
@@ -176,7 +176,7 @@ impl ModPolynomial {
     }
 
     fn self_composed_deg1(self, mut times: u128) -> ModPolynomial {
-        assert_eq!(self.k.len(), 2);
+        debug_assert_eq!(self.k.len(), 2);
 
         let mut self_pow2 = self.clone();
         let mut composed = self;
