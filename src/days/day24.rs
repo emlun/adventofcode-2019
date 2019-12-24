@@ -2,19 +2,19 @@ use crate::common::Solution;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-fn parse(lines: &[String]) -> Vec<Vec<bool>> {
+fn parse(lines: &[String]) -> BoolMatrix {
     [".....".to_string()]
         .iter()
         .chain(lines.iter())
         .chain([".....".to_string()].iter())
-        .map(|line| {
+        .flat_map(|line| {
             ".".chars()
                 .chain(line.chars())
                 .chain(".".chars())
                 .map(|c| c == '#')
-                .collect()
         })
-        .collect()
+        .collect::<BoolMatrixBuilder>()
+        .dim(7)
 }
 
 fn print_state(state: &[Vec<bool>]) {
@@ -41,39 +41,102 @@ fn print_levels(state: &HashMap<i32, Vec<Vec<bool>>>) {
     }
 }
 
-fn score(state: &[Vec<bool>]) -> u128 {
+fn score(state: &State) -> u128 {
     (1..=5)
         .flat_map(|y| (1..=5).map(move |x| (x, y)))
         .enumerate()
-        .map(|(i, (x, y))| if state[y][x] { 1 << i } else { 0 })
+        .map(|(i, (x, y))| if state.get(x, y) { 1 << i } else { 0 })
         .sum()
 }
 
-fn update(
-    state: Vec<Vec<bool>>,
-    mut next_state: Vec<Vec<bool>>,
-) -> (Vec<Vec<bool>>, Vec<Vec<bool>>) {
-    for y in 1..(state.len() - 1) {
-        for x in 1..(state[0].len() - 1) {
-            let neighbors = [(x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)]
-                .iter()
-                .filter(|(x2, y2)| state[*y2][*x2])
-                .count();
-            next_state[y][x] = if state[y][x] {
-                neighbors == 1
-            } else {
-                neighbors == 1 || neighbors == 2
-            };
+fn update(state: State, mut next_state: State) -> (State, State) {
+    for y in 1..=5 {
+        for x in 1..=5 {
+            let neighbors = state.count_neighbors(x, y);
+            next_state.set(
+                x,
+                y,
+                if state.get(x, y) {
+                    neighbors == 1
+                } else {
+                    neighbors == 1 || neighbors == 2
+                },
+            );
         }
     }
     (next_state, state)
 }
 
-fn empty_level() -> Vec<Vec<bool>> {
-    vec![vec![false; 7]; 7]
+type State = BoolMatrix;
+
+#[derive(Clone)]
+struct BoolMatrix {
+    dim: usize,
+    value: u64,
 }
 
-type State = Vec<Vec<bool>>;
+impl BoolMatrix {
+    fn new(dim: usize) -> Self {
+        Self { dim, value: 0 }
+    }
+
+    fn get(&self, x: usize, y: usize) -> bool {
+        let mask = 1 << self.coords_to_index(x, y);
+        self.value & mask != 0
+    }
+
+    fn count_neighbors(&self, x: usize, y: usize) -> u32 {
+        debug_assert!(x > 0);
+        debug_assert!(y > 0);
+        let mask_center: u64 = 1 << self.coords_to_index(x, y);
+        let mask: u64 = (mask_center << 1)
+            | (mask_center >> 1)
+            | (mask_center << self.dim)
+            | (mask_center >> self.dim);
+        (self.value & mask).count_ones()
+    }
+
+    fn set(&mut self, x: usize, y: usize, value: bool) {
+        debug_assert!(x < self.dim);
+        debug_assert!(y < self.dim);
+        let mask = 1 << self.coords_to_index(x, y);
+        if value {
+            self.value |= mask;
+        } else {
+            self.value &= !mask;
+        }
+    }
+
+    fn coords_to_index(&self, x: usize, y: usize) -> usize {
+        debug_assert!(x < self.dim);
+        debug_assert!(y < self.dim);
+        y * self.dim + x
+    }
+}
+
+struct BoolMatrixBuilder {
+    value: u64,
+}
+
+impl BoolMatrixBuilder {
+    fn dim(self, dim: usize) -> BoolMatrix {
+        BoolMatrix {
+            dim,
+            value: self.value,
+        }
+    }
+}
+
+impl std::iter::FromIterator<bool> for BoolMatrixBuilder {
+    fn from_iter<T: IntoIterator<Item = bool>>(iter: T) -> Self {
+        BoolMatrixBuilder {
+            value: iter
+                .into_iter()
+                .enumerate()
+                .fold(0, |matrix, (i, next)| matrix | ((next as u64) * (1 << i))),
+        }
+    }
+}
 
 #[derive(Clone)]
 struct LevelsState {
@@ -87,7 +150,7 @@ impl LevelsState {
     fn new(state: State) -> Self {
         LevelsState {
             levels: vec![state],
-            empty_level: empty_level(),
+            empty_level: BoolMatrix::new(7),
             min_level: 0,
             max_level: 0,
         }
@@ -105,8 +168,11 @@ impl LevelsState {
     fn get_mut(&mut self, level: i32) -> &mut State {
         let index = Self::level_to_index(level);
         if self.levels.len() <= index {
-            self.levels
-                .append(&mut (self.levels.len()..=index).map(|_| empty_level()).collect());
+            self.levels.append(
+                &mut (self.levels.len()..=index)
+                    .map(|_| BoolMatrix::new(7))
+                    .collect(),
+            );
         }
         if level < self.min_level {
             self.min_level = level;
@@ -131,50 +197,46 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
                     continue;
                 }
 
-                fn count_neighbors(
-                    state: &LevelsState,
-                    of_x: usize,
-                    of_y: usize,
-                    of_level: i32,
-                    at_x: usize,
-                    at_y: usize,
-                ) -> usize {
-                    let lv = match (at_x, at_y) {
-                        (3, 3) => of_level + 1,
-                        (0, _) | (6, _) | (_, 0) | (_, 6) => of_level - 1,
-                        _ => of_level,
-                    };
-                    let lvl = state.get(lv);
+                let basic_neighbors = state.get(level).count_neighbors(x, y);
 
-                    match (at_x, at_y, of_x, of_y) {
-                        (3, 3, 2, _) => (1..=5).filter(|y| lvl[*y][1]).count(),
-                        (3, 3, 4, _) => (1..=5).filter(|y| lvl[*y][5]).count(),
-                        (3, 3, _, 2) => (1..=5).filter(|x| lvl[1][*x]).count(),
-                        (3, 3, _, 4) => (1..=5).filter(|x| lvl[5][*x]).count(),
-                        (0, _, _, _) => lvl[3][2] as usize,
-                        (6, _, _, _) => lvl[3][4] as usize,
-                        (_, 0, _, _) => lvl[2][3] as usize,
-                        (_, 6, _, _) => lvl[4][3] as usize,
-                        _ => lvl[at_y][at_x] as usize,
-                    }
-                }
+                let lvlup = state.get(level + 1);
+                let lvldn = state.get(level - 1);
+                let level_neighbors = match (x, y) {
+                    (2, 3) => (1..=5).filter(|y| lvlup.get(1, *y)).count(),
+                    (4, 3) => (1..=5).filter(|y| lvlup.get(5, *y)).count(),
+                    (3, 2) => (1..=5).filter(|x| lvlup.get(*x, 1)).count(),
+                    (3, 4) => (1..=5).filter(|x| lvlup.get(*x, 5)).count(),
 
-                let neighbors: usize = [(x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)]
-                    .iter()
-                    .map(|(x2, y2)| count_neighbors(&state, x, y, level, *x2, *y2))
-                    .sum();
-                next_state.get_mut(level)[y][x] = if state.get(level)[y][x] {
-                    neighbors == 1
-                } else {
-                    neighbors == 1 || neighbors == 2
+                    (1, 1) => lvldn.get(2, 3) as usize + lvldn.get(3, 2) as usize,
+                    (5, 1) => lvldn.get(4, 3) as usize + lvldn.get(3, 2) as usize,
+                    (5, 5) => lvldn.get(4, 3) as usize + lvldn.get(3, 4) as usize,
+                    (1, 5) => lvldn.get(2, 3) as usize + lvldn.get(3, 4) as usize,
+
+                    (1, _) => lvldn.get(2, 3) as usize,
+                    (5, _) => lvldn.get(4, 3) as usize,
+                    (_, 1) => lvldn.get(3, 2) as usize,
+                    (_, 5) => lvldn.get(3, 4) as usize,
+
+                    _ => 0,
                 };
+                let neighbors = basic_neighbors as usize + level_neighbors;
+
+                next_state.get_mut(level).set(
+                    x,
+                    y,
+                    if state.get(level).get(x, y) {
+                        neighbors == 1
+                    } else {
+                        neighbors == 1 || neighbors == 2
+                    },
+                );
             }
         }
     }
     (next_state, state)
 }
 
-fn solve_a(initial_state: Vec<Vec<bool>>) -> u128 {
+fn solve_a(initial_state: State) -> u128 {
     let mut state = initial_state.clone();
     let mut tmp = initial_state;
     let mut seen: HashSet<u128> = HashSet::new();
@@ -190,7 +252,7 @@ fn solve_a(initial_state: Vec<Vec<bool>>) -> u128 {
     }
 }
 
-fn solve_b(initial_state: Vec<Vec<bool>>) -> usize {
+fn solve_b(initial_state: State) -> u32 {
     let mut state = LevelsState::new(initial_state);
     let mut tmp = state.clone();
 
@@ -203,10 +265,8 @@ fn solve_b(initial_state: Vec<Vec<bool>>) -> usize {
     state
         .levels
         .iter()
-        .flat_map(|grid| grid.iter())
-        .flat_map(|row| row.iter())
-        .filter(|v| **v)
-        .count()
+        .map(|level| level.value.count_ones())
+        .sum()
 }
 
 pub fn solve(lines: &[String]) -> Solution {
