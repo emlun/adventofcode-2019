@@ -1,4 +1,5 @@
 use crate::common::Solution;
+use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -14,51 +15,51 @@ fn adjacent(pos: Point) -> Vec<Point> {
     ]
 }
 
-fn steps_from(world: &World, loc: &Loc, levels: bool) -> Vec<Loc> {
-    adjacent(loc.pos)
-        .into_iter()
-        .flat_map(|next_pos| match world.tiles.get(&next_pos) {
-            None => None,
-            Some(Tile::Wall) => None,
-            Some(Tile::Floor) => Some(Loc {
-                pos: next_pos,
-                level: loc.level,
-            }),
-            Some(Tile::Warp(_)) => {
-                if loc.pos == world.start {
-                    None
-                } else if loc.pos == world.goal {
-                    if loc.level == 0 {
-                        Some(Loc {
-                            pos: next_pos,
+fn steps_from(world: &World, nav: &mut Navigation, loc: &Loc, levels: bool) -> Vec<(Loc, usize)> {
+    nav.available_moves(loc.pos)
+        .iter()
+        .flat_map(|route| {
+            if route.to == world.start {
+                None
+            } else if route.to == world.goal {
+                if loc.level == 0 {
+                    Some((
+                        Loc {
+                            pos: route.to,
                             level: loc.level,
-                        })
-                    } else {
-                        None
-                    }
+                        },
+                        route.len,
+                    ))
                 } else {
-                    let next_level = if levels {
-                        let is_outer_warp = next_pos.0 == (world.outer_warp_ring.0).0
-                            || next_pos.0 == (world.outer_warp_ring.1).0
-                            || next_pos.1 == (world.outer_warp_ring.0).1
-                            || next_pos.1 == (world.outer_warp_ring.1).1;
-                        if is_outer_warp {
-                            if loc.level == 0 {
-                                None
-                            } else {
-                                Some(loc.level - 1)
-                            }
+                    None
+                }
+            } else {
+                let next_level = if levels {
+                    let is_outer_warp = route.to.0 == (world.outer_warp_ring.0).0
+                        || route.to.0 == (world.outer_warp_ring.1).0
+                        || route.to.1 == (world.outer_warp_ring.0).1
+                        || route.to.1 == (world.outer_warp_ring.1).1;
+                    if is_outer_warp {
+                        if loc.level == 0 {
+                            None
                         } else {
-                            Some(loc.level + 1)
+                            Some(loc.level - 1)
                         }
                     } else {
-                        Some(loc.level)
-                    };
-                    next_level.map(|next_level| Loc {
-                        pos: world.warps.get(&next_pos).unwrap().to,
-                        level: next_level,
-                    })
-                }
+                        Some(loc.level + 1)
+                    }
+                } else {
+                    Some(loc.level)
+                };
+                next_level.map(|next_level| {
+                    (
+                        Loc {
+                            pos: world.warps.get(&route.to).unwrap().to,
+                            level: next_level,
+                        },
+                        route.len,
+                    )
+                })
             }
         })
         .collect()
@@ -77,9 +78,22 @@ enum Tile {
     Warp(String),
 }
 
+#[derive(Eq, PartialEq)]
 struct State {
     pub loc: Loc,
     pub len: usize,
+}
+
+impl Ord for State {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.len.cmp(&self.len)
+    }
+}
+
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 struct World {
@@ -140,18 +154,17 @@ impl World {
         let mut warp_names: HashMap<String, Vec<Point>> = HashMap::new();
         for (pos, tile) in tiles.iter() {
             if let Tile::Warp(_) = tile {
-                if adjacent(*pos)
-                    .into_iter()
-                    .any(|p| tiles.get(&p) == Some(&Tile::Floor))
-                {
-                    let name_start = find_start_of_warp_name(&tiles, *pos);
-                    let name = read_warp_name(&tiles, name_start);
-                    warp_names.entry(name).or_insert_with(Vec::new).push(*pos);
+                let warp_pos = walk_to_edge(&tiles, *pos, None).unwrap();
+                let name_start = find_start_of_warp_name(&tiles, *pos);
+                let name = read_warp_name(&tiles, name_start);
+                let points = warp_names.entry(name).or_insert_with(Vec::new);
+                if !points.contains(&warp_pos) {
+                    points.push(warp_pos);
                 }
             }
         }
 
-        fn walk_to_floor(
+        fn walk_to_edge(
             tiles: &HashMap<Point, Tile>,
             pos: Point,
             prev_pos: Option<&Point>,
@@ -159,9 +172,9 @@ impl World {
             for next_pos in adjacent(pos) {
                 if Some(&next_pos) != prev_pos {
                     match tiles.get(&next_pos) {
-                        Some(Tile::Floor) => return Some(next_pos),
+                        Some(Tile::Floor) => return Some(pos),
                         Some(Tile::Warp(_)) => {
-                            let r = walk_to_floor(tiles, next_pos, Some(&pos));
+                            let r = walk_to_edge(tiles, next_pos, Some(&pos));
                             if r.is_some() {
                                 return r;
                             }
@@ -173,8 +186,16 @@ impl World {
             None
         }
 
-        let start = walk_to_floor(&tiles, warp_names.get("AA").unwrap()[0], None).unwrap();
-        let goal = walk_to_floor(&tiles, warp_names.get("ZZ").unwrap()[0], None).unwrap();
+        fn walk_to_floor(tiles: &HashMap<Point, Tile>, pos: Point) -> Option<Point> {
+            walk_to_edge(tiles, pos, None).and_then(|edge| {
+                adjacent(edge)
+                    .into_iter()
+                    .find(|p| tiles.get(p) == Some(&Tile::Floor))
+            })
+        }
+
+        let start = walk_to_edge(&tiles, warp_names.get("AA").unwrap()[0], None).unwrap();
+        let goal = walk_to_edge(&tiles, warp_names.get("ZZ").unwrap()[0], None).unwrap();
 
         let warps = warp_names
             .into_iter()
@@ -184,14 +205,14 @@ impl World {
                     points[0],
                     Warp {
                         name: name.clone(),
-                        to: walk_to_floor(&tiles, points[1], None).unwrap(),
+                        to: walk_to_floor(&tiles, points[1]).unwrap(),
                     },
                 );
                 warps.insert(
                     points[1],
                     Warp {
                         name,
-                        to: walk_to_floor(&tiles, points[0], None).unwrap(),
+                        to: walk_to_floor(&tiles, points[0]).unwrap(),
                     },
                 );
                 warps
@@ -212,10 +233,63 @@ impl World {
     }
 }
 
-fn bfs(world: &World, levels: bool) -> usize {
-    let mut queue: VecDeque<State> = VecDeque::new();
+struct Navigation<'world> {
+    world: &'world World,
+    moves: HashMap<Point, Vec<Route>>,
+}
 
-    queue.push_back(State {
+#[derive(Clone, Debug)]
+struct Route {
+    to: Point,
+    len: usize,
+}
+
+impl<'world> Navigation<'world> {
+    fn available_moves(&mut self, from: Point) -> &Vec<Route> {
+        if self.moves.get(&from).is_none() {
+            let mut moves: Vec<Route> = Vec::new();
+            let mut visited: HashSet<Point> = HashSet::new();
+            let mut queue: VecDeque<Route> = VecDeque::new();
+            queue.push_back(Route { to: from, len: 0 });
+
+            while let Some(route) = queue.pop_front() {
+                for next_pos in adjacent(route.to) {
+                    if !visited.contains(&next_pos) {
+                        let next_len = route.len + 1;
+                        let next = Route {
+                            to: next_pos,
+                            len: next_len,
+                        };
+                        visited.insert(next_pos);
+
+                        match self.world.tiles.get(&next_pos) {
+                            Some(Tile::Floor) => {
+                                queue.push_back(next);
+                            }
+
+                            Some(Tile::Warp(_)) => {
+                                if route.to != self.world.start && route.to != from {
+                                    moves.push(next.clone());
+                                }
+                            }
+
+                            Some(Tile::Wall) | None => {}
+                        }
+                    }
+                }
+            }
+
+            self.moves.insert(from, moves);
+        }
+
+        self.moves.get(&from).unwrap()
+    }
+}
+
+fn dijkstra(world: &World, levels: bool) -> usize {
+    let mut queue: BinaryHeap<State> = BinaryHeap::new();
+
+    queue.push(State {
         loc: Loc {
             pos: world.start,
             level: 0,
@@ -224,19 +298,23 @@ fn bfs(world: &World, levels: bool) -> usize {
     });
 
     let mut visited = HashSet::new();
+    let mut nav = Navigation {
+        world: &world,
+        moves: HashMap::new(),
+    };
 
-    while let Some(state) = queue.pop_front() {
+    while let Some(state) = queue.pop() {
         if state.loc.pos == world.goal && state.loc.level == 0 {
             return state.len;
         } else {
             visited.insert(state.loc);
-            for next_loc in steps_from(world, &state.loc, levels) {
+            for (next_loc, next_len) in steps_from(world, &mut nav, &state.loc, levels) {
                 if !visited.contains(&next_loc) {
                     let next_state = State {
                         loc: next_loc,
-                        len: state.len + 1,
+                        len: state.len + next_len,
                     };
-                    queue.push_back(next_state);
+                    queue.push(next_state);
                 }
             }
         }
@@ -246,11 +324,11 @@ fn bfs(world: &World, levels: bool) -> usize {
 }
 
 fn solve_a(world: &World) -> usize {
-    bfs(world, false)
+    dijkstra(world, false) - 2
 }
 
 fn solve_b(world: &World) -> usize {
-    bfs(world, true)
+    dijkstra(world, true) - 2
 }
 
 pub fn solve(lines: &[String]) -> Solution {
