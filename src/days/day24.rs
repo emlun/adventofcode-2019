@@ -65,11 +65,18 @@ type State = BoolMatrix;
 struct BoolMatrix {
     dim: usize,
     value: u64,
+    neighbor_mask: u64,
 }
 
 impl BoolMatrix {
     fn new(dim: usize) -> Self {
-        Self { dim, value: 0 }
+        let neighbor_mask = 2 | (1 << dim) | (4 << dim) | (2 << (2 * dim));
+        println!("{:b}", neighbor_mask);
+        Self {
+            dim,
+            value: 0,
+            neighbor_mask,
+        }
     }
 
     fn get(&self, x: usize, y: usize) -> bool {
@@ -79,12 +86,7 @@ impl BoolMatrix {
     fn count_neighbors(&self, x: usize, y: usize) -> u32 {
         debug_assert!(x > 0);
         debug_assert!(y > 0);
-        let mask_center: u64 = 1 << self.coords_to_index(x, y);
-        let mask: u64 = (mask_center << 1)
-            | (mask_center >> 1)
-            | (mask_center << self.dim)
-            | (mask_center >> self.dim);
-        (self.value & mask).count_ones()
+        ((self.value >> self.coords_to_index(x - 1, y - 1)) & self.neighbor_mask).count_ones()
     }
 
     fn set(&mut self, x: usize, y: usize, value: bool) {
@@ -111,10 +113,9 @@ struct BoolMatrixBuilder {
 
 impl BoolMatrixBuilder {
     fn dim(self, dim: usize) -> BoolMatrix {
-        BoolMatrix {
-            dim,
-            value: self.value,
-        }
+        let mut m = BoolMatrix::new(dim);
+        m.value = self.value;
+        m
     }
 }
 
