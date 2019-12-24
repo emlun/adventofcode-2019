@@ -73,8 +73,7 @@ impl BoolMatrix {
     }
 
     fn get(&self, x: usize, y: usize) -> bool {
-        let mask = 1 << self.coords_to_index(x, y);
-        self.value & mask != 0
+        (self.value >> self.coords_to_index(x, y)) & 1 != 0
     }
 
     fn count_neighbors(&self, x: usize, y: usize) -> u32 {
