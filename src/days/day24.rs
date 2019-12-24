@@ -53,15 +53,7 @@ fn update(state: State, mut next_state: State) -> (State, State) {
     for y in 1..=5 {
         for x in 1..=5 {
             let neighbors = state.count_neighbors(x, y);
-            next_state.set(
-                x,
-                y,
-                if state.get(x, y) {
-                    neighbors == 1
-                } else {
-                    neighbors == 1 || neighbors == 2
-                },
-            );
+            next_state.set(x, y, neighbors == 1 || (neighbors == 2 && !state.get(x, y)));
         }
     }
     (next_state, state)
@@ -224,11 +216,7 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
                 next_state.get_mut(level).set(
                     x,
                     y,
-                    if state.get(level).get(x, y) {
-                        neighbors == 1
-                    } else {
-                        neighbors == 1 || neighbors == 2
-                    },
+                    neighbors == 1 || (neighbors == 2 && !state.get(level).get(x, y)),
                 );
             }
         }
