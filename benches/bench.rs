@@ -128,25 +128,25 @@ fn day23(b: &mut Bencher) {
     run_bench(23, b);
 }
 
-// #[bench]
-// fn days_all(b: &mut Bencher) {
-//     let solvers_and_inputs: Vec<(fn(&[String]) -> Solution, Vec<String>)> = days::all_numbers()
-//         .into_iter()
-//         .map(|day| {
-//             (
-//                 days::get_solver(day).unwrap(),
-//                 get_file_lines(&day_input_filename(day)).unwrap(),
-//             )
-//         })
-//         .collect();
-//
-//     b.iter(|| {
-//         solvers_and_inputs
-//             .iter()
-//             .map(|(solver, input)| solver(&input))
-//             .collect::<Vec<Solution>>()
-//     })
-// }
+#[bench]
+fn days_all(b: &mut Bencher) {
+    let solvers_and_inputs: Vec<(fn(&[String]) -> Solution, Vec<String>)> = days::all_numbers()
+        .into_iter()
+        .map(|day| {
+            (
+                days::get_solver(day).unwrap(),
+                get_file_lines(&day_input_filename(day)).unwrap(),
+            )
+        })
+        .collect();
+
+    b.iter(|| {
+        solvers_and_inputs
+            .iter()
+            .map(|(solver, input)| solver(&input))
+            .collect::<Vec<Solution>>()
+    })
+}
 
 mod intcode {
     use super::*;
