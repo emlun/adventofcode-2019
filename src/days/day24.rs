@@ -123,10 +123,10 @@ impl LevelsState {
 }
 
 fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, LevelsState) {
-    let maxi = 5;
+    const MAXI: usize = 5;
     for level in (state.min_level - 1)..=(state.max_level + 1) {
-        for y in 1..=maxi {
-            for x in 1..=maxi {
+        for y in 1..=MAXI {
+            for x in 1..=MAXI {
                 if x == 3 && y == 3 {
                     continue;
                 }
