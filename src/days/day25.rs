@@ -3,6 +3,8 @@ use crate::intcode::IntcodeComputer;
 use std::collections::BTreeSet;
 use std::collections::HashSet;
 use std::collections::VecDeque;
+use std::convert::TryFrom;
+use std::io::Read;
 
 type Point = (i16, i16);
 
@@ -103,17 +105,36 @@ fn next_commands(state: &State) -> (Vec<String>, Vec<String>) {
     (directions, items)
 }
 
+fn cheat(computer: IntcodeComputer) {
+    println!(
+        "{}",
+        computer
+            .prog
+            .iter()
+            .flat_map(|i| char::try_from(*i as u8).into_iter())
+            .collect::<String>()
+    )
+}
+
 fn solve_a(computer: IntcodeComputer) -> String {
     let mut computers = VecDeque::new();
     let mut visited: HashSet<(Point, BTreeSet<String>)> = HashSet::new();
     computers.push_back((computer, State::new()));
+
+    fn is_visited(visited: &HashSet<(Point, BTreeSet<String>)>, state: &State) -> bool {
+        const SECURITY_POS: Point = (1, 3);
+        const PRESSURE_POS: Point = (0, 3);
+        visited.iter().any(|(pos, items)| {
+            *pos == state.pos
+                && !(*pos == SECURITY_POS || *pos == PRESSURE_POS)
+                && items.is_superset(&state.items)
+        })
+    }
+
     while let Some((computer, state)) = computers.pop_front() {
         println!("state: {:?} {:?}", state.pos, state.items);
-        println!(
-            "visited contains: {:?}",
-            visited.contains(&(state.pos, state.items.clone()))
-        );
-        if visited.contains(&(state.pos, state.items.clone())) {
+        println!("visited contains: {:?}", is_visited(&visited, &state));
+        if is_visited(&visited, &state) {
             continue;
         }
         visited.insert((state.pos, state.items.clone()));
@@ -167,7 +188,7 @@ fn solve_a(computer: IntcodeComputer) -> String {
         println!("{}", finish.output.iter().collect::<String>());
         println!("{:?} {:?}", moves, items);
 
-        if moves[0] == "eject" {
+        if !moves.is_empty() && moves[0] == "eject" {
             println!("Tried items: {:?}", finish.items);
             let mut new_state = finish.clone();
             new_state.pos = match moves[1].as_str() {
@@ -187,7 +208,7 @@ fn solve_a(computer: IntcodeComputer) -> String {
                     .commands
                     .push_back(drop_state.command_history.last().unwrap().clone());
 
-                if !visited.contains(&(drop_state.pos, drop_state.items.clone())) {
+                if !is_visited(&visited, &drop_state) {
                     computers.push_back((computer.clone(), drop_state));
                 }
             }
@@ -206,7 +227,7 @@ fn solve_a(computer: IntcodeComputer) -> String {
                     new_state.commands.push_back(format!("take {}", item));
                     new_state.commands.push_back(move_command.clone());
                     new_state.items.insert(item.clone());
-                    if !visited.contains(&(new_state.pos, new_state.items.clone())) {
+                    if !is_visited(&visited, &new_state) {
                         computers.push_back((computer.clone(), new_state));
                     }
                 }
@@ -223,7 +244,7 @@ fn solve_a(computer: IntcodeComputer) -> String {
                     _ => finish.pos,
                 };
                 new_state.commands.push_back(move_command.clone());
-                if !visited.contains(&(new_state.pos, new_state.items.clone())) {
+                if !is_visited(&visited, &new_state) {
                     computers.push_back((computer.clone(), new_state));
                 }
             }
@@ -233,10 +254,45 @@ fn solve_a(computer: IntcodeComputer) -> String {
     "".to_string()
 }
 
+fn interact(computer: IntcodeComputer) -> String {
+    computer.run_with_halt_expect(
+        None,
+        VecDeque::new(),
+        |output, expects_input, mut input_queue| {
+            if let Some(o) = output {
+                print!("{}", o as u8 as char);
+            }
+
+            if expects_input {
+                if input_queue.is_empty() {
+                    let mut buf = [0; 100];
+                    let mut len = 0;
+                    while len == 0 || (buf[len - 1] as char) != '\n' {
+                        let n = std::io::stdin().read(&mut buf[len..]).unwrap();
+                        len += n;
+                    }
+                    for b in buf[0..len].iter() {
+                        input_queue.push_back(*b as i64);
+                    }
+                }
+                (input_queue.pop_front(), input_queue, false)
+            } else {
+                (None, input_queue, false)
+            }
+        },
+    );
+
+    "".to_string()
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let computer: IntcodeComputer = lines.into();
-    let a_solution = solve_a(computer);
+    // cheat(computer);
+    interact(computer);
+    // let a_solution = solve_a(computer);
+    // let a_solution = solve_a(computer);
     // let b_solution = solve_b(&computer);
+    let a_solution = "".to_string();
     let b_solution = "";
     (a_solution, b_solution.to_string())
 }

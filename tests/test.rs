@@ -164,5 +164,5 @@ fn day24() -> Result<(), std::io::Error> {
 
 #[test]
 fn day25() -> Result<(), std::io::Error> {
-    test_day(25, "", "")
+    test_day(25, "35332", "-")
 }
