@@ -71,7 +71,6 @@ struct BoolMatrix {
 impl BoolMatrix {
     fn new(dim: usize) -> Self {
         let neighbor_mask = 2 | (1 << dim) | (4 << dim) | (2 << (2 * dim));
-        println!("{:b}", neighbor_mask);
         Self {
             dim,
             value: 0,
