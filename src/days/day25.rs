@@ -2,7 +2,7 @@ use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
 use std::collections::VecDeque;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct State {
     state: u8,
     command_history: Vec<String>,
@@ -24,7 +24,7 @@ impl State {
     }
 }
 
-fn next_commands(state: &State) -> Vec<String> {
+fn next_commands(state: &State) -> (Vec<String>, Vec<String>) {
     let output: String = state.output.iter().collect();
     let mut words: VecDeque<&str> = output.split_whitespace().collect();
 
@@ -62,14 +62,12 @@ fn next_commands(state: &State) -> Vec<String> {
         }
     }
 
-    let mut commands: Vec<String> = Vec::new();
-    for dir in directions {
-        commands.push(dir);
-    }
-    for item in items {
-        commands.push(format!("take {}", item));
-    }
-    commands
+    let move_commands: Vec<String> = directions;
+    let mut item_commands: Vec<String> = items
+        .into_iter()
+        .map(|item| format!("take {}", item))
+        .collect();
+    (move_commands, item_commands)
 }
 
 fn solve_a(mut computer: IntcodeComputer) -> String {
@@ -110,17 +108,34 @@ fn solve_a(mut computer: IntcodeComputer) -> String {
                 }
             });
 
-        let commands = next_commands(&finish);
+        let (moves, items) = next_commands(&finish);
         println!("{}", finish.output.iter().collect::<String>());
-        println!("{:?}", commands);
+        println!("{:?} {:?}", moves, items);
 
-        for command in commands {
-            let mut new_state = State::new();
-            new_state.input = command.chars().collect();
-            new_state.input.push_back('\n');
-            new_state.command_history = finish.command_history.clone();
-            new_state.command_history.push(command);
-            computers.push_back((computer.clone(), new_state));
+        for item_command in items.iter() {
+            let mut take_state = State::new();
+            take_state.command_history = finish.command_history.clone();
+            take_state.command_history.push(item_command.clone());
+
+            for move_command in moves.iter() {
+                let mut move_state = take_state.clone();
+                move_state.input = format!("{}\n{}\n", item_command, move_command)
+                    .chars()
+                    .collect();
+                move_state.command_history.push(move_command.clone());
+                computers.push_back((computer.clone(), move_state));
+            }
+
+            computers.push_back((computer.clone(), take_state));
+        }
+
+        for move_command in moves {
+            let mut move_state = State::new();
+            move_state.command_history = finish.command_history.clone();
+            move_state.input = move_command.chars().collect();
+            move_state.command_history.push(move_command);
+            move_state.input.push_back('\n');
+            computers.push_back((computer.clone(), move_state));
         }
     }
 
