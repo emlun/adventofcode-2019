@@ -157,6 +157,27 @@ impl IntcodeComputer {
         outputs
     }
 
+    pub fn run_until_more_input_required<I>(mut self, input: I) -> (Self, Vec<Word>)
+    where
+        I: IntoIterator<Item = Word>,
+    {
+        let mut outputs = Vec::new();
+        let mut inputs = input.into_iter();
+        let mut next_input = inputs.next();
+        while self.is_running() {
+            if next_input.is_none() {
+                next_input = inputs.next();
+            }
+            if self.expects_input() && next_input.is_none() {
+                break;
+            }
+            if let Some(o) = self.step(&mut next_input) {
+                outputs.push(o);
+            };
+        }
+        (self, outputs)
+    }
+
     pub fn run_with<State, F>(
         mut self,
         initial_input: Option<Word>,

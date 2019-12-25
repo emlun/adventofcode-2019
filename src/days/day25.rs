@@ -3,55 +3,190 @@ use crate::intcode::IntcodeComputer;
 use std::collections::BTreeSet;
 use std::collections::HashSet;
 use std::collections::VecDeque;
-use std::convert::TryFrom;
 use std::io::Read;
 
-type Point = (i16, i16);
+type Point = (i8, i8);
+type Direction = (i8, i8);
 
 #[derive(Clone, Debug)]
 struct State {
-    pos: Point,
-    items: BTreeSet<String>,
     state: u8,
-    command_history: Vec<String>,
-    commands: VecDeque<String>,
-    input: VecDeque<char>,
-    output: Vec<char>,
+    pos: Vec<Point>,
+    unexplored_pos: Vec<Vec<Point>>,
+    items: BTreeSet<String>,
+    path_to_security: Vec<Direction>,
+    security_pos: Option<Point>,
+    next_commands: VecDeque<String>,
 }
 
 impl State {
-    const WAITING: u8 = 0;
-    const WRITING: u8 = 1;
+    const COLLECT: u8 = 0;
+    const NAVIGATE: u8 = 1;
+    const UNLOCK: u8 = 2;
+    const DONE: u8 = 3;
 
     fn new() -> Self {
         Self {
-            pos: (0, 0),
+            state: Self::COLLECT,
+            pos: vec![(0, 0)],
+            unexplored_pos: Vec::new(),
             items: BTreeSet::new(),
-            state: 0,
-            command_history: Vec::new(),
-            commands: VecDeque::new(),
-            input: VecDeque::new(),
-            output: Vec::new(),
+            path_to_security: Vec::new(),
+            security_pos: None,
+            next_commands: VecDeque::new(),
         }
+    }
+
+    fn current_pos(&self) -> Point {
+        self.pos[self.pos.len() - 1]
+    }
+
+    fn backtrack_dir(&self) -> Direction {
+        let pos = self.current_pos();
+        let prev = self.pos[self.pos.len() - 2];
+        (prev.0 - pos.0, prev.1 - pos.1)
+    }
+
+    fn backtrack_move(&self) -> &'static str {
+        dir_to_move(self.backtrack_dir())
+    }
+
+    fn backtrack(mut self) -> Self {
+        self.unexplored_pos.pop();
+        self.next_commands
+            .push_back(self.backtrack_move().to_string());
+        let prev_pos = self.current_pos();
+        self.pos.pop();
+
+        if self.security_pos.is_some() {
+            let pos = self.current_pos();
+
+            if !self.path_to_security.is_empty()
+                && self.path_to_security[self.path_to_security.len() - 1] == pos
+            {
+                self.path_to_security.pop();
+            } else {
+                self.path_to_security.push(prev_pos);
+            }
+        }
+        self
+    }
+
+    fn take(mut self, item: String) -> Self {
+        self.next_commands.push_back(format!("take {}", item));
+        self.items.insert(item);
+        self
+    }
+
+    fn explore(mut self, doors: Vec<String>) -> Self {
+        if self.unexplored_pos.iter().all(|poss| poss.is_empty()) {
+            self.state = Self::NAVIGATE;
+            self.navigate()
+        } else {
+            let unlen = self.unexplored_pos.len() - 1;
+            while let Some(unexplored) = self.unexplored_pos[unlen].pop() {
+                if self.pos.len() > 1 && unexplored == self.pos[self.pos.len() - 2] {
+                    continue;
+                }
+
+                let pos = self.current_pos();
+                let move_dir = (unexplored.0 - pos.0, unexplored.1 - pos.1);
+                let move_command = dir_to_move(move_dir).to_string();
+                if doors.contains(&move_command) {
+                    if self.security_pos.is_some() {
+                        self.path_to_security.push(pos);
+                    }
+
+                    self.next_commands.push_back(move_command);
+                    self.pos.push(unexplored);
+
+                    let mut next_unexplored = Vec::new();
+                    for next_dpos in &[(0, 1), (1, 0), (0, -1), (-1, 0)] {
+                        let next = (unexplored.0 + next_dpos.0, unexplored.1 + next_dpos.1);
+                        next_unexplored.push(next);
+                    }
+                    self.unexplored_pos.push(next_unexplored);
+
+                    return self;
+                }
+            }
+            self.backtrack()
+        }
+    }
+
+    fn navigate(mut self) -> Self {
+        println!("Security pos: {:?}", self.security_pos);
+        println!("Path to security: {:?}", self.path_to_security);
+        while let Some(step) = self.path_to_security.pop() {
+            let pos = self.current_pos();
+            println!("pos: {:?}", self.pos);
+
+            if self.pos.len() > 2 && self.pos[self.pos.len() - 2] == step {
+                self.pos.pop();
+            } else {
+                self.pos.push(step);
+            }
+            let dir = (step.0 - pos.0, step.1 - pos.1);
+            println!("dir: {:?}", dir);
+            let move_command = dir_to_move(dir);
+            println!("cmd: {}", move_command);
+            self.next_commands.push_back(move_command.to_string());
+            println!("cmds: {:?}", self.next_commands);
+        }
+        self.state = Self::UNLOCK;
+        self
+    }
+
+    fn unlock(self) -> Self {
+        unimplemented!();
     }
 }
 
-fn next_commands(state: &State) -> (Vec<String>, Vec<String>) {
-    let output: String = state.output.iter().collect();
+fn dir_to_move(dir: Direction) -> &'static str {
+    match dir {
+        (0, 1) => "north",
+        (1, 0) => "east",
+        (0, -1) => "south",
+        (-1, 0) => "west",
+        _ => unreachable!(),
+    }
+}
+
+struct Room {
+    name: String,
+    doors: Vec<String>,
+    items: Vec<String>,
+}
+
+fn parse_room(output: String) -> Room {
     let mut words: VecDeque<&str> = output.split_whitespace().collect();
 
-    let mut directions: Vec<String> = Vec::new();
+    let mut name: String = "".to_string();
+    let mut doors: Vec<String> = Vec::new();
     let mut items: Vec<String> = Vec::new();
 
     while !words.is_empty() {
         match words[0] {
+            "==" => {
+                let mut nm = vec![];
+                words.pop_front();
+                while let Some(word) = words.pop_front() {
+                    if word == "==" {
+                        name = nm.join(" ");
+                        break;
+                    } else {
+                        nm.push(word);
+                    }
+                }
+            }
+
             "Doors" => {
                 debug_assert_eq!(words.pop_front(), Some("Doors"));
                 debug_assert_eq!(words.pop_front(), Some("here"));
                 debug_assert_eq!(words.pop_front(), Some("lead:"));
                 while words[0] == "-" {
                     debug_assert_eq!(words.pop_front(), Some("-"));
-                    directions.push(words.pop_front().unwrap().to_string());
+                    doors.push(words.pop_front().unwrap().to_string());
                 }
             }
 
@@ -72,28 +207,10 @@ fn next_commands(state: &State) -> (Vec<String>, Vec<String>) {
                         | "escape pod"
                         | "giant electromagnet" => {}
                         _ => {
-                            // if state.items.len() < 1 || item == "dark matter" || item == "hypercube"
                             items.push(item);
                         }
                     };
                 }
-            }
-
-            "Analyzing..." => {
-                words.pop_front();
-                debug_assert_eq!(words.pop_front(), Some("Doors"));
-                debug_assert_eq!(words.pop_front(), Some("here"));
-                debug_assert_eq!(words.pop_front(), Some("lead:"));
-                debug_assert_eq!(words.pop_front(), Some("-"));
-                directions.push(words.pop_front().unwrap().to_string());
-
-                while words[0] != "==" && words[0] != "Command?" {
-                    if words[0] == "you" && words[1] == "are" && words[2] == "ejected" {
-                        return (vec!["eject".to_string(), directions[0].clone()], Vec::new());
-                    }
-                    words.pop_front();
-                }
-                println!("Made it through!?");
             }
 
             _ => {
@@ -102,159 +219,93 @@ fn next_commands(state: &State) -> (Vec<String>, Vec<String>) {
         }
     }
 
-    (directions, items)
+    Room { name, doors, items }
 }
 
-fn cheat(computer: IntcodeComputer) {
-    println!(
-        "{}",
-        computer
-            .prog
-            .iter()
-            .flat_map(|i| char::try_from(*i as u8).into_iter())
-            .collect::<String>()
-    )
-}
+fn update(mut state: State, output: String) -> State {
+    let room = parse_room(output);
 
-fn solve_a(computer: IntcodeComputer) -> String {
-    let mut computers = VecDeque::new();
-    let mut visited: HashSet<(Point, BTreeSet<String>)> = HashSet::new();
-    computers.push_back((computer, State::new()));
+    state.next_commands.clear();
+    match state.state {
+        State::COLLECT => {
+            if room.name == "Security Checkpoint" {
+                state.security_pos = Some(state.current_pos());
+                state = state.backtrack();
+            } else {
+                for item in room.items {
+                    state = state.take(item);
+                }
 
-    fn is_visited(visited: &HashSet<(Point, BTreeSet<String>)>, state: &State) -> bool {
-        const SECURITY_POS: Point = (1, 3);
-        const PRESSURE_POS: Point = (0, 3);
-        visited.iter().any(|(pos, items)| {
-            *pos == state.pos
-                && !(*pos == SECURITY_POS || *pos == PRESSURE_POS)
-                && items.is_superset(&state.items)
-        })
+                state.explore(room.doors)
+            }
+        }
+
+        State::NAVIGATE => state.navigate(),
+        State::UNLOCK => state.unlock(),
+        _ => unreachable!(),
     }
+}
 
-    while let Some((computer, state)) = computers.pop_front() {
-        println!("state: {:?} {:?}", state.pos, state.items);
-        println!("visited contains: {:?}", is_visited(&visited, &state));
-        if is_visited(&visited, &state) {
-            continue;
+fn move_to_point(pos: Point, move_command: &str) -> Point {
+    let dir = match move_command {
+        "north" => (0, 1),
+        "east" => (1, 0),
+        "south" => (0, -1),
+        "west" => (-1, 0),
+        _ => unreachable!(),
+    };
+    (pos.0 + dir.0, pos.1 + dir.1)
+}
+
+fn initialize(mut state: State, output: String) -> State {
+    let room = parse_room(output);
+    for item in room.items {
+        state = state.take(item);
+    }
+    state.unexplored_pos.push(
+        room.doors
+            .iter()
+            .map(|door| move_to_point((0, 0), door))
+            .collect(),
+    );
+    state.explore(room.doors)
+}
+
+fn solve_a(mut computer: IntcodeComputer) -> String {
+    let mut state = State::new();
+
+    let o = computer.run_until_more_input_required(None);
+    computer = o.0;
+    let first_output: String = o.1.into_iter().map(|i| i as u8 as char).collect();
+    println!("{}", first_output);
+    state = initialize(state, first_output);
+
+    loop {
+        let mut output: String = "".to_string();
+
+        while let Some(cmd) = state.next_commands.pop_front() {
+            println!("pos: {:?}", state.pos);
+            println!("items: {:?}", state.items);
+            println!("unexplored: {:?}", state.unexplored_pos);
+            println!("Command: {}", cmd);
+            let input: Vec<i64> = format!("{}\n", cmd)
+                .chars()
+                .map(|c| c as u8 as i64)
+                .collect();
+            let o = computer.run_until_more_input_required(input);
+            computer = o.0;
+            output = o.1.into_iter().map(|i| i as u8 as char).collect();
+            println!("{}", output);
         }
-        visited.insert((state.pos, state.items.clone()));
-        println!("{}", computers.len());
-        println!(
-            "Resuming computer: {} {:?}",
-            state.command_history.len(),
-            state.command_history
-        );
 
-        let (computer, finish) =
-            computer.run_with_halt_expect(None, state, |output, expects_input, mut state| {
-                state
-                    .output
-                    .append(&mut output.into_iter().map(|c| c as u8 as char).collect());
-
-                if expects_input {
-                    match state.state {
-                        State::WAITING => {
-                            state.state = State::WRITING;
-                            (None, state, false)
-                        }
-
-                        State::WRITING => {
-                            if state.input.is_empty() {
-                                if let Some(command) = state.commands.pop_front() {
-                                    state.input.append(&mut command.chars().collect());
-                                    state.input.push_back('\n');
-                                    state.command_history.push(command);
-                                }
-                            }
-                            let input = state.input.pop_front().map(|i| i as u8 as i64);
-                            if input.is_none() {
-                                (None, state, true)
-                            } else if state.input.is_empty() {
-                                state.state = State::WAITING;
-                                (input, state, false)
-                            } else {
-                                (input, state, false)
-                            }
-                        }
-
-                        _ => unreachable!(),
-                    }
-                } else {
-                    (None, state, false)
-                }
-            });
-
-        let (moves, items) = next_commands(&finish);
-        println!("{}", finish.output.iter().collect::<String>());
-        println!("{:?} {:?}", moves, items);
-
-        if !moves.is_empty() && moves[0] == "eject" {
-            println!("Tried items: {:?}", finish.items);
-            let mut new_state = finish.clone();
-            new_state.pos = match moves[1].as_str() {
-                "north" => (finish.pos.0, finish.pos.1 + 1),
-                "south" => (finish.pos.0, finish.pos.1 - 1),
-                "east" => (finish.pos.0 + 1, finish.pos.1),
-                "west" => (finish.pos.0 - 1, finish.pos.1),
-                _ => unreachable!(),
-            };
-
-            for item in finish.items {
-                let mut drop_state = new_state.clone();
-                drop_state.items.remove(&item);
-                drop_state.commands.push_back("inv".to_string());
-                drop_state.commands.push_back(format!("drop {}", item));
-                drop_state
-                    .commands
-                    .push_back(drop_state.command_history.last().unwrap().clone());
-
-                if !is_visited(&visited, &drop_state) {
-                    computers.push_back((computer.clone(), drop_state));
-                }
-            }
-        } else {
-            for item in items {
-                for move_command in moves.iter() {
-                    let mut new_state = finish.clone();
-                    new_state.output.clear();
-                    new_state.pos = match move_command.as_str() {
-                        "north" => (finish.pos.0, finish.pos.1 + 1),
-                        "south" => (finish.pos.0, finish.pos.1 - 1),
-                        "east" => (finish.pos.0 + 1, finish.pos.1),
-                        "west" => (finish.pos.0 - 1, finish.pos.1),
-                        _ => finish.pos,
-                    };
-                    new_state.commands.push_back(format!("take {}", item));
-                    new_state.commands.push_back(move_command.clone());
-                    new_state.items.insert(item.clone());
-                    if !is_visited(&visited, &new_state) {
-                        computers.push_back((computer.clone(), new_state));
-                    }
-                }
-            }
-
-            for move_command in moves.iter() {
-                let mut new_state = finish.clone();
-                new_state.output.clear();
-                new_state.pos = match move_command.as_str() {
-                    "north" => (finish.pos.0, finish.pos.1 + 1),
-                    "south" => (finish.pos.0, finish.pos.1 - 1),
-                    "east" => (finish.pos.0 + 1, finish.pos.1),
-                    "west" => (finish.pos.0 - 1, finish.pos.1),
-                    _ => finish.pos,
-                };
-                new_state.commands.push_back(move_command.clone());
-                if !is_visited(&visited, &new_state) {
-                    computers.push_back((computer.clone(), new_state));
-                }
-            }
-        }
+        state = update(state, output);
     }
 
     "".to_string()
 }
 
-fn interact(computer: IntcodeComputer) -> String {
+#[allow(dead_code)]
+fn interact(computer: IntcodeComputer) {
     computer.run_with_halt_expect(
         None,
         VecDeque::new(),
@@ -281,18 +332,14 @@ fn interact(computer: IntcodeComputer) -> String {
             }
         },
     );
-
-    "".to_string()
 }
 
 pub fn solve(lines: &[String]) -> Solution {
     let computer: IntcodeComputer = lines.into();
     // cheat(computer);
-    interact(computer);
-    // let a_solution = solve_a(computer);
+    // interact(computer);
+    let a_solution = solve_a(computer);
     // let a_solution = solve_a(computer);
     // let b_solution = solve_b(&computer);
-    let a_solution = "".to_string();
-    let b_solution = "";
-    (a_solution, b_solution.to_string())
+    (a_solution, "-".to_string())
 }
