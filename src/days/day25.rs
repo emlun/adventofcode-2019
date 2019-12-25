@@ -1,9 +1,15 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
+use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::collections::VecDeque;
+
+type Point = (i16, i16);
 
 #[derive(Debug)]
 struct State {
+    pos: Point,
+    items: BTreeSet<String>,
     state: u8,
     command_history: Vec<String>,
     input: VecDeque<char>,
@@ -16,6 +22,8 @@ impl State {
 
     fn new() -> Self {
         Self {
+            pos: (0, 0),
+            items: BTreeSet::new(),
             state: 0,
             command_history: Vec::new(),
             input: VecDeque::new(),
@@ -67,15 +75,17 @@ fn next_commands(state: &State) -> Vec<String> {
         commands.push(dir);
     }
     for item in items {
-        commands.push(format!("take {}", item));
+        // commands.push(format!("take {}", item));
     }
     commands
 }
 
 fn solve_a(mut computer: IntcodeComputer) -> String {
     let mut computers = VecDeque::new();
+    let mut visited: HashSet<(Point, BTreeSet<String>)> = HashSet::new();
     computers.push_back((computer, State::new()));
     while let Some((computer, state)) = computers.pop_front() {
+        visited.insert((state.pos, state.items.clone()));
         println!("Continuing computer: {:?}", state.command_history);
 
         let (computer, finish) =
@@ -118,9 +128,21 @@ fn solve_a(mut computer: IntcodeComputer) -> String {
             let mut new_state = State::new();
             new_state.input = command.chars().collect();
             new_state.input.push_back('\n');
+            new_state.pos = match command.as_str() {
+                "north" => (finish.pos.0, finish.pos.1 + 1),
+                "south" => (finish.pos.0, finish.pos.1 - 1),
+                "east" => (finish.pos.0 + 1, finish.pos.1),
+                "west" => (finish.pos.0 - 1, finish.pos.1),
+                _ => finish.pos,
+            };
+            if &command[0..4] == "take" {
+                new_state.items.insert(command[5..].to_string());
+            }
             new_state.command_history = finish.command_history.clone();
             new_state.command_history.push(command);
-            computers.push_back((computer.clone(), new_state));
+            if !visited.contains(&(new_state.pos, new_state.items.clone())) {
+                computers.push_back((computer.clone(), new_state));
+            }
         }
     }
 
