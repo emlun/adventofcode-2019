@@ -41,7 +41,7 @@ fn print_levels(state: &HashMap<i32, Vec<Vec<bool>>>) {
     }
 }
 
-fn score(state: &State) -> u128 {
+fn score(state: &State) -> u64 {
     (1..=5)
         .flat_map(|y| (1..=5).map(move |x| (x, y)))
         .enumerate()
@@ -224,16 +224,15 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
     (next_state, state)
 }
 
-fn solve_a(initial_state: State) -> u128 {
+fn solve_a(initial_state: State) -> u64 {
     let mut state = initial_state.clone();
     let mut tmp = initial_state;
-    let mut seen: HashSet<u128> = HashSet::new();
+    let mut seen: HashSet<u64> = HashSet::new();
     loop {
-        let sc = score(&state);
-        if seen.contains(&sc) {
-            break sc;
+        if seen.contains(&state.value) {
+            return score(&state);
         }
-        seen.insert(sc);
+        seen.insert(state.value);
         let o = update(state, tmp);
         state = o.0;
         tmp = o.1;
