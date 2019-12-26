@@ -1,7 +1,5 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
-use std::collections::BTreeSet;
-use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::io::Read;
 
@@ -13,10 +11,12 @@ struct State {
     state: u8,
     pos: Vec<Point>,
     unexplored_pos: Vec<Vec<Point>>,
-    items: BTreeSet<String>,
+    items: Vec<String>,
     path_to_security: Vec<Direction>,
     security_pos: Option<Point>,
     next_commands: VecDeque<String>,
+    unlock_attempt: u32,
+    solution: Option<String>,
 }
 
 impl State {
@@ -30,10 +30,12 @@ impl State {
             state: Self::COLLECT,
             pos: vec![(0, 0)],
             unexplored_pos: Vec::new(),
-            items: BTreeSet::new(),
+            items: Vec::new(),
             path_to_security: Vec::new(),
             security_pos: None,
             next_commands: VecDeque::new(),
+            unlock_attempt: 0,
+            solution: None,
         }
     }
 
@@ -74,7 +76,7 @@ impl State {
 
     fn take(mut self, item: String) -> Self {
         self.next_commands.push_back(format!("take {}", item));
-        self.items.insert(item);
+        self.items.push(item);
         self
     }
 
@@ -133,12 +135,48 @@ impl State {
             self.next_commands.push_back(move_command.to_string());
             println!("cmds: {:?}", self.next_commands);
         }
+        self.unlock_attempt = 1 << self.items.len() - 1;
         self.state = Self::UNLOCK;
         self
     }
 
-    fn unlock(self) -> Self {
-        unimplemented!();
+    fn unlock(mut self, room: Room) -> Self {
+        println!("Room solution: {:?}", room.solution);
+        if let Some(solution) = room.solution {
+            self.solution = Some(solution);
+            self.state = Self::DONE;
+        } else {
+            let next_attempt = if self.unlock_attempt == (1 << self.items.len()) - 1 {
+                self.unlock_attempt
+            } else {
+                self.unlock_attempt - 1
+            };
+
+            println!("Attempt: {:b}", self.unlock_attempt);
+            println!("Next:    {:b}", next_attempt);
+
+            let pos = self.current_pos();
+            let prev_pos = self.pos[self.pos.len() - 2];
+            let move_command = room
+                .doors
+                .into_iter()
+                .find(|door| move_to_point(pos, door) != prev_pos)
+                .unwrap();
+
+            for i in 0..self.items.len() {
+                let mask = 1 << i;
+                if self.unlock_attempt & mask > 0 && next_attempt & mask == 0 {
+                    self.next_commands
+                        .push_back(format!("drop {}", self.items[i]));
+                } else if self.unlock_attempt & mask == 0 && next_attempt & mask > 0 {
+                    self.next_commands
+                        .push_back(format!("take {}", self.items[i]));
+                }
+            }
+            self.unlock_attempt -= 1;
+            self.next_commands.push_back(move_command);
+        }
+        self
     }
 }
 
@@ -156,6 +194,7 @@ struct Room {
     name: String,
     doors: Vec<String>,
     items: Vec<String>,
+    solution: Option<String>,
 }
 
 fn parse_room(output: String) -> Room {
@@ -164,6 +203,7 @@ fn parse_room(output: String) -> Room {
     let mut name: String = "".to_string();
     let mut doors: Vec<String> = Vec::new();
     let mut items: Vec<String> = Vec::new();
+    let mut solution = None;
 
     while !words.is_empty() {
         match words[0] {
@@ -184,6 +224,7 @@ fn parse_room(output: String) -> Room {
                 debug_assert_eq!(words.pop_front(), Some("Doors"));
                 debug_assert_eq!(words.pop_front(), Some("here"));
                 debug_assert_eq!(words.pop_front(), Some("lead:"));
+                doors.clear();
                 while words[0] == "-" {
                     debug_assert_eq!(words.pop_front(), Some("-"));
                     doors.push(words.pop_front().unwrap().to_string());
@@ -213,24 +254,43 @@ fn parse_room(output: String) -> Room {
                 }
             }
 
+            "\"Analysis" => {
+                words.pop_front();
+                assert_eq!(words.pop_front(), Some("complete!"));
+                assert_eq!(words.pop_front(), Some("You"));
+                assert_eq!(words.pop_front(), Some("may"));
+                assert_eq!(words.pop_front(), Some("proceed.\""));
+                println!("COMPLETE!");
+                while let Some(word) = words.pop_front() {
+                    if word == "typing" {
+                        solution = words.pop_front().map(|s| s.to_string());
+                        break;
+                    }
+                }
+            }
+
             _ => {
                 words.pop_front();
             }
         }
     }
 
-    Room { name, doors, items }
+    Room {
+        name,
+        doors,
+        items,
+        solution,
+    }
 }
 
 fn update(mut state: State, output: String) -> State {
-    let room = parse_room(output);
-
     state.next_commands.clear();
     match state.state {
         State::COLLECT => {
+            let room = parse_room(output);
             if room.name == "Security Checkpoint" {
                 state.security_pos = Some(state.current_pos());
-                state = state.backtrack();
+                state.backtrack()
             } else {
                 for item in room.items {
                     state = state.take(item);
@@ -241,7 +301,8 @@ fn update(mut state: State, output: String) -> State {
         }
 
         State::NAVIGATE => state.navigate(),
-        State::UNLOCK => state.unlock(),
+        State::UNLOCK => state.unlock(parse_room(output)),
+        State::DONE => state,
         _ => unreachable!(),
     }
 }
@@ -299,9 +360,11 @@ fn solve_a(mut computer: IntcodeComputer) -> String {
         }
 
         state = update(state, output);
-    }
 
-    "".to_string()
+        if state.solution.is_some() {
+            return state.solution.unwrap();
+        }
+    }
 }
 
 #[allow(dead_code)]
