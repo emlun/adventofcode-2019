@@ -117,23 +117,16 @@ impl State {
     }
 
     fn navigate(mut self) -> Self {
-        println!("Security pos: {:?}", self.security_pos);
-        println!("Path to security: {:?}", self.path_to_security);
         while let Some(step) = self.path_to_security.pop() {
             let pos = self.current_pos();
-            println!("pos: {:?}", self.pos);
-
             if self.pos.len() > 2 && self.pos[self.pos.len() - 2] == step {
                 self.pos.pop();
             } else {
                 self.pos.push(step);
             }
             let dir = (step.0 - pos.0, step.1 - pos.1);
-            println!("dir: {:?}", dir);
             let move_command = dir_to_move(dir);
-            println!("cmd: {}", move_command);
             self.next_commands.push_back(move_command.to_string());
-            println!("cmds: {:?}", self.next_commands);
         }
         self.unlock_attempt = 1 << self.items.len() - 1;
         self.state = Self::UNLOCK;
@@ -141,7 +134,6 @@ impl State {
     }
 
     fn unlock(mut self, room: Room) -> Self {
-        println!("Room solution: {:?}", room.solution);
         if let Some(solution) = room.solution {
             self.solution = Some(solution);
             self.state = Self::DONE;
@@ -151,9 +143,6 @@ impl State {
             } else {
                 self.unlock_attempt - 1
             };
-
-            println!("Attempt: {:b}", self.unlock_attempt);
-            println!("Next:    {:b}", next_attempt);
 
             let pos = self.current_pos();
             let prev_pos = self.pos[self.pos.len() - 2];
@@ -260,7 +249,6 @@ fn parse_room(output: String) -> Room {
                 assert_eq!(words.pop_front(), Some("You"));
                 assert_eq!(words.pop_front(), Some("may"));
                 assert_eq!(words.pop_front(), Some("proceed.\""));
-                println!("COMPLETE!");
                 while let Some(word) = words.pop_front() {
                     if word == "typing" {
                         solution = words.pop_front().map(|s| s.to_string());
@@ -338,17 +326,17 @@ fn solve_a(mut computer: IntcodeComputer) -> String {
     let o = computer.run_until_more_input_required(None);
     computer = o.0;
     let first_output: String = o.1.into_iter().map(|i| i as u8 as char).collect();
-    println!("{}", first_output);
+    // println!("{}", first_output);
     state = initialize(state, first_output);
 
     loop {
         let mut output: String = "".to_string();
 
         while let Some(cmd) = state.next_commands.pop_front() {
-            println!("pos: {:?}", state.pos);
-            println!("items: {:?}", state.items);
-            println!("unexplored: {:?}", state.unexplored_pos);
-            println!("Command: {}", cmd);
+            // println!("pos: {:?}", state.pos);
+            // println!("items: {:?}", state.items);
+            // println!("unexplored: {:?}", state.unexplored_pos);
+            // println!("Command: {}", cmd);
             let input: Vec<i64> = format!("{}\n", cmd)
                 .chars()
                 .map(|c| c as u8 as i64)
@@ -356,7 +344,7 @@ fn solve_a(mut computer: IntcodeComputer) -> String {
             let o = computer.run_until_more_input_required(input);
             computer = o.0;
             output = o.1.into_iter().map(|i| i as u8 as char).collect();
-            println!("{}", output);
+            // println!("{}", output);
         }
 
         state = update(state, output);
@@ -399,10 +387,7 @@ fn interact(computer: IntcodeComputer) {
 
 pub fn solve(lines: &[String]) -> Solution {
     let computer: IntcodeComputer = lines.into();
-    // cheat(computer);
     // interact(computer);
     let a_solution = solve_a(computer);
-    // let a_solution = solve_a(computer);
-    // let b_solution = solve_b(&computer);
     (a_solution, "-".to_string())
 }
