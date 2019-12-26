@@ -128,7 +128,7 @@ impl State {
             let move_command = dir_to_move(dir);
             self.next_commands.push_back(move_command.to_string());
         }
-        self.unlock_attempt = 1 << self.items.len() - 1;
+        self.unlock_attempt = (1 << self.items.len()) - 1;
         self.state = Self::UNLOCK;
         self
     }
