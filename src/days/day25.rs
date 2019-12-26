@@ -290,7 +290,6 @@ fn update(mut state: State, output: String) -> State {
 
         State::NAVIGATE => state.navigate(),
         State::UNLOCK => state.unlock(parse_room(output)),
-        State::DONE => state,
         _ => unreachable!(),
     }
 }
