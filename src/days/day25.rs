@@ -154,12 +154,14 @@ impl State {
 
             for i in 0..self.items.len() {
                 let mask = 1 << i;
-                if self.unlock_attempt & mask > 0 && next_attempt & mask == 0 {
-                    self.next_commands
-                        .push_back(format!("drop {}", self.items[i]));
-                } else if self.unlock_attempt & mask == 0 && next_attempt & mask > 0 {
-                    self.next_commands
-                        .push_back(format!("take {}", self.items[i]));
+                match (self.unlock_attempt & mask > 0, next_attempt & mask > 0) {
+                    (true, false) => self
+                        .next_commands
+                        .push_back(format!("drop {}", self.items[i])),
+                    (false, true) => self
+                        .next_commands
+                        .push_back(format!("take {}", self.items[i])),
+                    _ => {}
                 }
             }
             self.unlock_attempt -= 1;
