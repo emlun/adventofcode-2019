@@ -210,21 +210,21 @@ fn parse_room(output: String) -> Room {
             }
 
             "Doors" => {
-                debug_assert_eq!(words.pop_front(), Some("Doors"));
-                debug_assert_eq!(words.pop_front(), Some("here"));
-                debug_assert_eq!(words.pop_front(), Some("lead:"));
+                words.pop_front();
+                words.pop_front();
+                words.pop_front();
                 doors.clear();
                 while words[0] == "-" {
-                    debug_assert_eq!(words.pop_front(), Some("-"));
+                    words.pop_front();
                     doors.push(words.pop_front().unwrap().to_string());
                 }
             }
 
             "Items" => {
-                debug_assert_eq!(words.pop_front(), Some("Items"));
-                debug_assert_eq!(words.pop_front(), Some("here:"));
+                words.pop_front();
+                words.pop_front();
                 while words[0] == "-" {
-                    debug_assert_eq!(words.pop_front(), Some("-"));
+                    words.pop_front();
                     let mut item: Vec<&str> = Vec::new();
                     while words[0] != "-" && words[0] != "Command?" {
                         item.push(words.pop_front().unwrap());
