@@ -267,15 +267,7 @@ fn subsequence_exists<T>(seq: &[T], subseq: &[T]) -> bool
 where
     T: PartialEq,
 {
-    let l = subseq.len();
-
-    for i in 0..(seq.len() - l) {
-        if &seq[i..(i + l)] == subseq {
-            return true;
-        }
-    }
-
-    false
+    (0..(seq.len() - subseq.len())).any(|i| seq[i..].starts_with(subseq))
 }
 
 fn find_longest_repeated_subseq<T>(seq: &[T]) -> Option<&[T]>
