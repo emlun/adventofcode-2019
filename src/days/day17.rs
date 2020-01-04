@@ -201,33 +201,30 @@ fn compress_route(route: Route) -> Route {
     })
 }
 
-fn simplest_path(world: &HashSet<Point>, start_pos: Point, start_dir: Point) -> Option<Route> {
+fn simplest_path(world: &HashSet<Point>, start_pos: Point, start_dir: Point) -> Route {
     let mut pos = start_pos;
     let mut dir = start_dir;
     let mut route = Vec::new();
-    let mut visited: HashSet<Point> = HashSet::new();
-    visited.insert(pos);
 
     loop {
         let next = add(&pos, &dir);
         if is_path(world, &next) {
             route.push(Step::F(1));
             pos = next;
-            visited.insert(pos);
         } else {
             let dir_left = rotate_ccw(&dir);
             if is_path(world, &add(&pos, &dir_left)) {
-                route.push(Step::L(0));
+                route.push(Step::L(1));
                 dir = dir_left;
+                pos = add(&pos, &dir);
             } else {
                 let dir_right = rotate_cw(&dir);
                 if is_path(world, &add(&pos, &dir_right)) {
-                    route.push(Step::R(0));
+                    route.push(Step::R(1));
                     dir = dir_right;
-                } else if visited == *world {
-                    return Some(route);
+                    pos = add(&pos, &dir);
                 } else {
-                    return None;
+                    return route;
                 }
             }
         }
@@ -340,10 +337,10 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
 
     let simp = simplest_path(&finish_a.world, finish_a.robot_pos, finish_a.robot_dir);
 
-    let simpcomp = compress_route(simp.clone().unwrap());
+    let simpcomp = compress_route(simp.clone());
 
     let (segments, sequence) = find_covering_subseqs(&simpcomp, 3)
-        .or_else(|| find_covering_subseqs(simp.as_ref().unwrap(), 3))
+        .or_else(|| find_covering_subseqs(&simp, 3))
         .expect("Found no solution!");
 
     let mut input_sequence = vec!['A' as i64 + sequence[0] as i64];
