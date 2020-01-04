@@ -1,6 +1,5 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
-use std::collections::HashMap;
 use std::collections::HashSet;
 
 type Point = (i64, i64);
@@ -9,12 +8,6 @@ const ENABLE_OUTPUT: bool = false;
 
 fn add(p1: &Point, p2: &Point) -> Point {
     (p1.0 + p2.0, p1.1 + p2.1)
-}
-
-#[derive(Debug, Eq, PartialEq)]
-enum Tile {
-    Empty,
-    Path,
 }
 
 fn rotate_ccw(dir: &Point) -> Point {
@@ -36,7 +29,7 @@ fn adjacent(pos: &Point) -> Vec<Point> {
 
 #[derive(Debug)]
 struct State {
-    world: HashMap<Point, Tile>,
+    world: HashSet<Point>,
     robot_pos: Point,
     robot_dir: Point,
     read_x: i64,
@@ -46,7 +39,7 @@ struct State {
 impl State {
     fn new() -> State {
         State {
-            world: HashMap::new(),
+            world: HashSet::new(),
             robot_pos: (0, 0),
             robot_dir: (0, 1),
             read_x: 0,
@@ -55,36 +48,29 @@ impl State {
     }
 }
 
-fn intersections(world: &HashMap<Point, Tile>) -> HashSet<Point> {
-    let minx = *world.keys().map(|(x, _)| x).min().unwrap_or(&0);
-    let maxx = *world.keys().map(|(x, _)| x).max().unwrap_or(&0);
-    let miny = *world.keys().map(|(_, y)| y).min().unwrap_or(&0);
-    let maxy = *world.keys().map(|(_, y)| y).max().unwrap_or(&0);
-
-    (miny..maxy)
-        .flat_map(|y| {
-            (minx..maxx).map(move |x| (x, y)).filter(|(x, y)| {
-                if world.get(&(*x, *y)).unwrap_or(&Tile::Empty) == &Tile::Path {
-                    let num_adjacent = adjacent(&(*x, *y))
-                        .into_iter()
-                        .filter(|(xx, yy)| {
-                            world.get(&(*xx, *yy)).unwrap_or(&Tile::Empty) == &Tile::Path
-                        })
-                        .count();
-                    num_adjacent > 2
-                } else {
-                    false
-                }
-            })
+fn intersections(world: &HashSet<Point>) -> HashSet<Point> {
+    world
+        .iter()
+        .filter(|(x, y)| {
+            if world.contains(&(*x, *y)) {
+                let num_adjacent = adjacent(&(*x, *y))
+                    .into_iter()
+                    .filter(|(xx, yy)| world.contains(&(*xx, *yy)))
+                    .count();
+                num_adjacent > 2
+            } else {
+                false
+            }
         })
+        .copied()
         .collect()
 }
 
 fn print_state(state: &State) {
-    let minx = *state.world.keys().map(|(x, _)| x).min().unwrap_or(&0);
-    let maxx = *state.world.keys().map(|(x, _)| x).max().unwrap_or(&0);
-    let miny = *state.world.keys().map(|(_, y)| y).min().unwrap_or(&0);
-    let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
+    let minx = *state.world.iter().map(|(x, _)| x).min().unwrap_or(&0);
+    let maxx = *state.world.iter().map(|(x, _)| x).max().unwrap_or(&0);
+    let miny = *state.world.iter().map(|(_, y)| y).min().unwrap_or(&0);
+    let maxy = *state.world.iter().map(|(_, y)| y).max().unwrap_or(&0);
 
     let intrsct: HashSet<Point> = intersections(&state.world);
 
@@ -119,10 +105,10 @@ fn print_state(state: &State) {
                         } else if intrsct.contains(&(x, y)) {
                             "O"
                         } else {
-                            match state.world.get(&(x, y)) {
-                                None => " ",
-                                Some(Tile::Empty) => ".",
-                                Some(Tile::Path) => "#",
+                            if state.world.contains(&(x, y)) {
+                                "#"
+                            } else {
+                                "."
                             }
                         }
                     })
@@ -139,13 +125,10 @@ fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State)
     if let Some(output) = output {
         match output as u8 as char {
             '.' => {
-                state
-                    .world
-                    .insert((state.read_x, state.read_y), Tile::Empty);
                 state.read_x += 1;
             }
             '#' => {
-                state.world.insert((state.read_x, state.read_y), Tile::Path);
+                state.world.insert((state.read_x, state.read_y));
                 state.read_x += 1;
             }
             '^' | '>' | 'v' | '<' => {
@@ -157,14 +140,11 @@ fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State)
                     '<' => (-1, 0),
                     _ => unreachable!(),
                 };
-                state.world.insert((state.read_x, state.read_y), Tile::Path);
+                state.world.insert((state.read_x, state.read_y));
                 state.read_x += 1;
             }
             'X' => {
                 state.robot_pos = (state.read_x, state.read_y);
-                state
-                    .world
-                    .insert((state.read_x, state.read_y), Tile::Empty);
                 state.read_x += 1;
             }
             '\n' => {
@@ -199,8 +179,8 @@ enum Step {
     L(usize),
 }
 
-fn is_path(world: &HashMap<Point, Tile>, pos: &Point) -> bool {
-    world.get(pos).unwrap_or(&Tile::Empty) == &Tile::Path
+fn is_path(world: &HashSet<Point>, pos: &Point) -> bool {
+    world.contains(pos)
 }
 
 fn compress_route(route: Route) -> Route {
@@ -221,19 +201,10 @@ fn compress_route(route: Route) -> Route {
     })
 }
 
-fn simplest_path(
-    world: &HashMap<Point, Tile>,
-    start_pos: Point,
-    start_dir: Point,
-) -> Option<Route> {
+fn simplest_path(world: &HashSet<Point>, start_pos: Point, start_dir: Point) -> Option<Route> {
     let mut pos = start_pos;
     let mut dir = start_dir;
     let mut route = Vec::new();
-    let paths: HashSet<Point> = world
-        .iter()
-        .filter(|(_, v)| **v == Tile::Path)
-        .map(|(k, _)| *k)
-        .collect();
     let mut visited: HashSet<Point> = HashSet::new();
     visited.insert(pos);
 
@@ -253,7 +224,7 @@ fn simplest_path(
                 if is_path(world, &add(&pos, &dir_right)) {
                     route.push(Step::R(0));
                     dir = dir_right;
-                } else if visited == paths {
+                } else if visited == *world {
                     return Some(route);
                 } else {
                     return None;
