@@ -13,12 +13,16 @@ fn solve_a(digits: &[i8]) -> String {
     }
 
     fn phase_digit(digits: &[i8], n: usize) -> i8 {
-        let d = (0..digits.len())
-            .map(|i| sum_term(i, digits, n + 1))
-            .sum::<i32>()
-            .abs()
-            % 10;
-        d as i8
+        if n >= digits.len() / 2 {
+            digits.iter().skip(n).copied().fold(0, |s, a| (s + a) % 10)
+        } else {
+            let d = (0..digits.len())
+                .map(|i| sum_term(i, digits, n + 1))
+                .sum::<i32>()
+                .abs()
+                % 10;
+            d as i8
+        }
     }
 
     fn phase(digits: &[i8]) -> Vec<i8> {
