@@ -1,6 +1,6 @@
 use crate::common::Solution;
 
-fn solve_a(digits: &[i8]) -> String {
+fn solve_a(digits: Vec<i8>) -> String {
     const PATTERN_BASE: [i8; 4] = [0, 1, 0, -1];
 
     fn pattern_digit(pattern_num: usize, digit: usize) -> i8 {
@@ -29,11 +29,11 @@ fn solve_a(digits: &[i8]) -> String {
         (0..digits.len()).map(|i| phase_digit(digits, i)).collect()
     }
 
-    fn transform(digits: &[i8], phases: usize) -> Vec<i8> {
-        (0..phases).fold(digits.to_vec(), |digs, _| phase(&digs))
+    fn transform(digits: Vec<i8>, phases: usize) -> Vec<i8> {
+        (0..phases).fold(digits, |digs, _| phase(&digs))
     }
 
-    transform(&digits, 100)
+    transform(digits, 100)
         .into_iter()
         .take(8)
         .map(|d| d.to_string())
@@ -41,7 +41,7 @@ fn solve_a(digits: &[i8]) -> String {
         .join("")
 }
 
-fn solve_b(digits: &[i8]) -> String {
+fn solve_b(digits: Vec<i8>) -> String {
     fn phase(mut digits: Vec<i8>) -> Vec<i8> {
         for i in (0..(digits.len() - 1)).rev() {
             digits[i] = (digits[i + 1] + digits[i]) % 10;
@@ -80,7 +80,7 @@ fn solve_b(digits: &[i8]) -> String {
 
 pub fn solve(lines: &[String]) -> Solution {
     let digits: Vec<i8> = lines[0].chars().map(|c| (c as i8) - 48).collect();
-    let a_solution = solve_a(&digits);
-    let b_solution = solve_b(&digits);
+    let a_solution = solve_a(digits.clone());
+    let b_solution = solve_b(digits);
     (a_solution, b_solution)
 }
