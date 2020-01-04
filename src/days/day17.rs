@@ -335,12 +335,11 @@ where
 fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
     computer.prog[0] = 2;
 
-    let simp = simplest_path(&finish_a.world, finish_a.robot_pos, finish_a.robot_dir);
+    let full_route = simplest_path(&finish_a.world, finish_a.robot_pos, finish_a.robot_dir);
+    let compressed_route = compress_route(full_route.clone());
 
-    let simpcomp = compress_route(simp.clone());
-
-    let (segments, sequence) = find_covering_subseqs(&simpcomp, 3)
-        .or_else(|| find_covering_subseqs(&simp, 3))
+    let (segments, sequence) = find_covering_subseqs(&compressed_route, 3)
+        .or_else(|| find_covering_subseqs(&full_route, 3))
         .expect("Found no solution!");
 
     let mut input_sequence = vec!['A' as i64 + sequence[0] as i64];
