@@ -379,27 +379,16 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
 
     let simpcomp = compress_route(simp.clone().unwrap());
 
-    let (segments, sequence) = if let Some(compressed_covering) =
-        find_covering_subseqs(&simpcomp, 3)
-    {
-        compressed_covering
-    } else if let Some(uncompressed_covering) = find_covering_subseqs(simp.as_ref().unwrap(), 3) {
-        uncompressed_covering
-    } else {
-        panic!("Found no solution!")
-    };
-
-    let sequence_letters: Vec<char> = sequence
-        .into_iter()
-        .map(|i| ('A' as usize + i) as u8 as char)
-        .collect();
+    let (segments, sequence) = find_covering_subseqs(&simpcomp, 3)
+        .or_else(|| find_covering_subseqs(simp.as_ref().unwrap(), 3))
+        .expect("Found no solution!");
 
     let mut input_sequence = Vec::new();
-    for cmd in sequence_letters {
-        input_sequence.push(cmd as u8 as i64);
+    for i in sequence {
+        input_sequence.push('A' as i64 + i as i64);
         input_sequence.push(b',' as i64);
     }
-    input_sequence.remove(input_sequence.len() - 1);
+    input_sequence.pop();
     input_sequence.push(b'\n' as i64);
     for seg in segments {
         for cmd in seg {
@@ -414,11 +403,10 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
                     .chain(d.to_string().chars())
                     .collect(),
             };
-            let mut chars: Vec<i64> = chars.into_iter().map(|c| c as u8 as i64).collect();
-            input_sequence.append(&mut chars);
+            input_sequence.append(&mut chars.into_iter().map(|c| c as u8 as i64).collect());
             input_sequence.push(b',' as i64);
         }
-        input_sequence.remove(input_sequence.len() - 1);
+        input_sequence.pop();
         input_sequence.push(b'\n' as i64);
     }
     input_sequence.push(b'n' as i64);
