@@ -185,8 +185,6 @@ fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State)
 fn solve_a(computer: IntcodeComputer) -> (State, i64) {
     let finish = computer.run_with(None, State::new(), step_build_map);
 
-    print_state(&finish);
-
     let intrsct = intersections(&finish.world);
     let solution = intrsct.into_iter().map(|(x, y)| x * y).sum::<i64>();
 
@@ -194,7 +192,7 @@ fn solve_a(computer: IntcodeComputer) -> (State, i64) {
 }
 
 type Route = Vec<Step>;
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Step {
     F(usize),
     R(usize),
@@ -221,35 +219,6 @@ fn compress_route(route: Route) -> Route {
         }
         rt
     })
-}
-
-fn follow_path_to_next_intersection(
-    world: &HashMap<Point, Tile>,
-    intrsct: &HashSet<Point>,
-    start: Point,
-    start_dir: Point,
-) -> (Point, Route) {
-    let mut pos = start;
-    let mut dir = start_dir;
-    let mut route = Vec::new();
-    while !intrsct.contains(&pos) || route.is_empty() {
-        let next = add(&pos, &dir);
-        if is_path(world, &next) {
-            route.push(Step::F(1));
-            pos = next;
-        } else {
-            let dir_left = rotate_ccw(&dir);
-            if is_path(world, &add(&pos, &dir_left)) {
-                route.push(Step::L(0));
-                dir = dir_left;
-            } else {
-                let dir_right = rotate_cw(&dir);
-                route.push(Step::R(0));
-                dir = dir_right;
-            }
-        }
-    }
-    (pos, compress_route(route))
 }
 
 fn simplest_path(
@@ -285,7 +254,7 @@ fn simplest_path(
                     route.push(Step::R(0));
                     dir = dir_right;
                 } else if visited == paths {
-                    return Some(compress_route(route));
+                    return Some(route);
                 } else {
                     return None;
                 }
@@ -294,56 +263,145 @@ fn simplest_path(
     }
 }
 
-fn intersection_transfers(world: &HashMap<Point, Tile>) -> HashMap<Point, Vec<(Point, Route)>> {
-    let intrsct = intersections(world);
-    intrsct
-        .iter()
-        .map(|start| {
-            let routes = vec![(1, 0), (0, 1), (-1, 0), (0, -1)]
-                .into_iter()
-                .filter(|dir| world.get(&add(&start, &dir)).unwrap_or(&Tile::Empty) == &Tile::Path)
-                .map(|dir| follow_path_to_next_intersection(world, &intrsct, *start, dir))
-                .collect();
-            (*start, routes)
-        })
-        .collect()
+fn subsequence_exists<T>(seq: &[T], subseq: &[T]) -> bool
+where
+    T: PartialEq,
+{
+    let l = subseq.len();
+
+    for i in 0..(seq.len() - l) {
+        if &seq[i..(i + l)] == subseq {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn find_longest_repeated_subseq<T>(seq: &[T]) -> Option<&[T]>
+where
+    T: PartialEq,
+{
+    let mut end_min = 0;
+    let mut end_max = seq.len();
+
+    while end_max > end_min {
+        let end = (end_max + end_min) / 2;
+        if end == end_min {
+            break;
+        } else if subsequence_exists(&seq[end..], &seq[0..end]) {
+            end_min = end;
+        } else {
+            end_max = end;
+        }
+    }
+
+    if end_min > 0 {
+        Some(&seq[0..end_min])
+    } else {
+        None
+    }
+}
+
+fn find_subseq_covering<T>(seq: &[T], subseqs: &[&[T]]) -> Option<Vec<usize>>
+where
+    T: PartialEq,
+{
+    if seq.is_empty() {
+        return Some(vec![]);
+    } else {
+        for i in 0..subseqs.len() {
+            let subseq = subseqs[i];
+            if seq.starts_with(subseq) {
+                if let Some(mut subfind) = find_subseq_covering(&seq[subseq.len()..], subseqs) {
+                    subfind.insert(0, i);
+                    return Some(subfind);
+                }
+            }
+        }
+
+        None
+    }
+}
+
+fn find_covering_subseqs<T>(seq: &[T], num_subseqs: usize) -> Option<(Vec<&[T]>, Vec<usize>)>
+where
+    T: PartialEq,
+{
+    fn fill_subseqs<'a, T>(
+        seq: &'a [T],
+        num_subseqs: usize,
+        mut subseqs: Vec<&'a [T]>,
+    ) -> Vec<&'a [T]>
+    where
+        T: PartialEq,
+    {
+        if seq.is_empty() || subseqs.len() == num_subseqs {
+            subseqs
+        } else if let Some(prefix) = subseqs.iter().find(|subseq| seq.starts_with(subseq)) {
+            fill_subseqs(&seq[prefix.len()..], num_subseqs, subseqs)
+        } else {
+            let next = find_longest_repeated_subseq(seq).unwrap();
+            subseqs.push(next);
+            fill_subseqs(&seq[next.len()..], num_subseqs, subseqs)
+        }
+    }
+
+    let mut subseqs: Vec<&[T]> = fill_subseqs(seq, num_subseqs, Vec::new());
+
+    while subseqs[0].len() > 0 {
+        if let Some(covering) = find_subseq_covering(seq, &subseqs) {
+            return Some((subseqs, covering));
+        } else {
+            while !subseqs.is_empty() {
+                let i = subseqs.len() - 1;
+                subseqs[i] = subseqs[i].split_last().unwrap().1;
+                if subseqs[subseqs.len() - 1].is_empty() {
+                    subseqs.pop();
+                } else {
+                    subseqs = fill_subseqs(seq, num_subseqs, subseqs);
+                    break;
+                }
+            }
+
+            if subseqs.is_empty() {
+                return None;
+            }
+        }
+    }
+    None
 }
 
 fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
     computer.prog[0] = 2;
 
-    for (start, routes) in intersection_transfers(&finish_a.world) {
-        for (end, route) in routes {
-            println!(
-                "({: >2},{: >2}) => ({: >2},{: >2}) : {:?}",
-                start.0, start.1, end.0, end.1, route
-            );
-        }
-    }
+    let simp = simplest_path(&finish_a.world, finish_a.robot_pos, finish_a.robot_dir);
 
-    println!(
-        "{:?}",
-        simplest_path(&finish_a.world, finish_a.robot_pos, finish_a.robot_dir)
-    );
+    let simpcomp = compress_route(simp.clone().unwrap());
 
-    let my_segments = {
-        use Step::{L, R};
-        vec![
-            vec![R(12), L(8), R(6)],
-            vec![L(8), R(8), R(6), R(12)],
-            vec![R(12), L(6), R(6), R(8), R(6)],
-        ]
+    let (segments, sequence) = if let Some(compressed_covering) =
+        find_covering_subseqs(&simpcomp, 3)
+    {
+        compressed_covering
+    } else if let Some(uncompressed_covering) = find_covering_subseqs(simp.as_ref().unwrap(), 3) {
+        uncompressed_covering
+    } else {
+        panic!("Found no solution!")
     };
-    let my_sequence = vec!['A', 'A', 'C', 'B', 'A', 'B', 'A', 'C', 'B', 'C'];
+
+    let sequence_letters: Vec<char> = sequence
+        .into_iter()
+        .map(|i| ('A' as usize + i) as u8 as char)
+        .collect();
 
     let mut input_sequence = Vec::new();
-    for cmd in my_sequence {
+    for cmd in sequence_letters {
         input_sequence.push(cmd as u8 as i64);
         input_sequence.push(b',' as i64);
     }
     input_sequence.remove(input_sequence.len() - 1);
     input_sequence.push(b'\n' as i64);
-    for seg in my_segments {
+    for seg in segments {
         for cmd in seg {
             let chars: Vec<char> = match cmd {
                 Step::F(d) => d.to_string().chars().collect(),
