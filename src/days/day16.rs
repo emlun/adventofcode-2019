@@ -44,7 +44,7 @@ fn solve_a(digits: &[i8]) -> String {
 fn solve_b(digits: &[i8]) -> String {
     fn phase(mut digits: Vec<i8>) -> Vec<i8> {
         for i in (0..(digits.len() - 1)).rev() {
-            digits[i] = (digits[i + 1] + digits[i]).abs() % 10;
+            digits[i] = (digits[i + 1] + digits[i]) % 10;
         }
         digits
     }
