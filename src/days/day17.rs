@@ -105,12 +105,10 @@ fn print_state(state: &State) {
                             "R"
                         } else if intrsct.contains(&(x, y)) {
                             "O"
+                        } else if state.world.contains(&(x, y)) {
+                            "#"
                         } else {
-                            if state.world.contains(&(x, y)) {
-                                "#"
-                            } else {
-                                "."
-                            }
+                            "."
                         }
                     })
                     .collect::<Vec<&str>>()
@@ -269,7 +267,7 @@ where
     T: PartialEq,
 {
     if seq.is_empty() {
-        return Some(LinkedList::new());
+        Some(LinkedList::new())
     } else {
         for i in 0..subseqs.len() {
             let subseq = subseqs[i];
@@ -310,7 +308,7 @@ where
 
     let mut subseqs: Vec<&[T]> = fill_subseqs(seq, num_subseqs, Vec::new());
 
-    while subseqs[0].len() > 0 {
+    while !subseqs[0].is_empty() {
         if let Some(covering) = find_subseq_covering(seq, &subseqs) {
             return Some((subseqs, covering));
         } else {
