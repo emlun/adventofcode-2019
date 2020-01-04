@@ -38,14 +38,15 @@ fn main() -> Result<(), std::io::Error> {
 }
 
 fn run_day(day: u8, input_path: Option<&Path>) -> Result<(), std::io::Error> {
+    println!();
+    println!("=== Day {: >2} ===", day);
+
     let day_func = days::get_solver(day).unwrap_or_else(|| panic!(format!("Unknown day: {}", day)));
     let lines = input_path
         .map(get_file_lines)
         .unwrap_or_else(|| get_file_lines(&day_input_filename(day)))?;
     let solution = day_func(&lines);
 
-    println!();
-    println!("=== Day {: >2} ===", day);
     println!("A: {}", solution.0);
     println!("B: {}", solution.1);
 
