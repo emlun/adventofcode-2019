@@ -383,12 +383,11 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
         .or_else(|| find_covering_subseqs(simp.as_ref().unwrap(), 3))
         .expect("Found no solution!");
 
-    let mut input_sequence = Vec::new();
-    for i in sequence {
-        input_sequence.push('A' as i64 + i as i64);
+    let mut input_sequence = vec!['A' as i64 + sequence[0] as i64];
+    for i in &sequence[1..] {
         input_sequence.push(b',' as i64);
+        input_sequence.push('A' as i64 + *i as i64);
     }
-    input_sequence.pop();
     input_sequence.push(b'\n' as i64);
     for seg in segments {
         for cmd in seg {
