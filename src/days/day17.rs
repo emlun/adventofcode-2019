@@ -1,6 +1,7 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
 use std::collections::HashSet;
+use std::collections::LinkedList;
 
 type Point = (i64, i64);
 
@@ -263,18 +264,18 @@ where
     }
 }
 
-fn find_subseq_covering<T>(seq: &[T], subseqs: &[&[T]]) -> Option<Vec<usize>>
+fn find_subseq_covering<T>(seq: &[T], subseqs: &[&[T]]) -> Option<LinkedList<usize>>
 where
     T: PartialEq,
 {
     if seq.is_empty() {
-        return Some(vec![]);
+        return Some(LinkedList::new());
     } else {
         for i in 0..subseqs.len() {
             let subseq = subseqs[i];
             if seq.starts_with(subseq) {
                 if let Some(mut subfind) = find_subseq_covering(&seq[subseq.len()..], subseqs) {
-                    subfind.insert(0, i);
+                    subfind.push_front(i);
                     return Some(subfind);
                 }
             }
@@ -284,7 +285,7 @@ where
     }
 }
 
-fn find_covering_subseqs<T>(seq: &[T], num_subseqs: usize) -> Option<(Vec<&[T]>, Vec<usize>)>
+fn find_covering_subseqs<T>(seq: &[T], num_subseqs: usize) -> Option<(Vec<&[T]>, LinkedList<usize>)>
 where
     T: PartialEq,
 {
@@ -338,14 +339,14 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
     let full_route = simplest_path(&finish_a.world, finish_a.robot_pos, finish_a.robot_dir);
     let compressed_route = compress_route(full_route.clone());
 
-    let (segments, sequence) = find_covering_subseqs(&compressed_route, 3)
+    let (segments, mut sequence) = find_covering_subseqs(&compressed_route, 3)
         .or_else(|| find_covering_subseqs(&full_route, 3))
         .expect("Found no solution!");
 
-    let mut input_sequence = vec!['A' as i64 + sequence[0] as i64];
-    for i in &sequence[1..] {
+    let mut input_sequence = vec!['A' as i64 + sequence.pop_front().unwrap() as i64];
+    for i in sequence {
         input_sequence.push(b',' as i64);
-        input_sequence.push('A' as i64 + *i as i64);
+        input_sequence.push('A' as i64 + i as i64);
     }
     input_sequence.push(b'\n' as i64);
     for seg in segments {
