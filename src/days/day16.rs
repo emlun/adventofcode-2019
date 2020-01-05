@@ -76,12 +76,12 @@ fn solve_b(digits: Vec<i8>) -> String {
         .fold(0, |result, d| result * 10 + (*d as usize));
 
     if msg_offset >= digits.len() * 10000 / 2 {
+        let l = digits.len();
         let digits: Vec<i8> = digits
-            .iter()
+            .into_iter()
             .cycle()
             .skip(msg_offset)
-            .take(digits.len() * 10000 - msg_offset)
-            .copied()
+            .take(l * 10000 - msg_offset)
             .collect();
 
         transform(digits, 100)
