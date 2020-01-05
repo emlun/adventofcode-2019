@@ -34,12 +34,11 @@ fn solve_a(digits: Vec<i8>) -> String {
                 .fold(positives, |s, a| (s - *a as i32) as i32);
             (negatives.abs() % 10) as i8
         } else {
-            let d = (n..digits.len())
+            ((n..digits.len())
                 .map(|i| sum_term(i, digits, n + 1))
                 .sum::<i32>()
                 .abs()
-                % 10;
-            d as i8
+                % 10) as i8
         }
     }
 
