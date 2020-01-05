@@ -59,15 +59,29 @@ fn solve_a(digits: Vec<i8>) -> String {
 }
 
 fn solve_b(digits: Vec<i8>) -> String {
-    fn phase(mut digits: Vec<i8>) -> Vec<i8> {
-        for i in (0..(digits.len() - 1)).rev() {
-            digits[i] = (digits[i + 1] + digits[i]) % 10;
-        }
-        digits
-    }
-
     fn transform(digits: Vec<i8>, phases: usize) -> Vec<i8> {
-        (0..phases).fold(digits, |digs, _| phase(digs))
+        let mut pascal: Vec<Vec<i8>> = Vec::with_capacity(phases);
+        pascal.push(vec![1].into_iter().cycle().take(digits.len()).collect());
+        for phase in 1..phases {
+            let mut row = Vec::with_capacity(digits.len());
+            row.push(1);
+            for index in 1..digits.len() {
+                row.push((row[index - 1] + pascal[phase - 1][index]) % 10);
+            }
+            pascal.push(row);
+        }
+
+        (0..8)
+            .map(|i| {
+                digits
+                    .iter()
+                    .skip(i)
+                    .enumerate()
+                    .fold(0, |sum, (index, digit)| {
+                        (sum + (pascal[phases - 1][index] * *digit)) % 10
+                    })
+            })
+            .collect()
     }
 
     let msg_offset: usize = digits
@@ -86,7 +100,6 @@ fn solve_b(digits: Vec<i8>) -> String {
 
         transform(digits, 100)
             .into_iter()
-            .take(8)
             .map(|d| d.to_string())
             .collect::<Vec<String>>()
             .join("")
