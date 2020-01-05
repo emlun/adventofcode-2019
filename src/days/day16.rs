@@ -31,8 +31,8 @@ fn solve_a(digits: Vec<i8>) -> String {
                 .iter()
                 .skip(3 * n + 2)
                 .take(n + 1)
-                .fold(0_i32, |s, a| (s + *a as i32) as i32);
-            ((positives - negatives).abs() % 10) as i8
+                .fold(positives, |s, a| (s - *a as i32) as i32);
+            (negatives.abs() % 10) as i8
         } else {
             let d = (n..digits.len())
                 .map(|i| sum_term(i, digits, n + 1))
