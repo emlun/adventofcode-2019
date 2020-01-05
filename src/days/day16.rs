@@ -15,8 +15,26 @@ fn solve_a(digits: Vec<i8>) -> String {
     fn phase_digit(digits: &[i8], n: usize) -> i8 {
         if n >= digits.len() / 2 {
             digits.iter().skip(n).copied().fold(0, |s, a| (s + a) % 10)
+        } else if n >= digits.len() / 3 {
+            digits
+                .iter()
+                .skip(n)
+                .take(n + 1)
+                .fold(0, |s, a| (s + a) % 10)
+        } else if n >= digits.len() / 4 {
+            let positives = digits
+                .iter()
+                .skip(n)
+                .take(n + 1)
+                .fold(0_i32, |s, a| (s + *a as i32) as i32);
+            let negatives = digits
+                .iter()
+                .skip(3 * n + 2)
+                .take(n + 1)
+                .fold(0_i32, |s, a| (s + *a as i32) as i32);
+            ((positives - negatives).abs() % 10) as i8
         } else {
-            let d = (0..digits.len())
+            let d = (n..digits.len())
                 .map(|i| sum_term(i, digits, n + 1))
                 .sum::<i32>()
                 .abs()
