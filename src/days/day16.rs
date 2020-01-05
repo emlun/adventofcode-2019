@@ -14,7 +14,7 @@ fn solve_a(digits: Vec<i8>) -> String {
 
     fn phase_digit(digits: &[i8], n: usize) -> i8 {
         if n >= digits.len() / 2 {
-            digits.iter().skip(n).copied().fold(0, |s, a| (s + a) % 10)
+            digits.iter().skip(n).fold(0, |s, a| (s + *a) % 10)
         } else if n >= digits.len() / 3 {
             digits
                 .iter()
