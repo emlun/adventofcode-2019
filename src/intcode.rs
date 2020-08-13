@@ -39,7 +39,7 @@ impl IntcodeComputer {
 
         fn ensure_size(prog: &mut Memory, size: usize) {
             if size >= prog.len() {
-                prog.extend((0..=0).cycle().take(size - prog.len() + 1));
+                prog.resize(size, 0);
             }
         };
 
@@ -51,7 +51,7 @@ impl IntcodeComputer {
                 2 => (relbase + prog[eip + offset]).try_into().unwrap(),
                 _ => unreachable!(),
             };
-            ensure_size(prog, out_addr);
+            ensure_size(prog, out_addr + 1);
             out_addr
         };
 
