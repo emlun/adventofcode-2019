@@ -39,7 +39,7 @@ impl IntcodeComputer {
 
         fn ensure_size(prog: &mut Memory, size: usize) {
             if size >= prog.len() {
-                prog.append(&mut (0..=0).cycle().take(size - prog.len() + 1).collect());
+                prog.extend((0..=0).cycle().take(size - prog.len() + 1));
             }
         };
 
