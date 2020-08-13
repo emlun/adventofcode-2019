@@ -13,8 +13,6 @@ struct Packet {
 fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
     let mut computers: Vec<IntcodeComputer> =
         (0..NUM_COMPUTERS).map(|_| template.clone()).collect();
-    let mut packet_queues: Vec<VecDeque<Packet>> =
-        (0..NUM_COMPUTERS).map(|_| VecDeque::new()).collect();
     let mut input_buffers: Vec<VecDeque<i64>> =
         (0..NUM_COMPUTERS).map(|_| VecDeque::new()).collect();
     let mut output_buffers: Vec<VecDeque<i64>> =
@@ -31,11 +29,10 @@ fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
     }
 
     loop {
-        let network_idle = computers.iter().enumerate().all(|(compi, _)| {
-            computers_stalled[compi] > 1
-                && packet_queues[compi].is_empty()
-                && input_buffers[compi].is_empty()
-        });
+        let network_idle = computers
+            .iter()
+            .enumerate()
+            .all(|(compi, _)| computers_stalled[compi] > 1 && input_buffers[compi].is_empty());
         if network_idle {
             if let Some(packet) = nat_buffer.as_ref() {
                 if Some(packet.y) == last_nat_y {
@@ -55,10 +52,6 @@ fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
                 if let Some(i) = input_buffers[compi].pop_front() {
                     computers_stalled[compi] = 0;
                     Some(i)
-                } else if let Some(packet) = packet_queues[compi].pop_front() {
-                    computers_stalled[compi] = 0;
-                    input_buffers[compi].push_back(packet.y);
-                    Some(packet.x)
                 } else {
                     computers_stalled[compi] += 1;
                     None
@@ -82,7 +75,8 @@ fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
                         }
                         nat_buffer = Some(packet);
                     } else {
-                        packet_queues[addr].push_back(packet);
+                        input_buffers[addr].push_back(packet.x);
+                        input_buffers[addr].push_back(packet.y);
                     }
                 }
             }
