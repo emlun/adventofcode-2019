@@ -60,12 +60,15 @@ fn solve_a(digits: Vec<i8>) -> String {
 
 fn solve_b(digits: Vec<i8>) -> String {
     fn transform(digits: Vec<i8>, phases: usize) -> Vec<i8> {
+        // As it turns out, the relevant diagonal of Pascal's triangle is
+        // periodic with a period of 16000 elements
+        let pascal_period = 16000;
         let mut pascal: Vec<Vec<i8>> = Vec::with_capacity(phases);
-        pascal.push(vec![1].into_iter().cycle().take(digits.len()).collect());
+        pascal.push(vec![1].into_iter().cycle().take(pascal_period).collect());
         for phase in 1..phases {
-            let mut row = Vec::with_capacity(digits.len());
+            let mut row = Vec::with_capacity(pascal_period);
             row.push(1);
-            for index in 1..digits.len() {
+            for index in 1..pascal_period {
                 row.push((row[index - 1] + pascal[phase - 1][index]) % 10);
             }
             pascal.push(row);
@@ -78,7 +81,7 @@ fn solve_b(digits: Vec<i8>) -> String {
                     .skip(i)
                     .enumerate()
                     .fold(0, |sum, (index, digit)| {
-                        (sum + (pascal[phases - 1][index] * *digit)) % 10
+                        (sum + (pascal[phases - 1][index % pascal_period] * *digit)) % 10
                     })
             })
             .collect()
