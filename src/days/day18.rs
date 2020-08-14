@@ -6,15 +6,6 @@ use std::collections::VecDeque;
 
 type Point = (usize, usize);
 
-fn adjacent(pos: &Point) -> Vec<Point> {
-    vec![
-        (pos.0 + 1, pos.1),
-        (pos.0, pos.1 + 1),
-        (pos.0 - 1, pos.1),
-        (pos.0, pos.1 - 1),
-    ]
-}
-
 #[derive(Eq, PartialEq)]
 enum Tile {
     Door(KeyId),
@@ -137,9 +128,14 @@ impl<'world> Navigation<'world> {
             });
 
             while let Some(proute) = queue.pop_front() {
-                for next_pos in adjacent(&proute.pos)
-                    .into_iter()
-                    .filter(|p| *p != proute.prev_pos)
+                for &next_pos in [
+                    (proute.pos.0 + 1, proute.pos.1),
+                    (proute.pos.0, proute.pos.1 + 1),
+                    (proute.pos.0 - 1, proute.pos.1),
+                    (proute.pos.0, proute.pos.1 - 1),
+                ]
+                .iter()
+                .filter(|p| **p != proute.prev_pos)
                 {
                     let pos_visited_with_fewer_keys = visited.iter().any(|&(pos, prereq)| {
                         pos == next_pos && proute.prerequired_keys.contains_all(prereq)
