@@ -37,12 +37,6 @@ impl IntcodeComputer {
         let relbase = self.relbase;
         let mut output = None;
 
-        fn ensure_size(prog: &mut Memory, size: usize) {
-            if size >= prog.len() {
-                prog.resize(size, 0);
-            }
-        };
-
         let get_addr = |prog: &mut Memory, offset: usize| -> usize {
             let parmode_pow = 10_i64.pow((offset + 1).try_into().unwrap());
             let out_addr = match (instruction / parmode_pow) % 10 {
@@ -51,7 +45,9 @@ impl IntcodeComputer {
                 2 => (relbase + prog[eip + offset]).try_into().unwrap(),
                 _ => unreachable!(),
             };
-            ensure_size(prog, out_addr + 1);
+            if out_addr >= prog.len() {
+                prog.resize(out_addr + 1, 0);
+            }
             out_addr
         };
 
