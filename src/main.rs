@@ -21,8 +21,8 @@ fn main() -> Result<(), std::io::Error> {
         .version(crate_version())
         .about(crate_description())
         .author(crate_author())
-        .arg(Arg::with_name("day").takes_value(true))
-        .arg(Arg::with_name("input-file").takes_value(true));
+        .arg(Arg::with_name("day").takes_value(true).help(r#"Day number (1 - 25) to run. If omitted, all days are run."#))
+        .arg(Arg::with_name("input-file").takes_value(true).help(r#"Path to file containing input for the chosen day, or "-" for standard input. If omitted, uses the path "./inputs/day<N>.in"."#));
 
     let matches = cli.get_matches();
 
