@@ -54,27 +54,21 @@ impl IntcodeComputer {
             out_addr
         };
 
-        let get_args = |prog: &mut Memory, num: usize| -> Memory {
-            (1..=num)
-                .map(|i| {
-                    let addr = get_addr(prog, i);
-                    prog[addr]
-                })
-                .collect()
+        let get_arg = |prog: &mut Memory, arg_num: usize| -> Word {
+            let addr = get_addr(prog, arg_num);
+            prog[addr]
         };
 
         self.eip = match opcode {
             OP_ADD => {
-                let args = get_args(&mut self.prog, 2);
                 let io = get_addr(&mut self.prog, 3);
-                self.prog[io] = args[0] + args[1];
+                self.prog[io] = get_arg(&mut self.prog, 1) + get_arg(&mut self.prog, 2);
                 self.eip + 4
             }
 
             OP_MULTIPLY => {
-                let args = get_args(&mut self.prog, 2);
                 let io = get_addr(&mut self.prog, 3);
-                self.prog[io] = args[0] * args[1];
+                self.prog[io] = get_arg(&mut self.prog, 1) * get_arg(&mut self.prog, 2);
                 self.eip + 4
             }
 
@@ -89,46 +83,48 @@ impl IntcodeComputer {
             }
 
             OP_OUTPUT => {
-                let args = get_args(&mut self.prog, 1);
-                output = Some(args[0]);
+                output = Some(get_arg(&mut self.prog, 1));
                 self.eip + 2
             }
 
             OP_JUMP_NONZERO => {
-                let args = get_args(&mut self.prog, 2);
-                if args[0] != 0 {
-                    args[1] as usize
+                if get_arg(&mut self.prog, 1) != 0 {
+                    get_arg(&mut self.prog, 2) as usize
                 } else {
                     self.eip + 3
                 }
             }
 
             OP_JUMP_ZERO => {
-                let args = get_args(&mut self.prog, 2);
-                if args[0] == 0 {
-                    args[1] as usize
+                if get_arg(&mut self.prog, 1) == 0 {
+                    get_arg(&mut self.prog, 2) as usize
                 } else {
                     self.eip + 3
                 }
             }
 
             OP_LESS => {
-                let args = get_args(&mut self.prog, 2);
                 let io = get_addr(&mut self.prog, 3);
-                self.prog[io] = if args[0] < args[1] { 1 } else { 0 };
+                self.prog[io] = if get_arg(&mut self.prog, 1) < get_arg(&mut self.prog, 2) {
+                    1
+                } else {
+                    0
+                };
                 self.eip + 4
             }
 
             OP_EQ => {
-                let args = get_args(&mut self.prog, 2);
                 let io = get_addr(&mut self.prog, 3);
-                self.prog[io] = if args[0] == args[1] { 1 } else { 0 };
+                self.prog[io] = if get_arg(&mut self.prog, 1) == get_arg(&mut self.prog, 2) {
+                    1
+                } else {
+                    0
+                };
                 self.eip + 4
             }
 
             OP_RELBASE => {
-                let args = get_args(&mut self.prog, 1);
-                self.relbase += args[0];
+                self.relbase += get_arg(&mut self.prog, 1);
                 self.eip + 2
             }
 
