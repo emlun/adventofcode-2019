@@ -357,3 +357,147 @@ pub fn solve(lines: &[String]) -> Solution {
     let b_solution = solve_b(world, pos);
     (a_solution.to_string(), b_solution.to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Point;
+    use super::World;
+
+    fn parse(input: &str) -> (World, Point) {
+        let lines: Vec<String> = input.trim().lines().map(|l| l.trim().to_string()).collect();
+        super::parse_world(&lines)
+    }
+
+    fn check_a(expected_output: usize, input: &str) {
+        let (world, pos) = parse(input);
+        let solution = super::solve_a(&world, pos);
+        assert_eq!(solution, expected_output);
+    }
+
+    fn check_b(expected_output: usize, input: &str) {
+        let (world, pos) = parse(input);
+        let solution = super::solve_b(world, pos);
+        assert_eq!(solution, expected_output);
+    }
+
+    #[test]
+    fn example_a1() {
+        let input = "
+        #########
+        #b.A.@.a#
+        #########
+        ";
+        check_a(8, input);
+    }
+
+    #[test]
+    fn example_a2() {
+        let input = "
+        ########################
+        #f.D.E.e.C.b.A.@.a.B.c.#
+        ######################.#
+        #d.....................#
+        ########################
+        ";
+        check_a(86, input);
+    }
+
+    #[test]
+    fn example_a3() {
+        let input = "
+        ########################
+        #...............b.C.D.f#
+        #.######################
+        #.....@.a.B.c.d.A.e.F.g#
+        ########################
+        ";
+        check_a(132, input);
+    }
+
+    #[test]
+    fn example_a4() {
+        let input = "
+        #################
+        #i.G..c...e..H.p#
+        ########.########
+        #j.A..b...f..D.o#
+        ########@########
+        #k.E..a...g..B.n#
+        ########.########
+        #l.F..d...h..C.m#
+        #################
+        ";
+        check_a(136, input);
+    }
+
+    #[test]
+    fn example_a5() {
+        let input = "
+        ########################
+        #@..............ac.GI.b#
+        ###d#e#f################
+        ###A#B#C################
+        ###g#h#i################
+        ########################
+        ";
+        check_a(81, input);
+    }
+
+    #[test]
+    fn example_b1() {
+        let input = "
+        #######
+        #a.#Cd#
+        ##...##
+        ##.@.##
+        ##...##
+        #cB#Ab#
+        #######
+        ";
+        check_b(8, input);
+    }
+
+    #[test]
+    fn example_b2() {
+        let input = "
+        ###############
+        #d.ABC.#.....a#
+        ######...######
+        ######.@.######
+        ######...######
+        #b.....#.....c#
+        ###############
+        ";
+        check_b(24, input);
+    }
+
+    #[test]
+    fn example_b3() {
+        let input = "
+        #############
+        #DcBa.#.GhKl#
+        #.###...#I###
+        #e#d#.@.#j#k#
+        ###C#...###J#
+        #fEbA.#.FgHi#
+        #############
+        ";
+        check_b(32, input);
+    }
+
+    #[test]
+    fn example_b4() {
+        let input = "
+        #############
+        #g#f.D#..h#l#
+        #F###e#E###.#
+        #dCba...BcIJ#
+        #####.@.#####
+        #nK.L...G...#
+        #M###N#H###.#
+        #o#m..#i#jk.#
+        #############
+        ";
+        check_b(72, input);
+    }
+}
