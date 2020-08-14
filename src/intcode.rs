@@ -36,7 +36,12 @@ impl IntcodeComputer {
         let mut output = None;
 
         let get_addr = |prog: &mut Memory, offset: usize| -> usize {
-            let parmode_pow = 10_i64.pow((offset + 1) as u32);
+            let parmode_pow = match offset {
+                1 => 100,
+                2 => 1000,
+                3 => 10000,
+                _ => unreachable!(),
+            };
             let out_addr = match (instruction / parmode_pow) % 10 {
                 0 => (prog[eip + offset]) as usize,
                 1 => eip + offset,
