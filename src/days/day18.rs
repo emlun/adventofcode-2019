@@ -128,16 +128,20 @@ impl<'world> Navigation<'world> {
             });
 
             while let Some(proute) = queue.pop_front() {
-                for &next_pos in [
+                let adjacent: Vec<Point> = [
                     (proute.pos.0 + 1, proute.pos.1),
                     (proute.pos.0, proute.pos.1 + 1),
                     (proute.pos.0 - 1, proute.pos.1),
                     (proute.pos.0, proute.pos.1 - 1),
                 ]
                 .iter()
-                .filter(|p| **p != proute.prev_pos)
+                .copied()
+                .filter(|p| *p != proute.prev_pos)
                 .filter(|p| self.world.tiles[p.1][p.0] != Wall)
-                {
+                .collect();
+                let several_next_points = adjacent.len() > 1;
+
+                for next_pos in adjacent {
                     let pos_visited_with_fewer_keys = visited.iter().any(|&(pos, prereq)| {
                         pos == next_pos && proute.prerequired_keys.contains_all(prereq)
                     });
@@ -154,7 +158,9 @@ impl<'world> Navigation<'world> {
                                     len: next_len,
                                 });
 
-                                visited.insert((next_pos, proute.prerequired_keys));
+                                if several_next_points {
+                                    visited.insert((next_pos, proute.prerequired_keys));
+                                }
                             }
 
                             Key(k) => {
@@ -165,7 +171,9 @@ impl<'world> Navigation<'world> {
                                     prerequired_keys: proute.prerequired_keys,
                                 });
 
-                                visited.insert((next_pos, proute.prerequired_keys));
+                                if several_next_points {
+                                    visited.insert((next_pos, proute.prerequired_keys));
+                                }
                             }
 
                             Door(k) => {
@@ -182,7 +190,9 @@ impl<'world> Navigation<'world> {
                                     len: next_len,
                                 });
 
-                                visited.insert((next_pos, prereq));
+                                if several_next_points {
+                                    visited.insert((next_pos, prereq));
+                                }
                             }
 
                             Wall => unreachable!(),
