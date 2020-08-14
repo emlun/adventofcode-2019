@@ -244,11 +244,7 @@ impl IntcodeComputer {
     }
 
     pub fn is_running(&self) -> bool {
-        !self.is_halted()
-    }
-
-    pub fn is_halted(&self) -> bool {
-        self.prog[self.eip] == OP_HALT
+        self.prog[self.eip] != OP_HALT
     }
 
     pub fn expects_input(&self) -> bool {
