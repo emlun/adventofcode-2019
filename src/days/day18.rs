@@ -16,19 +16,14 @@ fn adjacent(pos: &Point) -> Vec<Point> {
 }
 
 #[derive(Eq, PartialEq)]
-enum Entity {
-    Key(KeyId),
-    Door(KeyId),
-}
-
-#[derive(Eq, PartialEq)]
 enum Tile {
-    Floor(Option<Entity>),
+    Door(KeyId),
+    Floor,
+    Key(KeyId),
     Wall,
 }
 
-use Entity::{Door, Key};
-use Tile::{Floor, Wall};
+use Tile::{Door, Floor, Key, Wall};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 struct KeyId {
@@ -148,7 +143,7 @@ impl<'world> Navigation<'world> {
                         let next_len = proute.len + 1;
 
                         match &self.world.tiles[next_pos.1][next_pos.0] {
-                            Floor(None) => {
+                            Floor => {
                                 queue.push_back(PartialRoute {
                                     pos: next_pos,
                                     collected_keys: proute.collected_keys,
@@ -159,7 +154,7 @@ impl<'world> Navigation<'world> {
                                 visited.insert((next_pos, proute.prerequired_keys));
                             }
 
-                            Floor(Some(Key(k))) => {
+                            Key(k) => {
                                 moves.push(Route {
                                     to: next_pos,
                                     len: next_len,
@@ -170,7 +165,7 @@ impl<'world> Navigation<'world> {
                                 visited.insert((next_pos, proute.prerequired_keys));
                             }
 
-                            Floor(Some(Door(k))) => {
+                            Door(k) => {
                                 let prereq = if proute.collected_keys.contains(*k) {
                                     proute.prerequired_keys
                                 } else {
@@ -224,9 +219,9 @@ impl<'world> State<'world> {
                     } else {
                         match tile {
                             Wall => '#'.to_string(),
-                            Floor(Some(Key(a))) => a.to_char().to_string(),
-                            Floor(Some(Door(a))) => a.to_char().to_ascii_uppercase().to_string(),
-                            Floor(None) => '.'.to_string(),
+                            Floor => '.'.to_string(),
+                            Key(a) => a.to_char().to_string(),
+                            Door(a) => a.to_char().to_ascii_uppercase().to_string(),
                         }
                     })
                     .collect::<Vec<String>>()
@@ -260,17 +255,19 @@ fn parse_world(lines: &[String]) -> (World, Point) {
                 .enumerate()
                 .map(|(x, c)| match c {
                     '#' => Wall,
-                    '.' => Floor(None),
+                    '.' => Floor,
                     '@' => {
                         player_pos = (x, y);
-                        Floor(None)
+                        Floor
                     }
-                    a => Floor(Some(if a == a.to_ascii_uppercase() {
-                        Door(a.into())
-                    } else {
-                        keys = keys.with(a.into());
-                        Key(a.into())
-                    })),
+                    a => {
+                        if a == a.to_ascii_uppercase() {
+                            Door(a.into())
+                        } else {
+                            keys = keys.with(a.into());
+                            Key(a.into())
+                        }
+                    }
                 })
                 .collect()
         })
