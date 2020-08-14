@@ -41,7 +41,7 @@ pub fn solve(lines: &[String]) -> Solution {
     let a_solution: i64 = *ingredients.get("ORE").unwrap();
 
     let mut b_solution: i64 = 1;
-    while *ingredients.get("ORE").unwrap() < 1_000_000_000_000 {
+    loop {
         let additional_fuel = (1_000_000_000_000 - ingredients.get("ORE").unwrap()) / a_solution;
         if additional_fuel > 0 {
             b_solution += additional_fuel;
