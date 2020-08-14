@@ -118,6 +118,7 @@ impl<'world> Navigation<'world> {
         #[derive(Debug)]
         struct PartialRoute {
             pos: Point,
+            prev_pos: Point,
             collected_keys: KeySet,
             prerequired_keys: KeySet,
             len: usize,
@@ -129,13 +130,17 @@ impl<'world> Navigation<'world> {
             let mut queue: VecDeque<PartialRoute> = VecDeque::new();
             queue.push_back(PartialRoute {
                 pos: from,
+                prev_pos: from,
                 collected_keys: KeySet::new(),
                 prerequired_keys: KeySet::new(),
                 len: 0,
             });
 
             while let Some(proute) = queue.pop_front() {
-                for next_pos in adjacent(&proute.pos) {
+                for next_pos in adjacent(&proute.pos)
+                    .into_iter()
+                    .filter(|p| *p != proute.prev_pos)
+                {
                     let pos_visited_with_fewer_keys = visited.iter().any(|&(pos, prereq)| {
                         pos == next_pos && proute.prerequired_keys.contains_all(prereq)
                     });
@@ -146,6 +151,7 @@ impl<'world> Navigation<'world> {
                             Floor => {
                                 queue.push_back(PartialRoute {
                                     pos: next_pos,
+                                    prev_pos: proute.pos,
                                     collected_keys: proute.collected_keys,
                                     prerequired_keys: proute.prerequired_keys,
                                     len: next_len,
@@ -173,6 +179,7 @@ impl<'world> Navigation<'world> {
                                 };
                                 queue.push_back(PartialRoute {
                                     pos: next_pos,
+                                    prev_pos: proute.pos,
                                     collected_keys: proute.collected_keys,
                                     prerequired_keys: prereq,
                                     len: next_len,
