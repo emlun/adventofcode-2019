@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 type Word = i64;
 type Memory = Vec<Word>;
 
@@ -38,11 +36,11 @@ impl IntcodeComputer {
         let mut output = None;
 
         let get_addr = |prog: &mut Memory, offset: usize| -> usize {
-            let parmode_pow = 10_i64.pow((offset + 1).try_into().unwrap());
+            let parmode_pow = 10_i64.pow((offset + 1) as u32);
             let out_addr = match (instruction / parmode_pow) % 10 {
-                0 => (prog[eip + offset]).try_into().unwrap(),
+                0 => (prog[eip + offset]) as usize,
                 1 => eip + offset,
-                2 => (relbase + prog[eip + offset]).try_into().unwrap(),
+                2 => (relbase + prog[eip + offset]) as usize,
                 _ => unreachable!(),
             };
             if out_addr >= prog.len() {
