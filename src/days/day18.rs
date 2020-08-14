@@ -136,6 +136,7 @@ impl<'world> Navigation<'world> {
                 ]
                 .iter()
                 .filter(|p| **p != proute.prev_pos)
+                .filter(|p| self.world.tiles[p.1][p.0] != Wall)
                 {
                     let pos_visited_with_fewer_keys = visited.iter().any(|&(pos, prereq)| {
                         pos == next_pos && proute.prerequired_keys.contains_all(prereq)
@@ -184,7 +185,7 @@ impl<'world> Navigation<'world> {
                                 visited.insert((next_pos, prereq));
                             }
 
-                            Wall => {}
+                            Wall => unreachable!(),
                         }
                     }
                 }
