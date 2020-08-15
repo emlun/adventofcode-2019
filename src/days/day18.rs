@@ -212,53 +212,49 @@ impl<'world> Navigation<'world> {
 }
 
 #[derive(Eq, PartialEq)]
-struct State<'world> {
-    world: &'world World,
+struct State {
     poss: Vec<Point>,
     collected: KeySet,
     len: usize,
 }
-
-impl<'world> State<'world> {
-    #[allow(dead_code)]
-    fn print_state(&self) {
-        println!(
-            "{}",
-            self.world
-                .tiles
-                .iter()
-                .enumerate()
-                .map(|(r, row)| row
-                    .iter()
-                    .enumerate()
-                    .map(|(c, tile)| if self.poss.contains(&(c, r)) {
-                        '@'.to_string()
-                    } else {
-                        match tile {
-                            Wall => '#'.to_string(),
-                            Floor => '.'.to_string(),
-                            Key(a) => a.to_char().to_string(),
-                            Door(a) => a.to_char().to_ascii_uppercase().to_string(),
-                        }
-                    })
-                    .collect::<Vec<String>>()
-                    .join(""))
-                .collect::<Vec<String>>()
-                .join("\n")
-        );
-    }
-}
-
-impl Ord for State<'_> {
+impl Ord for State {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.len.cmp(&self.len)
     }
 }
 
-impl PartialOrd for State<'_> {
+impl PartialOrd for State {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
+}
+
+#[allow(dead_code)]
+fn print_state(world: &World, state: &State) {
+    println!(
+        "{}",
+        world
+            .tiles
+            .iter()
+            .enumerate()
+            .map(|(r, row)| row
+                .iter()
+                .enumerate()
+                .map(|(c, tile)| if state.poss.contains(&(c, r)) {
+                    '@'.to_string()
+                } else {
+                    match tile {
+                        Wall => '#'.to_string(),
+                        Floor => '.'.to_string(),
+                        Key(a) => a.to_char().to_string(),
+                        Door(a) => a.to_char().to_ascii_uppercase().to_string(),
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(""))
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
 }
 
 fn parse_world(lines: &[String]) -> (World, Point) {
@@ -302,7 +298,7 @@ fn duplication_key(keys: KeySet, points: &Vec<Point>) -> u128 {
     result
 }
 
-fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<State<'world>> {
+fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<State> {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
     let mut shortest_paths: HashMap<u128, usize> = HashMap::new();
 
@@ -312,7 +308,6 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
     };
 
     queue.push(State {
-        world,
         poss: start_positions.to_vec(),
         collected: KeySet::new(),
         len: 0,
@@ -340,7 +335,6 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
                         poss[posi] = route.to;
 
                         queue.push(State {
-                            world,
                             poss,
                             collected,
                             len: state.len + route.len,
