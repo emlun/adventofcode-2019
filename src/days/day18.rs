@@ -178,11 +178,10 @@ impl<'world> Navigation<'world> {
                         }
 
                         Door(k) => {
-                            let doors_passed = proute.doors_passed.with(*k);
                             queue.push_back(PartialRoute {
                                 pos: next_pos,
                                 prev_pos: proute.pos,
-                                doors_passed,
+                                doors_passed: proute.doors_passed.with(*k),
                                 len: next_len,
                             });
                         }
@@ -318,13 +317,12 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
                         .iter()
                         .filter(|route| state.collected.contains_all(route.doors_passed))
                     {
-                        let collected = state.collected.with(route.new_key);
                         let mut poss = state.poss.clone();
                         poss[posi] = route.to;
 
                         queue.push(State {
                             poss,
-                            collected,
+                            collected: state.collected.with(route.new_key),
                             len: state.len + route.len,
                         });
                     }
