@@ -111,7 +111,7 @@ struct Navigation<'world> {
 struct Route {
     to: Point,
     new_key: KeyId,
-    prerequired_keys: KeySet,
+    doors_passed: KeySet,
     len: usize,
 }
 
@@ -121,7 +121,7 @@ impl<'world> Navigation<'world> {
         struct PartialRoute {
             pos: Point,
             prev_pos: Point,
-            prerequired_keys: KeySet,
+            doors_passed: KeySet,
             len: usize,
         }
 
@@ -132,7 +132,7 @@ impl<'world> Navigation<'world> {
             queue.push_back(PartialRoute {
                 pos: from,
                 prev_pos: from,
-                prerequired_keys: KeySet::new(),
+                doors_passed: KeySet::new(),
                 len: 0,
             });
 
@@ -151,8 +151,8 @@ impl<'world> Navigation<'world> {
                 let several_next_points = adjacent.len() > 1;
 
                 for next_pos in adjacent {
-                    let pos_visited_with_fewer_keys = visited.iter().any(|&(pos, prereq)| {
-                        pos == next_pos && proute.prerequired_keys.contains_all(prereq)
+                    let pos_visited_with_fewer_keys = visited.iter().any(|&(pos, doors)| {
+                        pos == next_pos && proute.doors_passed.contains_all(doors)
                     });
                     if !pos_visited_with_fewer_keys {
                         let next_len = proute.len + 1;
@@ -162,12 +162,12 @@ impl<'world> Navigation<'world> {
                                 queue.push_back(PartialRoute {
                                     pos: next_pos,
                                     prev_pos: proute.pos,
-                                    prerequired_keys: proute.prerequired_keys,
+                                    doors_passed: proute.doors_passed,
                                     len: next_len,
                                 });
 
                                 if several_next_points {
-                                    visited.insert((next_pos, proute.prerequired_keys));
+                                    visited.insert((next_pos, proute.doors_passed));
                                 }
                             }
 
@@ -176,25 +176,25 @@ impl<'world> Navigation<'world> {
                                     to: next_pos,
                                     len: next_len,
                                     new_key: *k,
-                                    prerequired_keys: proute.prerequired_keys,
+                                    doors_passed: proute.doors_passed,
                                 });
 
                                 if several_next_points {
-                                    visited.insert((next_pos, proute.prerequired_keys));
+                                    visited.insert((next_pos, proute.doors_passed));
                                 }
                             }
 
                             Door(k) => {
-                                let prereq = proute.prerequired_keys.with(*k);
+                                let doors_passed = proute.doors_passed.with(*k);
                                 queue.push_back(PartialRoute {
                                     pos: next_pos,
                                     prev_pos: proute.pos,
-                                    prerequired_keys: prereq,
+                                    doors_passed,
                                     len: next_len,
                                 });
 
                                 if several_next_points {
-                                    visited.insert((next_pos, prereq));
+                                    visited.insert((next_pos, doors_passed));
                                 }
                             }
 
@@ -328,7 +328,7 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
                     for route in navigation
                         .available_moves(*pos)
                         .iter()
-                        .filter(|route| state.collected.contains_all(route.prerequired_keys))
+                        .filter(|route| state.collected.contains_all(route.doors_passed))
                     {
                         let collected = state.collected.with(route.new_key);
                         let mut poss = state.poss.clone();
