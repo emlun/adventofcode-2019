@@ -285,7 +285,7 @@ fn duplication_key(keys: KeySet, points: &Vec<Point>) -> u128 {
     result
 }
 
-fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<State> {
+fn dijkstra<'world>(world: &'world World, start_positions: Vec<Point>) -> Option<State> {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
     let mut shortest_paths: HashMap<u128, usize> = HashMap::new();
 
@@ -295,7 +295,7 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
     };
 
     queue.push(State {
-        poss: start_positions.to_vec(),
+        poss: start_positions,
         collected: KeySet::new(),
         len: 0,
     });
@@ -334,7 +334,7 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
 }
 
 fn solve_a(world: &World, pos: Point) -> usize {
-    let found = dijkstra(world, &[pos]);
+    let found = dijkstra(world, vec![pos]);
     found.unwrap().len
 }
 
@@ -351,7 +351,7 @@ fn solve_b(mut world: World, pos: Point) -> usize {
         (pos.0 + 1, pos.1 - 1),
     ];
 
-    let found = dijkstra(&world, &pos);
+    let found = dijkstra(&world, pos);
     found.unwrap().len
 }
 
