@@ -16,7 +16,7 @@ enum Tile {
 
 use Tile::{Door, Floor, Key, Wall};
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct KeyId {
     value: u32,
 }
@@ -49,15 +49,6 @@ impl KeySet {
     fn with(mut self, key: KeyId) -> Self {
         self.keys |= key.value;
         self
-    }
-
-    fn union(mut self, keys: KeySet) -> Self {
-        self.keys |= keys.keys;
-        self
-    }
-
-    fn contains(self, key: KeyId) -> bool {
-        self.keys & key.value != 0
     }
 
     fn contains_all(self, keys: KeySet) -> bool {
@@ -99,7 +90,7 @@ struct Navigation<'world> {
 #[derive(Debug)]
 struct Route {
     to: Point,
-    collected_keys: KeySet,
+    new_key: KeyId,
     prerequired_keys: KeySet,
     len: usize,
 }
@@ -110,7 +101,6 @@ impl<'world> Navigation<'world> {
         struct PartialRoute {
             pos: Point,
             prev_pos: Point,
-            collected_keys: KeySet,
             prerequired_keys: KeySet,
             len: usize,
         }
@@ -122,7 +112,6 @@ impl<'world> Navigation<'world> {
             queue.push_back(PartialRoute {
                 pos: from,
                 prev_pos: from,
-                collected_keys: KeySet::new(),
                 prerequired_keys: KeySet::new(),
                 len: 0,
             });
@@ -153,7 +142,6 @@ impl<'world> Navigation<'world> {
                                 queue.push_back(PartialRoute {
                                     pos: next_pos,
                                     prev_pos: proute.pos,
-                                    collected_keys: proute.collected_keys,
                                     prerequired_keys: proute.prerequired_keys,
                                     len: next_len,
                                 });
@@ -167,7 +155,7 @@ impl<'world> Navigation<'world> {
                                 moves.push(Route {
                                     to: next_pos,
                                     len: next_len,
-                                    collected_keys: proute.collected_keys.with(*k),
+                                    new_key: *k,
                                     prerequired_keys: proute.prerequired_keys,
                                 });
 
@@ -177,15 +165,10 @@ impl<'world> Navigation<'world> {
                             }
 
                             Door(k) => {
-                                let prereq = if proute.collected_keys.contains(*k) {
-                                    proute.prerequired_keys
-                                } else {
-                                    proute.prerequired_keys.with(*k)
-                                };
+                                let prereq = proute.prerequired_keys.with(*k);
                                 queue.push_back(PartialRoute {
                                     pos: next_pos,
                                     prev_pos: proute.pos,
-                                    collected_keys: proute.collected_keys,
                                     prerequired_keys: prereq,
                                     len: next_len,
                                 });
@@ -322,7 +305,7 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
                         .iter()
                         .filter(|route| state.collected.contains_all(route.prerequired_keys))
                     {
-                        let collected = state.collected.union(route.collected_keys);
+                        let collected = state.collected.with(route.new_key);
                         let mut poss = state.poss.clone();
                         poss[posi] = route.to;
 
