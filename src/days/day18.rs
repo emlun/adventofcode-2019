@@ -293,17 +293,18 @@ fn parse_world(lines: &[String]) -> (World, Point) {
     (World { tiles, keys }, player_pos)
 }
 
-fn get_positions_key(points: &Vec<Point>) -> usize {
-    let mut result = 0;
+fn duplication_key(keys: KeySet, points: &Vec<Point>) -> u128 {
+    let mut result: u128 = (keys.keys as u128) << 16;
     for p in points {
-        result = (result << 16) | (p.1 << 8) | p.0;
+        result |= ((p.1 << 8) | p.0) as u128;
+        result <<= 16;
     }
     result
 }
 
 fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<State<'world>> {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
-    let mut shortest_paths: HashMap<(KeySet, Point, usize), usize> = HashMap::new();
+    let mut shortest_paths: HashMap<u128, usize> = HashMap::new();
 
     let mut navigation = Navigation {
         world: &world,
@@ -321,10 +322,10 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
         if state.collected == world.keys {
             return Some(state);
         } else {
-            let pos_key = get_positions_key(&state.poss);
+            let dup_key = duplication_key(state.collected, &state.poss);
             for (posi, pos) in state.poss.iter().enumerate() {
                 let shortest = shortest_paths
-                    .entry((state.collected, *pos, pos_key))
+                    .entry(dup_key | posi as u128)
                     .or_insert(state.len + 1);
                 if state.len < *shortest {
                     *shortest = state.len;
