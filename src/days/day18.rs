@@ -62,6 +62,16 @@ impl KeySet {
     }
 }
 
+impl<I, K> From<I> for KeySet
+where
+    I: IntoIterator<Item = K>,
+    K: Into<KeyId>,
+{
+    fn from(it: I) -> Self {
+        it.into_iter().collect()
+    }
+}
+
 impl<K> std::iter::FromIterator<K> for KeySet
 where
     K: Into<KeyId>,
