@@ -127,7 +127,7 @@ impl<'world> Navigation<'world> {
 
         if self.moves.get(&from).is_none() {
             let mut moves: Vec<Route> = Vec::new();
-            let mut visited: HashSet<(Point, KeySet)> = HashSet::new();
+            let mut visited: HashSet<Point> = HashSet::new();
             let mut queue: VecDeque<PartialRoute> = VecDeque::new();
             queue.push_back(PartialRoute {
                 pos: from,
@@ -151,10 +151,11 @@ impl<'world> Navigation<'world> {
                 let several_next_points = adjacent.len() > 1;
 
                 for next_pos in adjacent {
-                    let pos_visited_with_fewer_keys = visited.iter().any(|&(pos, doors)| {
-                        pos == next_pos && proute.doors_passed.contains_all(doors)
-                    });
-                    if !pos_visited_with_fewer_keys {
+                    if !visited.contains(&next_pos) {
+                        if several_next_points {
+                            visited.insert(next_pos);
+                        }
+
                         let next_len = proute.len + 1;
 
                         match &self.world.tiles[next_pos.1][next_pos.0] {
@@ -165,10 +166,6 @@ impl<'world> Navigation<'world> {
                                     doors_passed: proute.doors_passed,
                                     len: next_len,
                                 });
-
-                                if several_next_points {
-                                    visited.insert((next_pos, proute.doors_passed));
-                                }
                             }
 
                             Key(k) => {
@@ -178,10 +175,6 @@ impl<'world> Navigation<'world> {
                                     new_key: *k,
                                     doors_passed: proute.doors_passed,
                                 });
-
-                                if several_next_points {
-                                    visited.insert((next_pos, proute.doors_passed));
-                                }
                             }
 
                             Door(k) => {
@@ -192,10 +185,6 @@ impl<'world> Navigation<'world> {
                                     doors_passed,
                                     len: next_len,
                                 });
-
-                                if several_next_points {
-                                    visited.insert((next_pos, doors_passed));
-                                }
                             }
 
                             Wall => unreachable!(),
