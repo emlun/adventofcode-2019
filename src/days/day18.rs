@@ -3,6 +3,7 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
+use std::rc::Rc;
 
 type Point = (usize, usize);
 
@@ -214,7 +215,7 @@ impl<'world> Navigation<'world> {
 #[derive(Eq, PartialEq)]
 struct State<'world> {
     world: &'world World,
-    poss: Vec<Point>,
+    poss: Rc<Vec<Point>>,
     collected: KeySet,
     len: usize,
 }
@@ -295,7 +296,7 @@ fn parse_world(lines: &[String]) -> (World, Point) {
 
 fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<State<'world>> {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
-    let mut shortest_paths: HashMap<(KeySet, Point, Vec<Point>), usize> = HashMap::new();
+    let mut shortest_paths: HashMap<(KeySet, Point, Rc<Vec<Point>>), usize> = HashMap::new();
 
     let mut navigation = Navigation {
         world: &world,
@@ -304,7 +305,7 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
 
     queue.push(State {
         world,
-        poss: start_positions.to_vec(),
+        poss: Rc::new(start_positions.to_vec()),
         collected: KeySet::new(),
         len: 0,
     });
@@ -315,7 +316,7 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
         } else {
             for (posi, pos) in state.poss.iter().enumerate() {
                 let shortest = shortest_paths
-                    .entry((state.collected, *pos, state.poss.clone()))
+                    .entry((state.collected, *pos, Rc::clone(&state.poss)))
                     .or_insert(state.len + 1);
                 if state.len < *shortest {
                     *shortest = state.len;
@@ -326,12 +327,12 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
                         .filter(|route| state.collected.contains_all(route.prerequired_keys))
                     {
                         let collected = state.collected.with(route.new_key);
-                        let mut poss = state.poss.clone();
+                        let mut poss = (*state.poss).clone();
                         poss[posi] = route.to;
 
                         queue.push(State {
                             world,
-                            poss,
+                            poss: Rc::new(poss),
                             collected,
                             len: state.len + route.len,
                         });
