@@ -281,7 +281,7 @@ fn parse_world(lines: &[String]) -> (World, Point) {
 
 fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<State<'world>> {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
-    let mut shortest_paths: HashMap<(KeySet, Point), usize> = HashMap::new();
+    let mut shortest_paths: HashMap<(KeySet, Point, Vec<Point>), usize> = HashMap::new();
 
     let mut navigation = Navigation {
         world: &world,
@@ -301,7 +301,7 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
         } else {
             for (posi, pos) in state.poss.iter().enumerate() {
                 let shortest = shortest_paths
-                    .entry((state.collected, *pos))
+                    .entry((state.collected, *pos, state.poss.clone()))
                     .or_insert(state.len + 1);
                 if state.len < *shortest {
                     *shortest = state.len;
