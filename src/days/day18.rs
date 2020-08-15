@@ -3,7 +3,6 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
-use std::rc::Rc;
 
 type Point = (usize, usize);
 
@@ -215,7 +214,7 @@ impl<'world> Navigation<'world> {
 #[derive(Eq, PartialEq)]
 struct State<'world> {
     world: &'world World,
-    poss: Rc<Vec<Point>>,
+    poss: Vec<Point>,
     collected: KeySet,
     len: usize,
 }
@@ -294,9 +293,17 @@ fn parse_world(lines: &[String]) -> (World, Point) {
     (World { tiles, keys }, player_pos)
 }
 
+fn get_positions_key(points: &Vec<Point>) -> usize {
+    let mut result = 0;
+    for p in points {
+        result = (result << 16) | (p.1 << 8) | p.0;
+    }
+    result
+}
+
 fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<State<'world>> {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
-    let mut shortest_paths: HashMap<(KeySet, Point, Rc<Vec<Point>>), usize> = HashMap::new();
+    let mut shortest_paths: HashMap<(KeySet, Point, usize), usize> = HashMap::new();
 
     let mut navigation = Navigation {
         world: &world,
@@ -305,7 +312,7 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
 
     queue.push(State {
         world,
-        poss: Rc::new(start_positions.to_vec()),
+        poss: start_positions.to_vec(),
         collected: KeySet::new(),
         len: 0,
     });
@@ -314,9 +321,10 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
         if state.collected == world.keys {
             return Some(state);
         } else {
+            let pos_key = get_positions_key(&state.poss);
             for (posi, pos) in state.poss.iter().enumerate() {
                 let shortest = shortest_paths
-                    .entry((state.collected, *pos, Rc::clone(&state.poss)))
+                    .entry((state.collected, *pos, pos_key))
                     .or_insert(state.len + 1);
                 if state.len < *shortest {
                     *shortest = state.len;
@@ -327,12 +335,12 @@ fn dijkstra<'world>(world: &'world World, start_positions: &[Point]) -> Option<S
                         .filter(|route| state.collected.contains_all(route.prerequired_keys))
                     {
                         let collected = state.collected.with(route.new_key);
-                        let mut poss = (*state.poss).clone();
+                        let mut poss = state.poss.clone();
                         poss[posi] = route.to;
 
                         queue.push(State {
                             world,
-                            poss: Rc::new(poss),
+                            poss,
                             collected,
                             len: state.len + route.len,
                         });
