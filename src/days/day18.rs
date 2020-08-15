@@ -78,7 +78,21 @@ where
 
 impl std::fmt::Debug for KeySet {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "{:b}", self.keys)
+        let mut bits = self.keys;
+        write!(f, "[")?;
+        for i in 0.. {
+            if bits > 0 {
+                if bits % 2 == 1 {
+                    write!(f, "{}", ('a' as u8 + i) as char)?;
+                } else {
+                    write!(f, " ")?;
+                }
+                bits >>= 1;
+            } else {
+                break;
+            }
+        }
+        write!(f, "]")
     }
 }
 
