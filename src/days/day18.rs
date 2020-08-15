@@ -147,48 +147,47 @@ impl<'world> Navigation<'world> {
                 .copied()
                 .filter(|p| *p != proute.prev_pos)
                 .filter(|p| self.world.tiles[p.1][p.0] != Wall)
+                .filter(|p| !visited.contains(p))
                 .collect();
                 let several_next_points = adjacent.len() > 1;
 
                 for next_pos in adjacent {
-                    if !visited.contains(&next_pos) {
-                        if several_next_points {
-                            visited.insert(next_pos);
+                    if several_next_points {
+                        visited.insert(next_pos);
+                    }
+
+                    let next_len = proute.len + 1;
+
+                    match &self.world.tiles[next_pos.1][next_pos.0] {
+                        Floor => {
+                            queue.push_back(PartialRoute {
+                                pos: next_pos,
+                                prev_pos: proute.pos,
+                                doors_passed: proute.doors_passed,
+                                len: next_len,
+                            });
                         }
 
-                        let next_len = proute.len + 1;
-
-                        match &self.world.tiles[next_pos.1][next_pos.0] {
-                            Floor => {
-                                queue.push_back(PartialRoute {
-                                    pos: next_pos,
-                                    prev_pos: proute.pos,
-                                    doors_passed: proute.doors_passed,
-                                    len: next_len,
-                                });
-                            }
-
-                            Key(k) => {
-                                moves.push(Route {
-                                    to: next_pos,
-                                    len: next_len,
-                                    new_key: *k,
-                                    doors_passed: proute.doors_passed,
-                                });
-                            }
-
-                            Door(k) => {
-                                let doors_passed = proute.doors_passed.with(*k);
-                                queue.push_back(PartialRoute {
-                                    pos: next_pos,
-                                    prev_pos: proute.pos,
-                                    doors_passed,
-                                    len: next_len,
-                                });
-                            }
-
-                            Wall => unreachable!(),
+                        Key(k) => {
+                            moves.push(Route {
+                                to: next_pos,
+                                len: next_len,
+                                new_key: *k,
+                                doors_passed: proute.doors_passed,
+                            });
                         }
+
+                        Door(k) => {
+                            let doors_passed = proute.doors_passed.with(*k);
+                            queue.push_back(PartialRoute {
+                                pos: next_pos,
+                                prev_pos: proute.pos,
+                                doors_passed,
+                                len: next_len,
+                            });
+                        }
+
+                        Wall => unreachable!(),
                     }
                 }
             }
