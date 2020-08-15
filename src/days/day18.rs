@@ -16,7 +16,7 @@ enum Tile {
 
 use Tile::{Door, Floor, Key, Wall};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 struct KeyId {
     value: u32,
 }
@@ -33,6 +33,12 @@ impl From<char> for KeyId {
         KeyId {
             value: 2_u32.pow(c as u32 - basis as u32),
         }
+    }
+}
+
+impl std::fmt::Debug for KeyId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.to_char())
     }
 }
 
