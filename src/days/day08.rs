@@ -6,14 +6,7 @@ const W: usize = 25;
 const H: usize = 6;
 
 pub fn solve_b(layers: &[Vec<u8>]) -> String {
-    let mut image: Vec<Vec<u8>> = Vec::new();
-    for _ in 0..H {
-        let mut row: Vec<u8> = Vec::new();
-        for _ in 0..W {
-            row.push(2);
-        }
-        image.push(row);
-    }
+    let mut image: Vec<Vec<u8>> = vec![vec![2; W]; H];
     for layer in layers.iter() {
         for r in 0..H {
             for c in 0..W {
