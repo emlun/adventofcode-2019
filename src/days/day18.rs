@@ -1,4 +1,5 @@
 use crate::common::Solution;
+use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -216,7 +217,7 @@ struct State {
 }
 impl Ord for State {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.len.cmp(&self.len)
+        self.len.cmp(&other.len)
     }
 }
 
@@ -296,7 +297,7 @@ fn duplication_key(keys: KeySet, points: &Vec<Point>) -> u128 {
 }
 
 fn dijkstra<'world>(world: &'world World, start_positions: Vec<Point>) -> Option<State> {
-    let mut queue: BinaryHeap<State> = BinaryHeap::new();
+    let mut queue: BinaryHeap<Reverse<State>> = BinaryHeap::new();
     let mut shortest_paths: HashMap<u128, usize> = HashMap::new();
 
     let mut navigation = Navigation {
@@ -304,13 +305,13 @@ fn dijkstra<'world>(world: &'world World, start_positions: Vec<Point>) -> Option
         moves: HashMap::new(),
     };
 
-    queue.push(State {
+    queue.push(Reverse(State {
         poss: start_positions,
         collected: KeySet::new(),
         len: 0,
-    });
+    }));
 
-    while let Some(state) = queue.pop() {
+    while let Some(Reverse(state)) = queue.pop() {
         if state.collected == world.keys {
             return Some(state);
         } else {
@@ -330,11 +331,11 @@ fn dijkstra<'world>(world: &'world World, start_positions: Vec<Point>) -> Option
                         let mut poss = state.poss.clone();
                         poss[posi] = route.to;
 
-                        queue.push(State {
+                        queue.push(Reverse(State {
                             poss,
                             collected: state.collected.with(route.new_key),
                             len: state.len + route.len,
-                        });
+                        }));
                     }
                 }
             }
