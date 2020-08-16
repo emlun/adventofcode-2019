@@ -321,12 +321,11 @@ fn initialize(mut state: State, output: String) -> State {
     state.explore(room.doors)
 }
 
-fn solve_a(mut computer: IntcodeComputer) -> String {
+fn solve_a(computer: IntcodeComputer) -> String {
     let mut state = State::new();
 
-    let o = computer.run_until_more_input_required(None);
-    computer = o.0;
-    let first_output: String = o.1.into_iter().map(|i| i as u8 as char).collect();
+    let mut computer = computer.run(None);
+    let first_output: String = computer.output.drain(..).map(|i| i as u8 as char).collect();
     // println!("{}", first_output);
     state = initialize(state, first_output);
 
@@ -342,9 +341,8 @@ fn solve_a(mut computer: IntcodeComputer) -> String {
                 .chars()
                 .map(|c| c as u8 as i64)
                 .collect();
-            let o = computer.run_until_more_input_required(input);
-            computer = o.0;
-            output = o.1.into_iter().map(|i| i as u8 as char).collect();
+            computer = computer.run(input);
+            output = computer.output.drain(..).map(|i| i as u8 as char).collect();
             // println!("{}", output);
         }
 

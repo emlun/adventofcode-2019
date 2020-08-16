@@ -1,25 +1,21 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
 
-fn run(computer: IntcodeComputer, input: i64) -> Vec<i64> {
-    computer.run(Some(input))
-}
-
 fn solve_a(computer: IntcodeComputer) -> Option<i64> {
-    let output = run(computer, 1);
+    let output = computer.run(Some(1)).output;
     if output
         .iter()
         .enumerate()
         .all(|(i, o)| *o == 0 || i == output.len() - 1)
     {
-        Some(*output.last().unwrap())
+        Some(*output.back().unwrap())
     } else {
         None
     }
 }
 
 fn solve_b(computer: IntcodeComputer) -> i64 {
-    *run(computer, 5).last().unwrap()
+    *computer.run(Some(5)).output.back().unwrap()
 }
 
 pub fn solve(lines: &[String]) -> Solution {

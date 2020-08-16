@@ -3,17 +3,10 @@ use crate::intcode::parse_program;
 use crate::intcode::IntcodeComputer;
 use std::convert::TryInto;
 
-fn run(mut computer: IntcodeComputer) -> i64 {
-    while computer.is_running() {
-        computer.step(&mut None);
-    }
-    computer.prog[0]
-}
-
 fn solve_a(mut computer: IntcodeComputer) -> i64 {
     computer.prog[1] = 12;
     computer.prog[2] = 2;
-    run(computer)
+    computer.run(None).prog[0]
 }
 
 #[allow(clippy::unreadable_literal)]
@@ -27,7 +20,7 @@ fn solve_b(program: Vec<i64>) -> i64 {
             let verb = verb.try_into().unwrap();
             prog[1] = noun;
             prog[2] = verb;
-            if run(IntcodeComputer::new(prog)) == B_OUTPUT_TARGET {
+            if IntcodeComputer::new(prog).run(None).prog[0] == B_OUTPUT_TARGET {
                 return 100 * noun + verb;
             }
         }

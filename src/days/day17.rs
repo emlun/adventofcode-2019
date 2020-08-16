@@ -368,7 +368,7 @@ fn solve_b(finish_a: State, mut computer: IntcodeComputer) -> i64 {
     input_sequence.push(b'n' as i64);
     input_sequence.push(b'\n' as i64);
 
-    let output = computer.run(input_sequence);
+    let output = computer.run(input_sequence).output;
     output[output.len() - 1]
 }
 

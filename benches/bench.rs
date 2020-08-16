@@ -166,7 +166,10 @@ mod intcode {
         let program = vec![
             109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
         ];
-        assert_eq!(IntcodeComputer::new(program.clone()).run(None), program);
+        assert_eq!(
+            IntcodeComputer::new(program.clone()).run(None).output,
+            program
+        );
         b.iter(|| IntcodeComputer::new(program.clone()).run(None));
     }
 
@@ -176,7 +179,7 @@ mod intcode {
             109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
         ];
         let computer = IntcodeComputer::new(program.clone());
-        assert_eq!(computer.clone().run(None), program);
+        assert_eq!(computer.clone().run(None).output, program);
         b.iter(|| computer.clone().run(None));
     }
 
@@ -197,7 +200,7 @@ mod intcode {
     fn day9_example_3_new(b: &mut Bencher) {
         let program = vec![104, 1125899906842624, 99];
         assert_eq!(
-            IntcodeComputer::new(program.clone()).run(None)[0],
+            IntcodeComputer::new(program.clone()).run(None).output[0],
             program[1]
         );
         b.iter(|| IntcodeComputer::new(program.clone()).run(None));
@@ -207,7 +210,7 @@ mod intcode {
     fn day9_example_3_clone(b: &mut Bencher) {
         let program = vec![104, 1125899906842624, 99];
         let computer = IntcodeComputer::new(program.clone());
-        assert_eq!(computer.clone().run(None)[0], program[1]);
+        assert_eq!(computer.clone().run(None).output[0], program[1]);
         b.iter(|| computer.clone().run(None));
     }
 
@@ -508,11 +511,11 @@ mod intcode {
         program[0] = 2;
         let computer = IntcodeComputer::new(program);
         assert_eq!(
-            computer
+            *computer
                 .clone()
                 .run(input.iter().copied())
-                .into_iter()
-                .last()
+                .output
+                .back()
                 .unwrap(),
             9803
         );
@@ -561,10 +564,11 @@ mod intcode_iagueqnar {
     ];
 
     fn run_test(b: &mut Bencher, program: Vec<i64>, input: Vec<i64>, expected_output: Vec<i64>) {
-        let (_, output) =
-            IntcodeComputer::new(program.clone()).run_until_more_input_required(input.clone());
+        let output = IntcodeComputer::new(program.clone())
+            .run(input.iter().copied())
+            .output;
         assert_eq!(output, expected_output);
-        b.iter(|| IntcodeComputer::new(program.clone()).run(input.clone()));
+        b.iter(|| IntcodeComputer::new(program.clone()).run(input.iter().copied()));
     }
 
     #[bench]

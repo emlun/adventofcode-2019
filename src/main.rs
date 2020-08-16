@@ -85,7 +85,7 @@ fn run_intcode(input_file: Option<&str>) -> Result<(), std::io::Error> {
         })
         .unwrap_or_default();
     let computer: IntcodeComputer = lines[0..1].into();
-    let (computer, output) = computer.run_until_more_input_required(inputs);
+    let computer = computer.run(inputs);
     if computer.expects_input() {
         Err(std::io::Error::new(
             std::io::ErrorKind::UnexpectedEof,
@@ -94,7 +94,8 @@ fn run_intcode(input_file: Option<&str>) -> Result<(), std::io::Error> {
     } else {
         println!(
             "{}",
-            output
+            computer
+                .output
                 .into_iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>()

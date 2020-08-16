@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 type Word = i64;
 type Memory = Vec<Word>;
 
@@ -6,6 +8,8 @@ pub struct IntcodeComputer {
     pub eip: usize,
     pub prog: Memory,
     relbase: Word,
+    pub input: VecDeque<Word>,
+    pub output: VecDeque<Word>,
 }
 
 const OP_ADD: Word = 1;
@@ -25,15 +29,16 @@ impl IntcodeComputer {
             eip: 0,
             prog: program,
             relbase: 0,
+            input: VecDeque::new(),
+            output: VecDeque::new(),
         }
     }
 
-    pub fn step(&mut self, input: &mut Option<Word>) -> Option<Word> {
+    pub fn step(&mut self) {
         let instruction = self.prog[self.eip];
         let opcode = instruction % 100;
         let eip = self.eip;
         let relbase = self.relbase;
-        let mut output = None;
 
         let get_addr = |prog: &mut Memory, offset: usize| -> usize {
             let parmode_pow = match offset {
@@ -74,7 +79,7 @@ impl IntcodeComputer {
 
             OP_INPUT => {
                 let io = get_addr(&mut self.prog, 1);
-                if let Some(i) = input.take() {
+                if let Some(i) = self.input.pop_front() {
                     self.prog[io] = i;
                     self.eip + 2
                 } else {
@@ -83,7 +88,7 @@ impl IntcodeComputer {
             }
 
             OP_OUTPUT => {
-                output = Some(get_arg(&mut self.prog, 1));
+                self.output.push_back(get_arg(&mut self.prog, 1));
                 self.eip + 2
             }
 
@@ -131,46 +136,17 @@ impl IntcodeComputer {
             OP_HALT => self.eip,
             _ => unreachable!(),
         };
-        output
     }
 
-    pub fn run<I>(mut self, input: I) -> Vec<Word>
+    pub fn run<I>(mut self, input: I) -> Self
     where
         I: IntoIterator<Item = Word>,
     {
-        let mut outputs = Vec::new();
-        let mut inputs = input.into_iter();
-        let mut next_input = inputs.next();
-        while self.is_running() {
-            if next_input.is_none() {
-                next_input = inputs.next();
-            }
-            if let Some(o) = self.step(&mut next_input) {
-                outputs.push(o);
-            };
+        self.input.extend(input);
+        while self.is_running() && !(self.input.is_empty() && self.expects_input()) {
+            self.step();
         }
-        outputs
-    }
-
-    pub fn run_until_more_input_required<I>(mut self, input: I) -> (Self, Vec<Word>)
-    where
-        I: IntoIterator<Item = Word>,
-    {
-        let mut outputs = Vec::new();
-        let mut inputs = input.into_iter();
-        let mut next_input = inputs.next();
-        while self.is_running() {
-            if next_input.is_none() {
-                next_input = inputs.next();
-            }
-            if self.expects_input() && next_input.is_none() {
-                break;
-            }
-            if let Some(o) = self.step(&mut next_input) {
-                outputs.push(o);
-            };
-        }
-        (self, outputs)
+        self
     }
 
     pub fn run_with<State, F>(
@@ -182,12 +158,13 @@ impl IntcodeComputer {
     where
         F: Fn(Option<Word>, State) -> (Option<Word>, State),
     {
-        let mut input = initial_input;
+        self.input.extend(initial_input);
         let mut state = initial_state;
         while self.is_running() {
-            let output = self.step(&mut input);
-            let stepout = reducer(output, state);
-            input = stepout.0;
+            self.step();
+            let stepout = reducer(self.output.pop_front(), state);
+            self.input.clear();
+            self.input.extend(stepout.0);
             state = stepout.1;
         }
         state
@@ -202,12 +179,13 @@ impl IntcodeComputer {
     where
         F: Fn(Option<Word>, State) -> (Option<Word>, State, bool),
     {
-        let mut input = initial_input;
+        self.input.extend(initial_input);
         let mut state = initial_state;
         while self.is_running() {
-            let output = self.step(&mut input);
-            let stepout = reducer(output, state);
-            input = stepout.0;
+            self.step();
+            let stepout = reducer(self.output.pop_front(), state);
+            self.input.clear();
+            self.input.extend(stepout.0);
             state = stepout.1;
             if stepout.2 {
                 break;
@@ -225,12 +203,13 @@ impl IntcodeComputer {
     where
         F: Fn(Option<Word>, bool, State) -> (Option<Word>, State, bool),
     {
-        let mut input = initial_input;
+        self.input.extend(initial_input);
         let mut state = initial_state;
         while self.is_running() {
-            let output = self.step(&mut input);
-            let stepout = reducer(output, self.expects_input(), state);
-            input = stepout.0;
+            self.step();
+            let stepout = reducer(self.output.pop_front(), self.expects_input(), state);
+            self.input.clear();
+            self.input.extend(stepout.0);
             state = stepout.1;
             if stepout.2 {
                 break;

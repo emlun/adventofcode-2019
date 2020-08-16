@@ -4,7 +4,7 @@ use crate::intcode::IntcodeComputer;
 type Point = (usize, usize);
 
 fn check(computer: &IntcodeComputer, (x, y): Point) -> bool {
-    computer.clone().run(vec![x as i64, y as i64])[0] == 1
+    computer.clone().run(vec![x as i64, y as i64]).output[0] == 1
 }
 
 fn compute_minx(computer: &IntcodeComputer, prev_minx: usize, y: usize) -> usize {

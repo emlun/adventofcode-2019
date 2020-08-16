@@ -7,7 +7,7 @@ fn simulate(computer: IntcodeComputer, run: bool, script: &str) -> i64 {
         .chars()
         .chain(walk_input.chars())
         .map(|i| i as u8 as i64);
-    let output = computer.run(input);
+    let output = computer.run(input).output;
 
     if output.contains(&(b'D' as i64)) {
         println!("{:?}", output);
@@ -17,7 +17,7 @@ fn simulate(computer: IntcodeComputer, run: bool, script: &str) -> i64 {
         );
         -1
     } else {
-        *output.last().unwrap()
+        *output.back().unwrap()
     }
 }
 

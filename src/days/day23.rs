@@ -1,6 +1,5 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
-use std::collections::VecDeque;
 
 const NUM_COMPUTERS: usize = 50;
 
@@ -11,12 +10,13 @@ struct Packet {
 }
 
 fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
-    let mut computers: Vec<IntcodeComputer> =
-        (0..NUM_COMPUTERS).map(|_| template.clone()).collect();
-    let mut input_buffers: Vec<VecDeque<i64>> =
-        (0..NUM_COMPUTERS).map(|_| VecDeque::new()).collect();
-    let mut output_buffers: Vec<VecDeque<i64>> =
-        (0..NUM_COMPUTERS).map(|_| VecDeque::new()).collect();
+    let mut computers: Vec<IntcodeComputer> = (0..NUM_COMPUTERS)
+        .map(|i| {
+            let mut computer = template.clone();
+            computer.input.push_back(i as i64);
+            computer
+        })
+        .collect();
 
     let mut nat_buffer: Option<Packet> = None;
     let mut last_nat_y: Option<i64> = None;
@@ -24,60 +24,54 @@ fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
 
     let mut a_solution: Option<i64> = None;
 
-    for (compi, computer) in computers.iter_mut().enumerate() {
-        computer.step(&mut Some(compi as i64));
-    }
-
     loop {
         let network_idle = computers
             .iter()
             .enumerate()
-            .all(|(compi, _)| computers_stalled[compi] > 1 && input_buffers[compi].is_empty());
+            .all(|(compi, _)| computers_stalled[compi] > 1 && computers[compi].input.is_empty());
         if network_idle {
             if let Some(packet) = nat_buffer.as_ref() {
                 if Some(packet.y) == last_nat_y {
                     return (a_solution.unwrap(), packet.y);
                 } else {
                     last_nat_y = Some(packet.y);
-                    input_buffers[0].push_back(packet.x);
-                    input_buffers[0].push_back(packet.y);
+                    computers[0].input.push_back(packet.x);
+                    computers[0].input.push_back(packet.y);
                 }
             } else {
                 panic!("Network stalled");
             }
         }
 
-        for (compi, computer) in computers.iter_mut().enumerate() {
-            let input = if computer.expects_input() {
-                if let Some(i) = input_buffers[compi].pop_front() {
-                    computers_stalled[compi] = 0;
-                    Some(i)
-                } else {
+        for compi in 0..computers.len() {
+            let computer = &mut computers[compi];
+
+            if computer.expects_input() {
+                if computer.input.is_empty() {
                     computers_stalled[compi] += 1;
-                    None
+                    computer.input.push_back(-1);
+                } else {
+                    computers_stalled[compi] = 0;
                 }
-            } else {
-                None
             };
 
-            if let Some(output) = computer.step(&mut input.or(Some(-1))) {
-                computers_stalled[compi] = 0;
-                output_buffers[compi].push_back(output);
-                if output_buffers[compi].len() >= 3 {
-                    let addr = output_buffers[compi].pop_front().unwrap() as usize;
-                    let x = output_buffers[compi].pop_front().unwrap();
-                    let y = output_buffers[compi].pop_front().unwrap();
-                    let packet = Packet { x, y };
+            computer.step();
 
-                    if addr == 255 {
-                        if a_solution.is_none() {
-                            a_solution = Some(packet.y);
-                        }
-                        nat_buffer = Some(packet);
-                    } else {
-                        input_buffers[addr].push_back(packet.x);
-                        input_buffers[addr].push_back(packet.y);
+            if computer.output.len() >= 3 {
+                computers_stalled[compi] = 0;
+                let addr = computer.output.pop_front().unwrap() as usize;
+                let x = computer.output.pop_front().unwrap();
+                let y = computer.output.pop_front().unwrap();
+                let packet = Packet { x, y };
+
+                if addr == 255 {
+                    if a_solution.is_none() {
+                        a_solution = Some(packet.y);
                     }
+                    nat_buffer = Some(packet);
+                } else {
+                    computers[addr].input.push_back(packet.x);
+                    computers[addr].input.push_back(packet.y);
                 }
             }
         }

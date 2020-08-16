@@ -1,9 +1,10 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
 use crate::util::Permutations;
+use std::collections::VecDeque;
 
-fn run(computer: IntcodeComputer, input: (u8, i64)) -> Vec<i64> {
-    computer.run(vec![i64::from(input.0), input.1])
+fn run(computer: IntcodeComputer, input: (u8, i64)) -> VecDeque<i64> {
+    computer.run(vec![i64::from(input.0), input.1]).output
 }
 
 fn solve_a(computer: IntcodeComputer) -> i64 {
@@ -40,57 +41,29 @@ fn solve_b(computer: IntcodeComputer) -> i64 {
                 let mut comp4 = computer.clone();
                 let mut comp5 = computer.clone();
 
-                let mut input1: Option<i64> = Some(*i1);
-                let mut input2: Option<i64> = Some(*i2);
-                let mut input3: Option<i64> = Some(*i3);
-                let mut input4: Option<i64> = Some(*i4);
-                let mut input5: Option<i64> = Some(*i5);
+                comp1.input.push_back(*i1);
+                comp2.input.push_back(*i2);
+                comp3.input.push_back(*i3);
+                comp4.input.push_back(*i4);
+                comp5.input.push_back(*i5);
 
-                let mut output1: Option<i64> = None;
-                let mut output2: Option<i64> = None;
-                let mut output3: Option<i64> = None;
-                let mut output4: Option<i64> = None;
-                let mut output5: Option<i64> = Some(0);
+                comp1.input.push_back(0);
 
                 while comp5.is_running() {
-                    if output1.is_none() {
-                        output1 = comp1.step(if input1.is_some() {
-                            &mut input1
-                        } else {
-                            &mut output5
-                        });
-                    }
-                    if output2.is_none() {
-                        output2 = comp2.step(if input2.is_some() {
-                            &mut input2
-                        } else {
-                            &mut output1
-                        });
-                    }
-                    if output3.is_none() {
-                        output3 = comp3.step(if input3.is_some() {
-                            &mut input3
-                        } else {
-                            &mut output2
-                        });
-                    }
-                    if output4.is_none() {
-                        output4 = comp4.step(if input4.is_some() {
-                            &mut input4
-                        } else {
-                            &mut output3
-                        });
-                    }
-                    if output5.is_none() {
-                        output5 = comp5.step(if input5.is_some() {
-                            &mut input5
-                        } else {
-                            &mut output4
-                        });
-                    }
+                    comp1.input.extend(comp5.output.drain(..));
+                    comp2.input.extend(comp1.output.drain(..));
+                    comp3.input.extend(comp2.output.drain(..));
+                    comp4.input.extend(comp3.output.drain(..));
+                    comp5.input.extend(comp4.output.drain(..));
+
+                    comp1 = comp1.run(None);
+                    comp2 = comp2.run(None);
+                    comp3 = comp3.run(None);
+                    comp4 = comp4.run(None);
+                    comp5 = comp5.run(None);
                 }
 
-                let out = output5.take().unwrap();
+                let out = comp5.output.pop_front().unwrap();
                 if out > max_output.unwrap_or(out - 1) {
                     max_output = Some(out);
                 }
