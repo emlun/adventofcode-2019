@@ -12,10 +12,6 @@ fn solve_a(digits: Vec<i8>) -> String {
         })
         .collect();
 
-    let sum_term = |i: usize, digits: &[i8], pattern_num: usize| -> i32 {
-        (digits[i] * pattern[pattern_num - 1][i]) as i32
-    };
-
     let phase_digit = |digits: &[i8], n: usize| -> i8 {
         if n >= digits.len() / 2 {
             digits.iter().skip(n).fold(0, |s, a| (s + *a) % 10)
@@ -39,7 +35,7 @@ fn solve_a(digits: Vec<i8>) -> String {
             (negatives.abs() % 10) as i8
         } else {
             ((n..digits.len())
-                .map(|i| sum_term(i, digits, n + 1))
+                .map(|i| (digits[i] * pattern[n][i]) as i32)
                 .sum::<i32>()
                 .abs()
                 % 10) as i8
