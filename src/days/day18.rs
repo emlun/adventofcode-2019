@@ -288,10 +288,10 @@ fn parse_world(lines: &[String]) -> (World, Point) {
 }
 
 fn duplication_key(keys: KeySet, points: &[Point]) -> u128 {
-    let mut result: u128 = (keys.keys as u128) << 16;
+    let mut result: u128 = keys.keys as u128;
     for p in points {
-        result |= ((p.1 << 8) | p.0) as u128;
         result <<= 16;
+        result |= ((p.1 << 8) | p.0) as u128;
     }
     result
 }
@@ -315,14 +315,13 @@ fn dijkstra<'world>(world: &'world World, start_positions: Vec<Point>) -> Option
         if state.collected == world.keys {
             return Some(state);
         } else {
-            let dup_key = duplication_key(state.collected, &state.poss);
-            for (posi, pos) in state.poss.iter().enumerate() {
-                let shortest = shortest_paths
-                    .entry(dup_key | posi as u128)
-                    .or_insert(state.len + 1);
-                if state.len < *shortest {
-                    *shortest = state.len;
+            let shortest = shortest_paths
+                .entry(duplication_key(state.collected, &state.poss))
+                .or_insert(state.len);
+            if state.len <= *shortest {
+                *shortest = state.len;
 
+                for (posi, pos) in state.poss.iter().enumerate() {
                     for route in navigation
                         .available_moves(*pos)
                         .iter()
@@ -333,13 +332,12 @@ fn dijkstra<'world>(world: &'world World, start_positions: Vec<Point>) -> Option
                         let collected = state.collected.with(route.new_key);
                         let next_len = state.len + route.len;
 
-                        let dup_key = duplication_key(collected, &poss);
                         let shortest = shortest_paths
-                            .entry(dup_key | posi as u128)
-                            .or_insert(next_len + 2);
+                            .entry(duplication_key(collected, &poss))
+                            .or_insert(next_len + 1);
 
-                        if next_len + 1 < *shortest {
-                            *shortest = next_len + 1;
+                        if next_len < *shortest {
+                            *shortest = next_len;
                             queue.push(Reverse(State {
                                 poss,
                                 collected,
