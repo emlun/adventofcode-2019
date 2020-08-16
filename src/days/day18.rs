@@ -11,11 +11,12 @@ type Point = (usize, usize);
 enum Tile {
     Door(KeyId),
     Floor,
+    FloorThenWall,
     Key(KeyId),
     Wall,
 }
 
-use Tile::{Door, Floor, Key, Wall};
+use Tile::{Door, Floor, FloorThenWall, Key, Wall};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 struct KeyId {
@@ -116,6 +117,7 @@ struct World {
 struct Navigation<'world> {
     world: &'world World,
     moves: HashMap<Point, Vec<Route>>,
+    part_b_walls_enabled: bool,
 }
 
 #[derive(Debug)]
@@ -123,16 +125,26 @@ struct Route {
     to: Point,
     new_key: KeyId,
     doors_passed: KeySet,
+    part_b_wall_passed: bool,
     len: usize,
 }
 
 impl<'world> Navigation<'world> {
+    fn new(world: &World, part_b_walls_enabled: bool) -> Navigation {
+        Navigation {
+            world,
+            moves: HashMap::new(),
+            part_b_walls_enabled,
+        }
+    }
+
     fn available_moves(&mut self, from: Point) -> &Vec<Route> {
         #[derive(Debug)]
         struct PartialRoute {
             pos: Point,
             prev_pos: Point,
             doors_passed: KeySet,
+            part_b_wall_passed: bool,
             len: usize,
         }
 
@@ -144,6 +156,7 @@ impl<'world> Navigation<'world> {
                 pos: from,
                 prev_pos: from,
                 doors_passed: KeySet::new(),
+                part_b_wall_passed: false,
                 len: 0,
             });
 
@@ -170,13 +183,17 @@ impl<'world> Navigation<'world> {
                     let next_len = proute.len + 1;
 
                     match &self.world.tiles[next_pos.1][next_pos.0] {
-                        Floor => {
-                            queue.push_back(PartialRoute {
-                                pos: next_pos,
-                                prev_pos: proute.pos,
-                                doors_passed: proute.doors_passed,
-                                len: next_len,
-                            });
+                        floor_kind @ Floor | floor_kind @ FloorThenWall => {
+                            let part_b_wall = *floor_kind == FloorThenWall;
+                            if !part_b_wall || !self.part_b_walls_enabled {
+                                queue.push_back(PartialRoute {
+                                    pos: next_pos,
+                                    prev_pos: proute.pos,
+                                    doors_passed: proute.doors_passed,
+                                    part_b_wall_passed: proute.part_b_wall_passed || part_b_wall,
+                                    len: next_len,
+                                });
+                            }
                         }
 
                         Key(k) => {
@@ -185,6 +202,7 @@ impl<'world> Navigation<'world> {
                                 len: next_len,
                                 new_key: *k,
                                 doors_passed: proute.doors_passed,
+                                part_b_wall_passed: proute.part_b_wall_passed,
                             });
                         }
 
@@ -194,6 +212,7 @@ impl<'world> Navigation<'world> {
                                 prev_pos: proute.pos,
                                 doors_passed: proute.doors_passed.with(*k),
                                 len: next_len,
+                                part_b_wall_passed: proute.part_b_wall_passed,
                             });
                         }
 
@@ -206,6 +225,13 @@ impl<'world> Navigation<'world> {
         }
 
         self.moves.get(&from).unwrap()
+    }
+
+    fn enable_part_b_walls(&mut self) {
+        self.part_b_walls_enabled = true;
+        for (_, routes) in self.moves.iter_mut() {
+            routes.retain(|route| !route.part_b_wall_passed);
+        }
     }
 }
 
@@ -244,6 +270,7 @@ fn print_state(world: &World, state: &State) {
                     match tile {
                         Wall => '#'.to_string(),
                         Floor => '.'.to_string(),
+                        FloorThenWall => 'X'.to_string(),
                         Key(a) => a.to_char().to_string(),
                         Door(a) => a.to_char().to_ascii_uppercase().to_string(),
                     }
@@ -258,7 +285,7 @@ fn print_state(world: &World, state: &State) {
 fn parse_world(lines: &[String]) -> (World, Point) {
     let mut player_pos = (0, 0);
     let mut keys = KeySet::new();
-    let tiles = lines
+    let mut tiles: Vec<Vec<Tile>> = lines
         .iter()
         .enumerate()
         .map(|(y, line)| {
@@ -284,6 +311,22 @@ fn parse_world(lines: &[String]) -> (World, Point) {
         })
         .collect();
 
+    if tiles[player_pos.1 - 1][player_pos.0 - 1] == Floor
+        && tiles[player_pos.1 - 1][player_pos.0] == Floor
+        && tiles[player_pos.1 - 1][player_pos.0 + 1] == Floor
+        && tiles[player_pos.1][player_pos.0 - 1] == Floor
+        && tiles[player_pos.1][player_pos.0] == Floor
+        && tiles[player_pos.1][player_pos.0 + 1] == Floor
+        && tiles[player_pos.1 + 1][player_pos.0 - 1] == Floor
+        && tiles[player_pos.1 + 1][player_pos.0] == Floor
+        && tiles[player_pos.1 + 1][player_pos.0 + 1] == Floor
+    {
+        tiles[player_pos.1][player_pos.0 - 1] = FloorThenWall;
+        tiles[player_pos.1 - 1][player_pos.0] = FloorThenWall;
+        tiles[player_pos.1][player_pos.0 + 1] = FloorThenWall;
+        tiles[player_pos.1 + 1][player_pos.0] = FloorThenWall;
+    }
+
     (World { tiles, keys }, player_pos)
 }
 
@@ -296,14 +339,13 @@ fn duplication_key(keys: KeySet, points: &[Point]) -> u128 {
     result
 }
 
-fn dijkstra<'world>(world: &'world World, start_positions: Vec<Point>) -> Option<State> {
+fn dijkstra<'world>(
+    world: &'world World,
+    start_positions: Vec<Point>,
+    navigation: &mut Navigation,
+) -> Option<State> {
     let mut queue: BinaryHeap<Reverse<State>> = BinaryHeap::new();
     let mut shortest_paths: HashMap<u128, usize> = HashMap::new();
-
-    let mut navigation = Navigation {
-        world: &world,
-        moves: HashMap::new(),
-    };
 
     queue.push(Reverse(State {
         poss: start_positions,
@@ -352,17 +394,12 @@ fn dijkstra<'world>(world: &'world World, start_positions: Vec<Point>) -> Option
     None
 }
 
-fn solve_a(world: &World, pos: Point) -> usize {
-    let found = dijkstra(world, vec![pos]);
+fn solve_a(world: &World, pos: Point, navigation: &mut Navigation) -> usize {
+    let found = dijkstra(world, vec![pos], navigation);
     found.unwrap().len
 }
 
-fn solve_b(mut world: World, pos: Point) -> usize {
-    world.tiles[pos.1 - 1][pos.0] = Tile::Wall;
-    world.tiles[pos.1][pos.0 - 1] = Tile::Wall;
-    world.tiles[pos.1 + 1][pos.0] = Tile::Wall;
-    world.tiles[pos.1][pos.0 + 1] = Tile::Wall;
-
+fn solve_b(world: &World, pos: Point, navigation: &mut Navigation) -> usize {
     let pos = vec![
         (pos.0 - 1, pos.1 - 1),
         (pos.0 - 1, pos.1 + 1),
@@ -370,19 +407,25 @@ fn solve_b(mut world: World, pos: Point) -> usize {
         (pos.0 + 1, pos.1 - 1),
     ];
 
-    let found = dijkstra(&world, pos);
+    navigation.enable_part_b_walls();
+
+    let found = dijkstra(world, pos, navigation);
     found.unwrap().len
 }
 
 pub fn solve(lines: &[String]) -> Solution {
     let (world, pos) = parse_world(lines);
-    let a_solution = solve_a(&world, pos);
-    let b_solution = solve_b(world, pos);
+
+    let mut navigation = Navigation::new(&world, false);
+
+    let a_solution = solve_a(&world, pos, &mut navigation);
+    let b_solution = solve_b(&world, pos, &mut navigation);
     (a_solution.to_string(), b_solution.to_string())
 }
 
 #[cfg(test)]
 mod tests {
+    use super::Navigation;
     use super::Point;
     use super::World;
 
@@ -393,13 +436,13 @@ mod tests {
 
     fn check_a(expected_output: usize, input: &str) {
         let (world, pos) = parse(input);
-        let solution = super::solve_a(&world, pos);
+        let solution = super::solve_a(&world, pos, &mut Navigation::new(&world, false));
         assert_eq!(solution, expected_output);
     }
 
     fn check_b(expected_output: usize, input: &str) {
         let (world, pos) = parse(input);
-        let solution = super::solve_b(world, pos);
+        let solution = super::solve_b(&world, pos, &mut Navigation::new(&world, true));
         assert_eq!(solution, expected_output);
     }
 
