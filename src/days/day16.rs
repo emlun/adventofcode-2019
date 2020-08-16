@@ -42,11 +42,10 @@ fn solve_a(digits: Vec<i8>) -> String {
         }
     };
 
-    let phase =
-        |digits: &[i8]| -> Vec<i8> { (0..digits.len()).map(|i| phase_digit(digits, i)).collect() };
-
     let transform = |digits: Vec<i8>, phases: usize| -> Vec<i8> {
-        (0..phases).fold(digits, |digs, _| phase(&digs))
+        (0..phases).fold(digits, |digs, _| {
+            (0..digs.len()).map(|i| phase_digit(&digs, i)).collect()
+        })
     };
 
     transform(digits, 100)
