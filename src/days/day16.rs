@@ -58,8 +58,21 @@ fn solve_a(digits: Vec<i8>) -> String {
         .join("")
 }
 
+fn gcd(a: usize, b: usize) -> usize {
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a % b)
+    }
+}
+
+fn lcm(a: usize, b: usize) -> usize {
+    let gcdab = gcd(a, b);
+    (a / gcdab) * b
+}
+
 fn solve_b(digits: Vec<i8>) -> String {
-    fn transform(digits: Vec<i8>, phases: usize) -> Vec<i8> {
+    fn transform(digits: Vec<i8>, msg_offset: usize, phases: usize) -> Vec<i8> {
         // As it turns out, the relevant diagonal of Pascal's triangle is
         // periodic with a period of 16000 elements
         let pascal_period = 16000;
@@ -74,15 +87,41 @@ fn solve_b(digits: Vec<i8>) -> String {
             pascal.push(row);
         }
 
+        let l = digits.len();
+        let digits_offset: Vec<i8> = digits
+            .into_iter()
+            .cycle()
+            .skip(msg_offset % l)
+            .take(l)
+            .collect();
+
+        let joint_cycle = lcm(pascal_period, l);
+        let tot_len = l * 10000 - msg_offset;
+        let num_cycles = tot_len / joint_cycle;
+
         (0..8)
             .map(|i| {
-                digits
+                let sum_first_cycle = digits_offset
                     .iter()
+                    .cycle()
                     .skip(i)
+                    .take(joint_cycle)
                     .enumerate()
                     .fold(0, |sum, (index, digit)| {
                         (sum + (pascal[phases - 1][index % pascal_period] * *digit)) % 10
-                    })
+                    });
+
+                let sum_last_cycle = digits_offset
+                    .iter()
+                    .cycle()
+                    .take(tot_len)
+                    .skip(i + num_cycles * joint_cycle)
+                    .enumerate()
+                    .fold(0, |sum, (index, digit)| {
+                        (sum + (pascal[phases - 1][index % pascal_period] * *digit)) % 10
+                    });
+
+                (sum_first_cycle * num_cycles as i8 + sum_last_cycle) % 10
             })
             .collect()
     }
@@ -93,15 +132,7 @@ fn solve_b(digits: Vec<i8>) -> String {
         .fold(0, |result, d| result * 10 + (*d as usize));
 
     if msg_offset >= digits.len() * 10000 / 2 {
-        let l = digits.len();
-        let digits: Vec<i8> = digits
-            .into_iter()
-            .cycle()
-            .skip(msg_offset)
-            .take(l * 10000 - msg_offset)
-            .collect();
-
-        transform(digits, 100)
+        transform(digits, msg_offset, 100)
             .into_iter()
             .map(|d| d.to_string())
             .collect::<Vec<String>>()
