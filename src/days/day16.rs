@@ -3,16 +3,20 @@ use crate::common::Solution;
 fn solve_a(digits: Vec<i8>) -> String {
     const PATTERN_BASE: [i8; 4] = [0, 1, 0, -1];
 
-    fn pattern_digit(pattern_num: usize, digit: usize) -> i8 {
-        let index = ((digit + 1) / pattern_num) % 4;
-        PATTERN_BASE[index]
-    }
+    let pattern: Vec<Vec<i8>> = (0..digits.len() / 4)
+        .map(|pattern_i| {
+            let pattern_num = pattern_i + 1;
+            (1..=digits.len())
+                .map(|digit| PATTERN_BASE[(digit / pattern_num) % 4])
+                .collect()
+        })
+        .collect();
 
-    fn sum_term(i: usize, digits: &[i8], pattern_num: usize) -> i32 {
-        (digits[i] * pattern_digit(pattern_num, i)) as i32
-    }
+    let sum_term = |i: usize, digits: &[i8], pattern_num: usize| -> i32 {
+        (digits[i] * pattern[pattern_num - 1][i]) as i32
+    };
 
-    fn phase_digit(digits: &[i8], n: usize) -> i8 {
+    let phase_digit = |digits: &[i8], n: usize| -> i8 {
         if n >= digits.len() / 2 {
             digits.iter().skip(n).fold(0, |s, a| (s + *a) % 10)
         } else if n >= digits.len() / 3 {
@@ -40,15 +44,14 @@ fn solve_a(digits: Vec<i8>) -> String {
                 .abs()
                 % 10) as i8
         }
-    }
+    };
 
-    fn phase(digits: &[i8]) -> Vec<i8> {
-        (0..digits.len()).map(|i| phase_digit(digits, i)).collect()
-    }
+    let phase =
+        |digits: &[i8]| -> Vec<i8> { (0..digits.len()).map(|i| phase_digit(digits, i)).collect() };
 
-    fn transform(digits: Vec<i8>, phases: usize) -> Vec<i8> {
+    let transform = |digits: Vec<i8>, phases: usize| -> Vec<i8> {
         (0..phases).fold(digits, |digs, _| phase(&digs))
-    }
+    };
 
     transform(digits, 100)
         .into_iter()
