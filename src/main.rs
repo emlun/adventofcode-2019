@@ -78,12 +78,12 @@ fn run_intcode(input_file: Option<&str>) -> Result<(), std::io::Error> {
     let inputs: Vec<i64> = lines
         .get(1)
         .map(|line| {
-            line.split(",")
+            line.split(',')
                 .map(|s| s.parse())
                 .collect::<Result<Vec<i64>, std::num::ParseIntError>>()
                 .expect("Invalid integer in intcode program input (second line)")
         })
-        .unwrap_or(vec![]);
+        .unwrap_or_default();
     let computer: IntcodeComputer = lines[0..1].into();
     let (computer, output) = computer.run_until_more_input_required(inputs);
     if computer.expects_input() {

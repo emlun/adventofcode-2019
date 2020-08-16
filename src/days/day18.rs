@@ -100,7 +100,7 @@ impl std::fmt::Debug for KeySet {
         for i in 0.. {
             if bits > 0 {
                 if bits % 2 == 1 {
-                    write!(f, "{}", ('a' as u8 + i) as char)?;
+                    write!(f, "{}", (b'a' + i) as char)?;
                 } else {
                     write!(f, " ")?;
                 }

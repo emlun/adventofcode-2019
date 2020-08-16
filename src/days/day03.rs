@@ -9,7 +9,7 @@ fn parse_wire(desc: &str) -> Vec<Point> {
     let mut points: Vec<Point> = Vec::new();
     let mut pos: Point = (0, 0);
     for step in desc.split(',') {
-        let dir = match step.chars().nth(0).unwrap() {
+        let dir = match step.chars().next().unwrap() {
             'R' => (1, 0),
             'L' => (-1, 0),
             'U' => (0, 1),
