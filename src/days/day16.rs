@@ -117,3 +117,49 @@ pub fn solve(lines: &[String]) -> Solution {
     let b_solution = solve_b(digits);
     (a_solution, b_solution)
 }
+
+#[cfg(test)]
+mod tests {
+
+    fn check_a(input: &str, expected_output: &str) {
+        let digits: Vec<i8> = input.chars().map(|c| (c as i8) - 48).collect();
+        let sol = super::solve_a(digits);
+        assert_eq!(sol, expected_output);
+    }
+
+    fn check_b(input: &str, expected_output: &str) {
+        let digits: Vec<i8> = input.chars().map(|c| (c as i8) - 48).collect();
+        let sol = super::solve_b(digits);
+        assert_eq!(sol, expected_output);
+    }
+
+    #[test]
+    fn example_a1() {
+        check_a("80871224585914546619083218645595", "24176176");
+    }
+
+    #[test]
+    fn example_a2() {
+        check_a("19617804207202209144916044189917", "73745418");
+    }
+
+    #[test]
+    fn example_a3() {
+        check_a("69317163492948606335995924319873", "52432133");
+    }
+
+    #[test]
+    fn example_b1() {
+        check_b("03036732577212944063491565474664", "84462026");
+    }
+
+    #[test]
+    fn example_b2() {
+        check_b("02935109699940807407585447034323", "78725270");
+    }
+
+    #[test]
+    fn example_b3() {
+        check_b("03081770884921959731165446850517", "53553731");
+    }
+}
