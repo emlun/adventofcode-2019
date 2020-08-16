@@ -59,6 +59,11 @@ impl KeySet {
         self
     }
 
+    fn union(mut self, other: Self) -> Self {
+        self.keys |= other.keys;
+        self
+    }
+
     fn contains_all(self, keys: KeySet) -> bool {
         self.keys & keys.keys == keys.keys
     }
@@ -123,7 +128,7 @@ struct Navigation<'world> {
 #[derive(Debug)]
 struct Route {
     to: Point,
-    new_key: KeyId,
+    keys: KeySet,
     doors_passed: KeySet,
     part_b_wall_passed: bool,
     len: usize,
@@ -143,6 +148,7 @@ impl<'world> Navigation<'world> {
         struct PartialRoute {
             pos: Point,
             prev_pos: Point,
+            keys: KeySet,
             doors_passed: KeySet,
             part_b_wall_passed: bool,
             len: usize,
@@ -155,6 +161,7 @@ impl<'world> Navigation<'world> {
             queue.push_back(PartialRoute {
                 pos: from,
                 prev_pos: from,
+                keys: KeySet::new(),
                 doors_passed: KeySet::new(),
                 part_b_wall_passed: false,
                 len: 0,
@@ -189,6 +196,7 @@ impl<'world> Navigation<'world> {
                                 queue.push_back(PartialRoute {
                                     pos: next_pos,
                                     prev_pos: proute.pos,
+                                    keys: proute.keys,
                                     doors_passed: proute.doors_passed,
                                     part_b_wall_passed: proute.part_b_wall_passed || part_b_wall,
                                     len: next_len,
@@ -197,12 +205,21 @@ impl<'world> Navigation<'world> {
                         }
 
                         Key(k) => {
+                            let keys = proute.keys.with(*k);
                             moves.push(Route {
                                 to: next_pos,
                                 len: next_len,
-                                new_key: *k,
+                                keys,
                                 doors_passed: proute.doors_passed,
                                 part_b_wall_passed: proute.part_b_wall_passed,
+                            });
+                            queue.push_back(PartialRoute {
+                                pos: next_pos,
+                                prev_pos: proute.pos,
+                                keys,
+                                doors_passed: proute.doors_passed,
+                                part_b_wall_passed: proute.part_b_wall_passed,
+                                len: next_len,
                             });
                         }
 
@@ -210,6 +227,7 @@ impl<'world> Navigation<'world> {
                             queue.push_back(PartialRoute {
                                 pos: next_pos,
                                 prev_pos: proute.pos,
+                                keys: proute.keys,
                                 doors_passed: proute.doors_passed.with(*k),
                                 len: next_len,
                                 part_b_wall_passed: proute.part_b_wall_passed,
@@ -368,10 +386,11 @@ fn dijkstra<'world>(
                         .available_moves(*pos)
                         .iter()
                         .filter(|route| state.collected.contains_all(route.doors_passed))
+                        .filter(|route| !state.collected.contains_all(route.keys))
                     {
                         let mut poss = state.poss.clone();
                         poss[posi] = route.to;
-                        let collected = state.collected.with(route.new_key);
+                        let collected = state.collected.union(route.keys);
                         let next_len = state.len + route.len;
 
                         let shortest = shortest_paths
