@@ -287,7 +287,7 @@ fn parse_world(lines: &[String]) -> (World, Point) {
     (World { tiles, keys }, player_pos)
 }
 
-fn duplication_key(keys: KeySet, points: &Vec<Point>) -> u128 {
+fn duplication_key(keys: KeySet, points: &[Point]) -> u128 {
     let mut result: u128 = (keys.keys as u128) << 16;
     for p in points {
         result |= ((p.1 << 8) | p.0) as u128;
