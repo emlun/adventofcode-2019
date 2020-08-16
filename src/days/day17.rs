@@ -269,8 +269,7 @@ where
     if seq.is_empty() {
         Some(LinkedList::new())
     } else {
-        for i in 0..subseqs.len() {
-            let subseq = subseqs[i];
+        for (i, subseq) in subseqs.iter().enumerate() {
             if seq.starts_with(subseq) {
                 if let Some(mut subfind) = find_subseq_covering(&seq[subseq.len()..], subseqs) {
                     subfind.push_front(i);
