@@ -7,11 +7,13 @@ const H: usize = 6;
 
 pub fn solve_b(layers: &[Vec<u8>]) -> String {
     let mut image: Vec<Vec<u8>> = vec![vec![2; W]; H];
-    for layer in layers.iter() {
-        for r in 0..H {
-            for c in 0..W {
-                if image[r][c] == 2 {
-                    image[r][c] = layer[r * W + c];
+    for (r, row) in image.iter_mut().enumerate() {
+        for (c, col) in row.iter_mut().enumerate() {
+            let rc = r * W + c;
+            for layer in layers {
+                if layer[rc] != 2 {
+                    *col = layer[rc];
+                    break;
                 }
             }
         }
