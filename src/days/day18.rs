@@ -330,12 +330,22 @@ fn dijkstra<'world>(world: &'world World, start_positions: Vec<Point>) -> Option
                     {
                         let mut poss = state.poss.clone();
                         poss[posi] = route.to;
+                        let collected = state.collected.with(route.new_key);
+                        let next_len = state.len + route.len;
 
-                        queue.push(Reverse(State {
-                            poss,
-                            collected: state.collected.with(route.new_key),
-                            len: state.len + route.len,
-                        }));
+                        let dup_key = duplication_key(collected, &poss);
+                        let shortest = shortest_paths
+                            .entry(dup_key | posi as u128)
+                            .or_insert(next_len + 2);
+
+                        if next_len + 1 < *shortest {
+                            *shortest = next_len + 1;
+                            queue.push(Reverse(State {
+                                poss,
+                                collected,
+                                len: next_len,
+                            }));
+                        }
                     }
                 }
             }
