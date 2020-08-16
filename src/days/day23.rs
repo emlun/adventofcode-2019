@@ -55,7 +55,7 @@ fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
                 }
             };
 
-            computer.step();
+            computer.run_mut(None);
 
             if computer.output.len() >= 3 {
                 computers_stalled[compi] = 0;

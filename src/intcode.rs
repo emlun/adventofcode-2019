@@ -142,6 +142,14 @@ impl IntcodeComputer {
     where
         I: IntoIterator<Item = Word>,
     {
+        self.run_mut(input);
+        self
+    }
+
+    pub fn run_mut<I>(&mut self, input: I) -> &mut Self
+    where
+        I: IntoIterator<Item = Word>,
+    {
         self.input.extend(input);
         while self.is_running() && !(self.input.is_empty() && self.expects_input()) {
             self.step();
