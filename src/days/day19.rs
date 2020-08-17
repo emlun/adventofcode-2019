@@ -28,10 +28,10 @@ fn compute_maxx(computer: &IntcodeComputer, prev_maxx: usize, y: usize) -> usize
 fn reduce_maxx(computer: &IntcodeComputer, maxx: usize, y: usize) -> usize {
     let mut result = maxx;
     for x in (0..maxx).rev() {
-        if !check(computer, (x, y)) {
-            result = x;
-        } else {
+        if check(computer, (x, y)) {
             break;
+        } else {
+            result = x;
         }
     }
     result
