@@ -92,6 +92,7 @@ pub fn solve(lines: &[String]) -> Solution {
         num += 1;
         if num == 200 {
             b_solution = orig_ast.0 + orig_ast.1 * 100;
+            break;
         }
         if i >= asteroid_rays.len() {
             i -= asteroid_rays.len();
