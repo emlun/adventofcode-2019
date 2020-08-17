@@ -1,6 +1,5 @@
 use crate::common::Solution;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::convert::TryInto;
 
 type Point = (i64, i64);
@@ -47,18 +46,17 @@ pub fn solve(lines: &[String]) -> Solution {
     let (laser_pos, asteroid_rays): (Point, HashMap<Point, Vec<Point>>) = map
         .iter()
         .map(|(r0, c0)| {
-            let mut recentered_map: HashSet<Point> =
-                map.iter().map(|(r, c)| ((r - r0), (c - c0))).collect();
-            recentered_map.remove(&(0, 0));
+            let recentered_map = map
+                .iter()
+                .filter(|(r, c)| (r, c) != (r0, c0))
+                .map(|(r, c)| ((r - r0), (c - c0)));
 
             let asteroid_rays: HashMap<Point, Vec<Point>> =
-                recentered_map
-                    .into_iter()
-                    .fold(HashMap::new(), |mut result, pos| {
-                        let ray = normalize(pos);
-                        result.entry(ray).or_insert_with(Vec::new).push(pos);
-                        result
-                    });
+                recentered_map.fold(HashMap::new(), |mut result, pos| {
+                    let ray = normalize(pos);
+                    result.entry(ray).or_insert_with(Vec::new).push(pos);
+                    result
+                });
             ((*r0, *c0), asteroid_rays)
         })
         .max_by_key(|(_, rays)| rays.len())
