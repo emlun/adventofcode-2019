@@ -5,6 +5,10 @@ use crate::common::Solution;
 
 type Point = (i64, i64);
 
+fn norm(p: &&&Point) -> u64 {
+    (p.0.abs() as u64) + (p.1.abs() as u64)
+}
+
 fn parse_wire(desc: &str) -> Vec<Point> {
     let mut points: Vec<Point> = Vec::new();
     let mut pos: Point = (0, 0);
@@ -23,10 +27,6 @@ fn parse_wire(desc: &str) -> Vec<Point> {
         }
     }
     points
-}
-
-fn norm(p: &&&Point) -> u64 {
-    (p.0.abs() as u64) + (p.1.abs() as u64)
 }
 
 pub fn solve(lines: &[String]) -> Solution {
