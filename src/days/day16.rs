@@ -1,5 +1,10 @@
 use crate::common::Solution;
 
+const NUM_PHASES: usize = 100;
+
+// The 100th diagonal of Pascal's triangle is periodic with 16000 elements
+const PASCAL_PERIOD: usize = 16000;
+
 fn solve_a(digits: Vec<i8>) -> String {
     const PATTERN_BASE: [i8; 4] = [0, 1, 0, -1];
 
@@ -42,13 +47,13 @@ fn solve_a(digits: Vec<i8>) -> String {
         }
     };
 
-    let transform = |digits: Vec<i8>, phases: usize| -> Vec<i8> {
-        (0..phases).fold(digits, |digs, _| {
+    let transform = |digits: Vec<i8>| -> Vec<i8> {
+        (0..NUM_PHASES).fold(digits, |digs, _| {
             (0..digs.len()).map(|i| phase_digit(&digs, i)).collect()
         })
     };
 
-    transform(digits, 100)
+    transform(digits)
         .into_iter()
         .take(8)
         .map(|d| d.to_string())
@@ -70,17 +75,14 @@ fn lcm(a: usize, b: usize) -> usize {
 }
 
 fn solve_b(digits: Vec<i8>) -> String {
-    fn transform(digits: Vec<i8>, msg_offset: usize, phases: usize) -> Vec<i8> {
-        // As it turns out, the relevant diagonal of Pascal's triangle is
-        // periodic with a period of 16000 elements
-        let pascal_period = 16000;
-        let mut pascal: Vec<Vec<i8>> = Vec::with_capacity(phases);
+    fn transform(digits: Vec<i8>, msg_offset: usize) -> Vec<i8> {
+        let mut pascal: Vec<Vec<i8>> = Vec::with_capacity(NUM_PHASES);
         pascal.push(vec![]);
-        pascal.push((0..=9).cycle().skip(1).take(pascal_period).collect());
-        for phase in 2..phases {
-            let mut row = Vec::with_capacity(pascal_period);
+        pascal.push((0..=9).cycle().skip(1).take(PASCAL_PERIOD).collect());
+        for phase in 2..NUM_PHASES {
+            let mut row = Vec::with_capacity(PASCAL_PERIOD);
             row.push(1);
-            for index in 1..pascal_period {
+            for index in 1..PASCAL_PERIOD {
                 row.push((row[index - 1] + pascal[phase - 1][index]) % 10);
             }
             pascal.push(row);
@@ -94,7 +96,7 @@ fn solve_b(digits: Vec<i8>) -> String {
             .take(l)
             .collect();
 
-        let joint_cycle = lcm(pascal_period, l);
+        let joint_cycle = lcm(PASCAL_PERIOD, l);
         let tot_len = l * 10000 - msg_offset;
         let num_cycles = tot_len / joint_cycle;
 
@@ -107,7 +109,7 @@ fn solve_b(digits: Vec<i8>) -> String {
                     .take(joint_cycle)
                     .enumerate()
                     .fold(0, |sum, (index, digit)| {
-                        (sum + (pascal[phases - 1][index % pascal_period] * *digit)) % 10
+                        (sum + (pascal[NUM_PHASES - 1][index % PASCAL_PERIOD] * *digit)) % 10
                     });
 
                 let sum_last_cycle = digits_offset
@@ -117,7 +119,7 @@ fn solve_b(digits: Vec<i8>) -> String {
                     .skip(i + num_cycles * joint_cycle)
                     .enumerate()
                     .fold(0, |sum, (index, digit)| {
-                        (sum + (pascal[phases - 1][index % pascal_period] * *digit)) % 10
+                        (sum + (pascal[NUM_PHASES - 1][index % PASCAL_PERIOD] * *digit)) % 10
                     });
 
                 (sum_first_cycle * num_cycles as i8 + sum_last_cycle) % 10
@@ -131,7 +133,7 @@ fn solve_b(digits: Vec<i8>) -> String {
         .fold(0, |result, d| result * 10 + (*d as usize));
 
     if msg_offset >= digits.len() * 10000 / 2 {
-        transform(digits, msg_offset, 100)
+        transform(digits, msg_offset)
             .into_iter()
             .map(|d| d.to_string())
             .collect::<Vec<String>>()
