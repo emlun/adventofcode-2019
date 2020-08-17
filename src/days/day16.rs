@@ -75,8 +75,9 @@ fn solve_b(digits: Vec<i8>) -> String {
         // periodic with a period of 16000 elements
         let pascal_period = 16000;
         let mut pascal: Vec<Vec<i8>> = Vec::with_capacity(phases);
-        pascal.push(vec![1].into_iter().cycle().take(pascal_period).collect());
-        for phase in 1..phases {
+        pascal.push(vec![]);
+        pascal.push((0..=9).cycle().skip(1).take(pascal_period).collect());
+        for phase in 2..phases {
             let mut row = Vec::with_capacity(pascal_period);
             row.push(1);
             for index in 1..pascal_period {
