@@ -54,7 +54,7 @@ pub fn solve(lines: &[String]) -> Solution {
             let asteroid_rays: HashMap<Point, Vec<Point>> =
                 recentered_map.fold(HashMap::new(), |mut result, pos| {
                     let ray = normalize(pos);
-                    result.entry(ray).or_insert_with(Vec::new).push(pos);
+                    result.entry(ray).or_default().push(pos);
                     result
                 });
             ((*r0, *c0), asteroid_rays)
