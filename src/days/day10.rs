@@ -50,8 +50,6 @@ pub fn solve(lines: &[String]) -> Solution {
             let mut recentered_map: HashSet<Point> =
                 map.iter().map(|(r, c)| ((r - r0), (c - c0))).collect();
             recentered_map.remove(&(0, 0));
-            let mut recentered_map: Vec<Point> = recentered_map.into_iter().collect();
-            recentered_map.sort_by_key(|(r, c)| r.abs() + c.abs());
 
             let asteroid_rays: HashMap<Point, Vec<Point>> =
                 recentered_map
@@ -69,6 +67,10 @@ pub fn solve(lines: &[String]) -> Solution {
 
     let mut asteroid_rays: Vec<(Point, Vec<Point>)> = asteroid_rays
         .into_iter()
+        .map(|(p, mut ray)| {
+            ray.sort_by_key(|(r, c)| r.abs() + c.abs());
+            (p, ray)
+        })
         .collect::<Vec<(Point, Vec<Point>)>>();
     asteroid_rays.sort_by(|(dir1, _), (dir2, _)| {
         if ray_atan(dir1) - ray_atan(dir2) < 0.0 {
