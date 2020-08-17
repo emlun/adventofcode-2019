@@ -75,7 +75,7 @@ fn lcm(a: usize, b: usize) -> usize {
 }
 
 fn solve_b(digits: Vec<i8>) -> String {
-    fn transform(digits: Vec<i8>, msg_offset: usize) -> Vec<i8> {
+    fn transform(digits: Vec<i8>, msg_offset: usize) -> Vec<String> {
         let mut pascal: Vec<Vec<i8>> = Vec::with_capacity(NUM_PHASES);
         pascal.push(vec![]);
         pascal.push((0..=9).cycle().skip(1).take(PASCAL_PERIOD).collect());
@@ -124,6 +124,7 @@ fn solve_b(digits: Vec<i8>) -> String {
 
                 (sum_first_cycle * num_cycles as i8 + sum_last_cycle) % 10
             })
+            .map(|d| d.to_string())
             .collect()
     }
 
@@ -133,11 +134,7 @@ fn solve_b(digits: Vec<i8>) -> String {
         .fold(0, |result, d| result * 10 + (*d as usize));
 
     if msg_offset >= digits.len() * 10000 / 2 {
-        transform(digits, msg_offset)
-            .into_iter()
-            .map(|d| d.to_string())
-            .collect::<Vec<String>>()
-            .join("")
+        transform(digits, msg_offset).join("")
     } else {
         panic!("Don't know how to solve when message offset is not past half the sequence!");
     }
