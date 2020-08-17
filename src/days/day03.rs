@@ -44,7 +44,7 @@ pub fn solve(lines: &[String]) -> Solution {
     let a_solution: u64 = intersections.iter().map(norm).min().unwrap();
     let b_solution: usize = 2 + intersections
         .iter()
-        .map(|p| wire1_inv.get(*p).unwrap() + wire2_inv.get(*p).unwrap())
+        .map(|p| wire1_inv[*p] + wire2_inv[*p])
         .min()
         .unwrap();
     (a_solution.to_string(), b_solution.to_string())
