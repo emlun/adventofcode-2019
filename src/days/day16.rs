@@ -6,17 +6,6 @@ const NUM_PHASES: usize = 100;
 const PASCAL_PERIOD: usize = 16000;
 
 fn solve_a(digits: Vec<i8>) -> String {
-    const PATTERN_BASE: [i8; 4] = [0, 1, 0, -1];
-
-    let pattern: Vec<Vec<i8>> = (0..digits.len() / 4)
-        .map(|pattern_i| {
-            let pattern_num = pattern_i + 1;
-            (1..=digits.len())
-                .map(|digit| PATTERN_BASE[(digit / pattern_num) % 4])
-                .collect()
-        })
-        .collect();
-
     let phase_digit = |digits: &[i8], n: usize| -> i8 {
         if n >= digits.len() / 2 {
             digits.iter().skip(n).fold(0, |s, a| (s + *a) % 10)
@@ -39,11 +28,19 @@ fn solve_a(digits: Vec<i8>) -> String {
                 .fold(positives, |s, a| (s - *a as i32) as i32);
             (negatives.abs() % 10) as i8
         } else {
-            ((n..digits.len())
-                .map(|i| (digits[i] * pattern[n][i]) as i32)
-                .sum::<i32>()
-                .abs()
-                % 10) as i8
+            let positives: i32 = (n..digits.len())
+                .step_by((n + 1) * 4)
+                .flat_map(|i| digits.iter().skip(i).take(n + 1))
+                .map(|d| *d as i32)
+                .sum();
+
+            let negatives: i32 = ((n + ((n + 1) * 2))..digits.len())
+                .step_by((n + 1) * 4)
+                .flat_map(|i| digits.iter().skip(i).take(n + 1))
+                .map(|d| *d as i32)
+                .sum();
+
+            ((positives - negatives).abs() % 10) as i8
         }
     };
 
