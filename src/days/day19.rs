@@ -54,21 +54,36 @@ fn solve_b(computer: IntcodeComputer) -> (usize, usize) {
         a_solution += std::cmp::min(50, maxx) - minx;
     }
 
-    let mut y = 50;
-    loop {
-        maxx = compute_maxx(&computer, maxx, y);
-        if maxx >= DIM_WANTED {
-            break;
+    let k1: f64 = (maxx as f64) / 49_f64;
+    let k2: f64 = (minx as f64) / 49_f64;
+
+    let mut y: usize = ((2_f64 * DIM_WANTED as f64) / (k1 - k2)).round() as usize;
+    let mut maxx = reduce_maxx(
+        &computer,
+        compute_maxx(&computer, (y as f64 * k1).round() as usize, y),
+        y,
+    );
+
+    if check(&computer, (maxx - DIM_WANTED, y + DIM_WANTED - 1)) {
+        let mut prev_maxx;
+        loop {
+            y -= 1;
+            prev_maxx = maxx;
+            maxx = reduce_maxx(&computer, maxx, y);
+            let x = maxx - DIM_WANTED;
+            if !check(&computer, (x, y + DIM_WANTED - 1)) {
+                return (a_solution, (prev_maxx - DIM_WANTED) * 10000 + (y + 1));
+            }
         }
-        y += 1;
-    }
-    loop {
-        let x = maxx - DIM_WANTED;
-        if check(&computer, (x, y + DIM_WANTED - 1)) {
-            return (a_solution, x * 10000 + y);
+    } else {
+        loop {
+            y += 1;
+            maxx = compute_maxx(&computer, maxx, y);
+            let x = maxx - DIM_WANTED;
+            if check(&computer, (x, y + DIM_WANTED - 1)) {
+                return (a_solution, x * 10000 + y);
+            }
         }
-        y += 1;
-        maxx = compute_maxx(&computer, maxx, y);
     }
 }
 
