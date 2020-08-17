@@ -102,25 +102,22 @@ pub fn solve(lines: &[String]) -> Solution {
         moons = step(moons);
 
         if x_period.is_none() {
-            let x_state: Vec<(i64, i64)> =
-                moons.iter().map(|moon| (moon.pos.0, moon.vel.0)).collect();
-            if x_state == initial_x_state {
+            let x_state = moons.iter().map(|moon| (moon.pos.0, moon.vel.0));
+            if initial_x_state.iter().zip(x_state).all(|(a, b)| *a == b) {
                 x_period = Some(i);
             }
         }
 
         if y_period.is_none() {
-            let y_state: Vec<(i64, i64)> =
-                moons.iter().map(|moon| (moon.pos.1, moon.vel.1)).collect();
-            if y_state == initial_y_state {
+            let y_state = moons.iter().map(|moon| (moon.pos.1, moon.vel.1));
+            if initial_y_state.iter().zip(y_state).all(|(a, b)| *a == b) {
                 y_period = Some(i);
             }
         }
 
         if z_period.is_none() {
-            let z_state: Vec<(i64, i64)> =
-                moons.iter().map(|moon| (moon.pos.2, moon.vel.2)).collect();
-            if z_state == initial_z_state {
+            let z_state = moons.iter().map(|moon| (moon.pos.2, moon.vel.2));
+            if initial_z_state.iter().zip(z_state).all(|(a, b)| *a == b) {
                 z_period = Some(i);
             }
         }
