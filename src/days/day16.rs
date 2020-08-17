@@ -5,46 +5,32 @@ const NUM_PHASES: usize = 100;
 // The 100th diagonal of Pascal's triangle is periodic with 16000 elements
 const PASCAL_PERIOD: usize = 16000;
 
-fn solve_a(digits: Vec<i8>) -> String {
-    let phase_digit = |digits: &[i8], n: usize| -> i8 {
+fn solve_a(digits: Vec<i32>) -> String {
+    let phase_digit = |digits: &[i32], n: usize| -> i32 {
         if n >= digits.len() / 2 {
-            (digits.iter().skip(n).map(|a| *a as i32).sum::<i32>() % 10) as i8
+            digits.iter().skip(n).sum::<i32>() % 10
         } else if n >= digits.len() / 3 {
-            (digits
-                .iter()
-                .skip(n)
-                .take(n + 1)
-                .map(|a| *a as i32)
-                .sum::<i32>()
-                % 10) as i8
+            digits.iter().skip(n).take(n + 1).sum::<i32>() % 10
         } else if n >= digits.len() / 4 {
-            let positives = digits
-                .iter()
-                .skip(n)
-                .take(n + 1)
-                .fold(0, |s, a| s + *a as i16);
-            let negatives = digits
-                .iter()
-                .skip(3 * n + 2)
-                .take(n + 1)
-                .fold(positives, |s, a| s - *a as i16);
-            (negatives.abs() % 10) as i8
+            let positives: i32 = digits.iter().skip(n).take(n + 1).sum();
+            let negatives: i32 = digits.iter().skip(3 * n + 2).take(n + 1).sum();
+            (positives - negatives).abs() % 10
         } else {
-            let positives: i16 = (n..digits.len())
+            let positives: i32 = (n..digits.len())
                 .step_by((n + 1) * 4)
                 .flat_map(|i| digits.iter().skip(i).take(n + 1))
-                .fold(0, |s, a| s + *a as i16);
+                .sum();
 
-            let negatives: i16 = ((n + ((n + 1) * 2))..digits.len())
+            let negatives: i32 = ((n + ((n + 1) * 2))..digits.len())
                 .step_by((n + 1) * 4)
                 .flat_map(|i| digits.iter().skip(i).take(n + 1))
-                .fold(positives, |s, a| s - *a as i16);
+                .sum();
 
-            (negatives.abs() % 10) as i8
+            (positives - negatives).abs() % 10
         }
     };
 
-    let transform = |digits: Vec<i8>| -> Vec<i8> {
+    let transform = |digits: Vec<i32>| -> Vec<i32> {
         (0..NUM_PHASES).fold(digits, |digs, _| {
             (0..digs.len()).map(|i| phase_digit(&digs, i)).collect()
         })
@@ -71,9 +57,9 @@ fn lcm(a: usize, b: usize) -> usize {
     (a / gcdab) * b
 }
 
-fn solve_b(digits: Vec<i8>) -> String {
-    fn transform(digits: Vec<i8>, msg_offset: usize) -> Vec<String> {
-        let mut pascal: Vec<Vec<i8>> = Vec::with_capacity(NUM_PHASES);
+fn solve_b(digits: Vec<i32>) -> String {
+    fn transform(digits: Vec<i32>, msg_offset: usize) -> Vec<String> {
+        let mut pascal: Vec<Vec<i32>> = Vec::with_capacity(NUM_PHASES);
         pascal.push(vec![]);
         pascal.push((0..=9).cycle().skip(1).take(PASCAL_PERIOD).collect());
         for phase in 2..NUM_PHASES {
@@ -86,7 +72,7 @@ fn solve_b(digits: Vec<i8>) -> String {
         }
 
         let l = digits.len();
-        let digits_offset: Vec<i8> = digits
+        let digits_offset: Vec<i32> = digits
             .into_iter()
             .cycle()
             .skip(msg_offset % l)
@@ -119,7 +105,7 @@ fn solve_b(digits: Vec<i8>) -> String {
                         (sum + (pascal[NUM_PHASES - 1][index % PASCAL_PERIOD] * *digit)) % 10
                     });
 
-                (sum_first_cycle * num_cycles as i8 + sum_last_cycle) % 10
+                (sum_first_cycle * num_cycles as i32 + sum_last_cycle) % 10
             })
             .map(|d| d.to_string())
             .collect()
@@ -138,7 +124,7 @@ fn solve_b(digits: Vec<i8>) -> String {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let digits: Vec<i8> = lines[0].chars().map(|c| (c as i8) - 48).collect();
+    let digits: Vec<i32> = lines[0].chars().map(|c| (c as i32) - 48).collect();
     let a_solution = solve_a(digits.clone());
     let b_solution = solve_b(digits);
     (a_solution, b_solution)
@@ -148,13 +134,13 @@ pub fn solve(lines: &[String]) -> Solution {
 mod tests {
 
     fn check_a(input: &str, expected_output: &str) {
-        let digits: Vec<i8> = input.chars().map(|c| (c as i8) - 48).collect();
+        let digits: Vec<i32> = input.chars().map(|c| (c as i32) - 48).collect();
         let sol = super::solve_a(digits);
         assert_eq!(sol, expected_output);
     }
 
     fn check_b(input: &str, expected_output: &str) {
-        let digits: Vec<i8> = input.chars().map(|c| (c as i8) - 48).collect();
+        let digits: Vec<i32> = input.chars().map(|c| (c as i32) - 48).collect();
         let sol = super::solve_b(digits);
         assert_eq!(sol, expected_output);
     }
