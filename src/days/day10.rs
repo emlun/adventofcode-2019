@@ -39,11 +39,11 @@ pub fn solve(lines: &[String]) -> Solution {
         .flat_map(|(r, line)| {
             line.chars()
                 .enumerate()
+                .filter(|(_, ch)| *ch == '#')
                 .map(|(c, ch)| (r, c, ch))
                 .collect::<Vec<(usize, usize, char)>>()
                 .into_iter()
         })
-        .filter(|(_, _, ch)| *ch == '#')
         .map(|(r, c, _)| (r.try_into().unwrap(), c.try_into().unwrap()))
         .collect();
 
