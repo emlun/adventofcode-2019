@@ -8,39 +8,39 @@ const PASCAL_PERIOD: usize = 16000;
 fn solve_a(digits: Vec<i8>) -> String {
     let phase_digit = |digits: &[i8], n: usize| -> i8 {
         if n >= digits.len() / 2 {
-            digits.iter().skip(n).fold(0, |s, a| (s + *a) % 10)
+            (digits.iter().skip(n).map(|a| *a as i32).sum::<i32>() % 10) as i8
         } else if n >= digits.len() / 3 {
-            digits
+            (digits
                 .iter()
                 .skip(n)
                 .take(n + 1)
-                .fold(0, |s, a| (s + a) % 10)
+                .map(|a| *a as i32)
+                .sum::<i32>()
+                % 10) as i8
         } else if n >= digits.len() / 4 {
             let positives = digits
                 .iter()
                 .skip(n)
                 .take(n + 1)
-                .fold(0_i32, |s, a| (s + *a as i32) as i32);
+                .fold(0, |s, a| s + *a as i16);
             let negatives = digits
                 .iter()
                 .skip(3 * n + 2)
                 .take(n + 1)
-                .fold(positives, |s, a| (s - *a as i32) as i32);
+                .fold(positives, |s, a| s - *a as i16);
             (negatives.abs() % 10) as i8
         } else {
-            let positives: i32 = (n..digits.len())
+            let positives: i16 = (n..digits.len())
                 .step_by((n + 1) * 4)
                 .flat_map(|i| digits.iter().skip(i).take(n + 1))
-                .map(|d| *d as i32)
-                .sum();
+                .fold(0, |s, a| s + *a as i16);
 
-            let negatives: i32 = ((n + ((n + 1) * 2))..digits.len())
+            let negatives: i16 = ((n + ((n + 1) * 2))..digits.len())
                 .step_by((n + 1) * 4)
                 .flat_map(|i| digits.iter().skip(i).take(n + 1))
-                .map(|d| *d as i32)
-                .sum();
+                .fold(positives, |s, a| s - *a as i16);
 
-            ((positives - negatives).abs() % 10) as i8
+            (negatives.abs() % 10) as i8
         }
     };
 
