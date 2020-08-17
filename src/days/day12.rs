@@ -92,7 +92,6 @@ pub fn solve(lines: &[String]) -> Solution {
     }
 
     let a_solution: i64 = moons.iter().map(energy).sum();
-    let mut b_solution: Option<i64> = None;
 
     let mut x_period = None;
     let mut y_period = None;
@@ -123,10 +122,8 @@ pub fn solve(lines: &[String]) -> Solution {
         }
 
         if let (Some(xp), Some(yp), Some(zp)) = (x_period, y_period, z_period) {
-            b_solution = Some(lcm(xp, yp, zp));
-            break;
+            return (a_solution.to_string(), lcm(xp, yp, zp).to_string());
         }
     }
-
-    (a_solution.to_string(), b_solution.unwrap().to_string())
+    unreachable!();
 }
