@@ -4,20 +4,20 @@ use std::collections::HashSet;
 use crate::common::Solution;
 
 #[derive(Debug, Eq, Hash, PartialEq)]
-struct Point(i64);
+struct Point(i32);
 impl Point {
-    fn new((x, y): (i32, i32)) -> Point {
-        let slf = Point(((x as i64) << 32) | (y as i64 & 0xffffffff));
+    fn new((x, y): (i16, i16)) -> Point {
+        let slf = Point(((x as i32) << 16) | (y as i32 & 0xffff));
         debug_assert_eq!((x, y), slf.as_tuple(), "{:?}", slf);
         slf
     }
 
-    fn as_tuple(&self) -> (i32, i32) {
-        ((self.0 >> 32) as i32, (self.0 & 0xffffffff) as i32)
+    fn as_tuple(&self) -> (i16, i16) {
+        ((self.0 >> 16) as i16, (self.0 & 0xffff) as i16)
     }
 
-    fn norm(&self) -> i32 {
-        ((self.0 >> 32) as i32).abs() + ((self.0 & 0xffffffff) as i32).abs()
+    fn norm(&self) -> i16 {
+        ((self.0 >> 16) as i16).abs() + ((self.0 & 0xffff) as i16).abs()
     }
 }
 
@@ -53,7 +53,7 @@ pub fn solve(lines: &[String]) -> Solution {
 
     let intersections: HashSet<&&Point> = wire1_set.intersection(&wire2_set).collect();
 
-    let a_solution: i32 = intersections.iter().map(|p| p.norm()).min().unwrap();
+    let a_solution: i16 = intersections.iter().map(|p| p.norm()).min().unwrap();
     let b_solution: usize = 2 + intersections
         .iter()
         .map(|p| wire1_inv[*p] + wire2_inv[*p])
