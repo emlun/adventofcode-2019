@@ -40,11 +40,8 @@ pub fn solve(lines: &[String]) -> Solution {
             line.chars()
                 .enumerate()
                 .filter(|(_, ch)| *ch == '#')
-                .map(|(c, ch)| (r, c, ch))
-                .collect::<Vec<(usize, usize, char)>>()
-                .into_iter()
+                .map(move |(c, _)| (r.try_into().unwrap(), c.try_into().unwrap()))
         })
-        .map(|(r, c, _)| (r.try_into().unwrap(), c.try_into().unwrap()))
         .collect();
 
     let (laser_pos, asteroid_rays): (Point, HashMap<Point, Vec<Point>>) = map
