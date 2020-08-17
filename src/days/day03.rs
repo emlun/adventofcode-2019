@@ -25,7 +25,7 @@ fn parse_wire(desc: &str) -> Vec<Point> {
     points
 }
 
-fn norm(p: &Point) -> u64 {
+fn norm(p: &&&Point) -> u64 {
     (p.0.abs() as u64) + (p.1.abs() as u64)
 }
 
@@ -41,7 +41,7 @@ pub fn solve(lines: &[String]) -> Solution {
 
     let intersections: HashSet<&&Point> = wire1_set.intersection(&wire2_set).collect();
 
-    let a_solution: u64 = intersections.iter().map(|p| norm(*p)).min().unwrap();
+    let a_solution: u64 = intersections.iter().map(norm).min().unwrap();
     let b_solution: usize = 2 + intersections
         .iter()
         .map(|p| wire1_inv.get(*p).unwrap() + wire2_inv.get(*p).unwrap())
