@@ -96,10 +96,7 @@ pub fn solve(lines: &[String]) -> Solution {
         }
         if i >= asteroid_rays.len() {
             i -= asteroid_rays.len();
-            asteroid_rays = asteroid_rays
-                .into_iter()
-                .filter(|v| !v.is_empty())
-                .collect();
+            asteroid_rays.retain(|v| !v.is_empty());
         }
     }
 
