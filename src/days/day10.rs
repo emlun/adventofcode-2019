@@ -33,7 +33,7 @@ fn ray_atan((r, c): &Point) -> f64 {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let map: HashSet<Point> = lines
+    let map: Vec<Point> = lines
         .iter()
         .enumerate()
         .flat_map(|(r, line)| {
