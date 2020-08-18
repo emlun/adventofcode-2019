@@ -57,34 +57,25 @@ fn solve_b(computer: IntcodeComputer) -> (usize, usize) {
     let k1: f64 = (maxx as f64) / 49_f64;
     let k2: f64 = (minx as f64) / 49_f64;
 
-    let mut y: usize = ((2_f64 * DIM_WANTED as f64) / (k1 - k2)).round() as usize;
-    let mut maxx = reduce_maxx(
-        &computer,
-        compute_maxx(&computer, (y as f64 * k1).round() as usize, y),
-        y,
-    );
+    let y_guess: usize = ((2_f64 * DIM_WANTED as f64) / (k1 - k2)).round() as usize;
 
-    if check(&computer, (maxx - DIM_WANTED, y + DIM_WANTED - 1)) {
-        let mut prev_maxx;
-        loop {
-            y -= 1;
-            prev_maxx = maxx;
-            maxx = reduce_maxx(&computer, maxx, y);
-            let x = maxx - DIM_WANTED;
-            if !check(&computer, (x, y + DIM_WANTED - 1)) {
-                return (a_solution, (prev_maxx - DIM_WANTED) * 10000 + (y + 1));
-            }
-        }
-    } else {
-        loop {
-            y += 1;
-            maxx = compute_maxx(&computer, maxx, y);
-            let x = maxx - DIM_WANTED;
-            if check(&computer, (x, y + DIM_WANTED - 1)) {
-                return (a_solution, x * 10000 + y);
-            }
+    let mut y_min = 50;
+    let mut y_max = y_guess * 2;
+    let mut x_max = maxx;
+
+    while y_max > y_min {
+        let y = (y_max + y_min) / 2;
+        let maxx_guess = (y as f64 * k1).round() as usize;
+        let maxx = reduce_maxx(&computer, compute_maxx(&computer, maxx_guess, y), y);
+        let x = maxx - DIM_WANTED;
+        if check(&computer, (x, y + DIM_WANTED - 1)) {
+            y_max = y;
+            x_max = x;
+        } else {
+            y_min = y + 1;
         }
     }
+    (a_solution, x_max * 10000 + y_max)
 }
 
 pub fn solve(lines: &[String]) -> Solution {
