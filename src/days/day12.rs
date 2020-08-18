@@ -17,17 +17,16 @@ fn energy(x: &Moon, y: &Moon, z: &Moon) -> i64 {
     pot * kin
 }
 
-fn step(mut moons: Vec<Moon>) -> Vec<Moon> {
+fn step(moons: &mut Vec<Moon>) {
     for mooni in 0..moons.len() {
         moons[mooni].vel += moons
             .iter()
             .map(|gravmoon| gravity(&moons[mooni], gravmoon))
             .sum::<i64>();
     }
-    for moon in &mut moons {
+    for moon in moons {
         moon.pos += moon.vel;
     }
-    moons
 }
 
 fn gcd(a: usize, b: usize) -> usize {
@@ -47,7 +46,7 @@ fn lcm(a: usize, b: usize, c: usize) -> usize {
 
 fn find_period(initial_state: Vec<Moon>, mut moons: Vec<Moon>) -> usize {
     for i in 1001.. {
-        moons = step(moons);
+        step(&mut moons);
 
         if initial_state == moons {
             return i;
@@ -81,7 +80,9 @@ pub fn solve(lines: &[String]) -> Solution {
     let initial_states = moons.clone();
 
     for _ in 0..1000 {
-        moons = moons.into_iter().map(step).collect();
+        for m in moons.iter_mut() {
+            step(m);
+        }
     }
 
     let a_solution: i64 = moons[0]
