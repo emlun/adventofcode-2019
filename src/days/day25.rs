@@ -144,9 +144,13 @@ impl State {
             self.stage = Done;
         } else {
             if room.too_light {
+                let last_code = self.last_attempt_code;
+                self.too_light.retain(|light| light | last_code == *light);
                 self.too_light.push(self.last_attempt_code);
             }
             if room.too_heavy {
+                let last_code = self.last_attempt_code;
+                self.too_heavy.retain(|heavy| heavy & last_code == *heavy);
                 self.too_heavy.push(self.last_attempt_code);
             }
 
