@@ -25,12 +25,12 @@ fn main() -> Result<(), std::io::Error> {
         .arg(
             Arg::with_name("day")
                 .takes_value(true)
-                .help(r#"Day number (1 - 25) to run, or "intcode" to parse and run an intcode program. If omitted, all days are run."#)
+                .help(r#"Day number (1 - 25) to run, or "intcode" to parse and run an Intcode program. If omitted, all days are run."#)
         )
         .arg(
             Arg::with_name("input-file")
                 .takes_value(true)
-                .help(r#"Path to file containing input for the chosen day or, if <day> is "intcode", an intcode program on the first line and its input on the second line. Use "-" for standard input. If omitted, uses the path "./inputs/day<N>.in" for day solvers and standard input for intcode."#)
+                .help(r#"When <day> is not "intcode": Path to a file containing input for the chosen day. Use "-" for standard input; omit to use "./inputs/day<day>.in". When <day> is "intcode": Path to a file containing the Intcode program to run. Use "-" or omit for standard input. Input is read from the first line of standard input in the same format as an Intcode program; when program is also read from standard input, the program is read from the first line and the input from the second."#)
         );
 
     let matches = cli.get_matches();
@@ -75,15 +75,29 @@ fn run_all_days() -> Result<(), std::io::Error> {
 
 fn run_intcode(input_file: Option<&str>) -> Result<(), std::io::Error> {
     let lines = get_file_lines(Path::new(input_file.unwrap_or("-")))?;
-    let inputs: Vec<i64> = lines
-        .get(1)
-        .map(|line| {
-            line.split(',')
-                .map(|s| s.parse())
-                .collect::<Result<Vec<i64>, std::num::ParseIntError>>()
-                .expect("Invalid integer in intcode program input (second line)")
-        })
-        .unwrap_or_default();
+    let inputs: Vec<i64> = if input_file == None || input_file == Some("-") {
+        lines
+            .get(1)
+            .map(|line| {
+                line.split(',')
+                    .map(|s| s.parse())
+                    .collect::<Result<Vec<i64>, std::num::ParseIntError>>()
+                    .expect(
+                        "Invalid integer in intcode program input (second line of standard input)",
+                    )
+            })
+            .unwrap_or_default()
+    } else {
+        get_file_lines(Path::new("-"))?
+            .get(0)
+            .map(|line| {
+                line.split(',')
+                    .map(|s| s.parse())
+                    .collect::<Result<Vec<i64>, std::num::ParseIntError>>()
+                    .expect("Invalid integer in intcode program input (standard input)")
+            })
+            .unwrap_or_default()
+    };
     let computer: IntcodeComputer = lines[0..1].into();
     let computer = computer.run(inputs);
     if computer.expects_input() {
