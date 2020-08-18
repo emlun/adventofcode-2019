@@ -6,9 +6,18 @@ use std::io::Read;
 type Point = (i8, i8);
 type Direction = (i8, i8);
 
+#[derive(Clone, Copy, Debug)]
+enum AlgorithmStage {
+    Collect,
+    Navigate,
+    Unlock,
+    Done,
+}
+use AlgorithmStage::{Collect, Done, Navigate, Unlock};
+
 #[derive(Clone, Debug)]
 struct State {
-    state: u8,
+    stage: AlgorithmStage,
     pos: Vec<Point>,
     unexplored_pos: Vec<Vec<Point>>,
     items: Vec<String>,
@@ -20,14 +29,9 @@ struct State {
 }
 
 impl State {
-    const COLLECT: u8 = 0;
-    const NAVIGATE: u8 = 1;
-    const UNLOCK: u8 = 2;
-    const DONE: u8 = 3;
-
     fn new() -> Self {
         Self {
-            state: Self::COLLECT,
+            stage: Collect,
             pos: vec![(0, 0)],
             unexplored_pos: Vec::new(),
             items: Vec::new(),
@@ -82,7 +86,7 @@ impl State {
 
     fn explore(mut self, doors: Vec<String>) -> Self {
         if self.unexplored_pos.iter().all(|poss| poss.is_empty()) {
-            self.state = Self::NAVIGATE;
+            self.stage = Navigate;
             self.navigate()
         } else {
             let unlen = self.unexplored_pos.len() - 1;
@@ -129,14 +133,14 @@ impl State {
             self.next_commands.push_back(move_command.to_string());
         }
         self.unlock_attempt = (1 << self.items.len()) - 1;
-        self.state = Self::UNLOCK;
+        self.stage = Unlock;
         self
     }
 
     fn unlock(mut self, room: Room) -> Self {
         if let Some(solution) = room.solution {
             self.solution = Some(solution);
-            self.state = Self::DONE;
+            self.stage = Done;
         } else {
             let next_attempt = if self.unlock_attempt == (1 << self.items.len()) - 1 {
                 self.unlock_attempt
@@ -275,8 +279,8 @@ fn parse_room(output: String) -> Room {
 
 fn update(mut state: State, output: String) -> State {
     state.next_commands.clear();
-    match state.state {
-        State::COLLECT => {
+    match state.stage {
+        Collect => {
             let room = parse_room(output);
             if room.name == "Security Checkpoint" {
                 state.security_pos = Some(state.current_pos());
@@ -290,8 +294,8 @@ fn update(mut state: State, output: String) -> State {
             }
         }
 
-        State::NAVIGATE => state.navigate(),
-        State::UNLOCK => state.unlock(parse_room(output)),
+        Navigate => state.navigate(),
+        Unlock => state.unlock(parse_room(output)),
         _ => unreachable!(),
     }
 }
