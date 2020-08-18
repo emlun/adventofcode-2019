@@ -91,10 +91,6 @@ impl State {
         } else {
             let unlen = self.unexplored_pos.len() - 1;
             while let Some(unexplored) = self.unexplored_pos[unlen].pop() {
-                if self.pos.len() > 1 && unexplored == self.pos[self.pos.len() - 2] {
-                    continue;
-                }
-
                 let pos = self.current_pos();
                 let move_dir = (unexplored.0 - pos.0, unexplored.1 - pos.1);
                 let move_command = dir_to_move(move_dir).to_string();
@@ -109,7 +105,9 @@ impl State {
                     let mut next_unexplored = Vec::new();
                     for next_dpos in &[(0, 1), (1, 0), (0, -1), (-1, 0)] {
                         let next = (unexplored.0 + next_dpos.0, unexplored.1 + next_dpos.1);
-                        next_unexplored.push(next);
+                        if next != pos {
+                            next_unexplored.push(next);
+                        }
                     }
                     self.unexplored_pos.push(next_unexplored);
 
