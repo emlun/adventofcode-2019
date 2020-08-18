@@ -25,6 +25,9 @@ struct State {
     security_found: bool,
     next_commands: VecDeque<String>,
     unlock_attempt: u32,
+    last_attempt_code: u32,
+    too_heavy: Vec<u32>,
+    too_light: Vec<u32>,
     solution: Option<String>,
 }
 
@@ -39,6 +42,9 @@ impl State {
             security_found: false,
             next_commands: VecDeque::new(),
             unlock_attempt: 0,
+            last_attempt_code: 0,
+            too_heavy: Vec::new(),
+            too_light: Vec::new(),
             solution: None,
         }
     }
@@ -126,8 +132,9 @@ impl State {
             let move_command = dir_to_move(dir);
             self.next_commands.push_back(move_command.to_string());
         }
-        self.unlock_attempt = (1 << self.items.len()) - 1;
         self.stage = Unlock;
+        self.unlock_attempt = 0;
+        self.last_attempt_code = (1 << self.items.len()) - 1;
         self
     }
 
@@ -136,11 +143,26 @@ impl State {
             self.solution = Some(solution);
             self.stage = Done;
         } else {
-            let next_attempt = if self.unlock_attempt == (1 << self.items.len()) - 1 {
-                self.unlock_attempt
-            } else {
-                self.unlock_attempt - 1
-            };
+            if room.too_light {
+                self.too_light.push(self.last_attempt_code);
+            }
+            if room.too_heavy {
+                self.too_heavy.push(self.last_attempt_code);
+            }
+
+            self.unlock_attempt = (self.unlock_attempt + 1) % (1 << self.items.len());
+
+            while self
+                .too_heavy
+                .iter()
+                .any(|heavy| heavy & self.unlock_attempt == *heavy)
+                || self
+                    .too_light
+                    .iter()
+                    .any(|light| light | self.unlock_attempt == *light)
+            {
+                self.unlock_attempt = (self.unlock_attempt + 1) % (1 << self.items.len());
+            }
 
             let pos = self.current_pos();
             let prev_pos = self.pos[self.pos.len() - 2];
@@ -152,7 +174,10 @@ impl State {
 
             for i in 0..self.items.len() {
                 let mask = 1 << i;
-                match (self.unlock_attempt & mask > 0, next_attempt & mask > 0) {
+                match (
+                    self.last_attempt_code & mask > 0,
+                    self.unlock_attempt & mask > 0,
+                ) {
                     (true, false) => self
                         .next_commands
                         .push_back(format!("drop {}", self.items[i])),
@@ -162,7 +187,7 @@ impl State {
                     _ => {}
                 }
             }
-            self.unlock_attempt -= 1;
+            self.last_attempt_code = self.unlock_attempt;
             self.next_commands.push_back(move_command);
         }
         self
@@ -183,6 +208,8 @@ struct Room {
     name: String,
     doors: Vec<String>,
     items: Vec<String>,
+    too_light: bool,
+    too_heavy: bool,
     solution: Option<String>,
 }
 
@@ -193,6 +220,8 @@ fn parse_room(output: String) -> Room {
     let mut doors: Vec<String> = Vec::new();
     let mut items: Vec<String> = Vec::new();
     let mut solution = None;
+    let mut too_light = false;
+    let mut too_heavy = false;
 
     while !words.is_empty() {
         match words[0] {
@@ -257,6 +286,14 @@ fn parse_room(output: String) -> Room {
                 }
             }
 
+            "\"Alert!" => {
+                words.drain(0..6);
+                if words.pop_front() == Some("lighter") {
+                    too_heavy = true;
+                } else {
+                    too_light = true;
+                }
+            }
             _ => {
                 words.pop_front();
             }
@@ -267,6 +304,8 @@ fn parse_room(output: String) -> Room {
         name,
         doors,
         items,
+        too_light,
+        too_heavy,
         solution,
     }
 }
