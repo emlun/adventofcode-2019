@@ -26,6 +26,22 @@ $ cargo run 1 foo.txt
 $ cargo run 1 - < foo.txt
 ```
 
+You can also run an Intcode program by specifying `intcode` instead of a day
+number. The second argument is a file containing the program; if omitted or set
+to `-`, the program is read from standard input. Program input is read from the
+first line of standard input in the same format as an Intcode program; when the
+program is also read from standard input, the input is instead read from the
+second line.
+
+```
+$ cargo run intcode add.intcode <<< '4,7'
+11
+
+$ cargo run intcode <<< '3,11,3,12,1,11,12,11,4,11,99
+4,7'
+11
+```
+
 Running the benchmarks requires Rust nightly:
 
 ```
