@@ -65,11 +65,7 @@ impl State {
         self.pos.pop();
 
         if self.security_pos.is_some() {
-            let pos = self.current_pos();
-
-            if !self.path_to_security.is_empty()
-                && self.path_to_security[self.path_to_security.len() - 1] == pos
-            {
+            if self.path_to_security.last() == Some(&self.current_pos()) {
                 self.path_to_security.pop();
             } else {
                 self.path_to_security.push(prev_pos);
