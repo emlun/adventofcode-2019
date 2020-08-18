@@ -26,10 +26,8 @@ pub fn solve_b(layers: &[Vec<u8>]) -> String {
             .map(|row| {
                 row.iter()
                     .map(|cell| match cell {
-                        0 => ".",
                         1 => "#",
-                        2 => " ",
-                        _ => unreachable!(),
+                        _ => " ",
                     })
                     .collect::<Vec<&str>>()
                     .join("")
