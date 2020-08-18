@@ -133,8 +133,8 @@ impl State {
             self.next_commands.push_back(move_command.to_string());
         }
         self.stage = Unlock;
-        self.unlock_attempt = 0;
         self.last_attempt_code = (1 << self.items.len()) - 1;
+        self.unlock_attempt = gray_decode(self.last_attempt_code);
         self
     }
 
@@ -195,6 +195,15 @@ impl State {
 
 fn gray_code(n: u32) -> u32 {
     n ^ (n >> 1)
+}
+
+fn gray_decode(mut n: u32) -> u32 {
+    let mut mask = n;
+    while mask > 0 {
+        mask >>= 1;
+        n ^= mask;
+    }
+    n
 }
 
 fn dir_to_move(dir: Direction) -> &'static str {
