@@ -1,42 +1,31 @@
 use crate::common::Solution;
 use crate::util::sign;
 
-type Point = (i64, i64, i64);
-
+#[derive(Clone, Eq, PartialEq)]
 struct Moon {
-    pos: Point,
-    vel: Point,
+    pos: i64,
+    vel: i64,
 }
 
-fn add(p1: &Point, p2: &Point) -> Point {
-    (p1.0 + p2.0, p1.1 + p2.1, p1.2 + p2.2)
+fn gravity(on: &Moon, from: &Moon) -> i64 {
+    sign(from.pos - on.pos)
 }
 
-fn sub(p1: &Point, p2: &Point) -> Point {
-    (p1.0 - p2.0, p1.1 - p2.1, p1.2 - p2.2)
-}
-
-fn gravity(on: &Moon, from: &Moon) -> Point {
-    let posdiff = sub(&from.pos, &on.pos);
-    (sign(posdiff.0), sign(posdiff.1), sign(posdiff.2))
-}
-
-fn energy(moon: &Moon) -> i64 {
-    let pot = moon.pos.0.abs() + moon.pos.1.abs() + moon.pos.2.abs();
-    let kin = moon.vel.0.abs() + moon.vel.1.abs() + moon.vel.2.abs();
+fn energy(x: &Moon, y: &Moon, z: &Moon) -> i64 {
+    let pot = x.pos.abs() + y.pos.abs() + z.pos.abs();
+    let kin = x.vel.abs() + y.vel.abs() + z.vel.abs();
     pot * kin
 }
 
 fn step(mut moons: Vec<Moon>) -> Vec<Moon> {
     for mooni in 0..moons.len() {
-        let mut acc = (0, 0, 0);
-        for gravmoon in &moons {
-            acc = add(&acc, &gravity(&moons[mooni], gravmoon));
-        }
-        moons[mooni].vel = add(&moons[mooni].vel, &acc);
+        moons[mooni].vel += moons
+            .iter()
+            .map(|gravmoon| gravity(&moons[mooni], gravmoon))
+            .sum::<i64>();
     }
     for moon in &mut moons {
-        moon.pos = add(&moon.pos, &moon.vel);
+        moon.pos += moon.vel;
     }
     moons
 }
@@ -57,73 +46,88 @@ fn lcm(a: i64, b: i64, c: i64) -> i64 {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let mut moons: Vec<Moon> = lines
-        .iter()
-        .map(|line| {
-            let posv: Vec<i64> = line
-                .split(',')
-                .map(|part| {
-                    part.split('=')
-                        .nth(1)
-                        .unwrap()
-                        .split('>')
-                        .next()
-                        .unwrap()
-                        .parse()
-                        .unwrap()
-                })
-                .collect();
-            Moon {
-                pos: (posv[0], posv[1], posv[2]),
-                vel: (0, 0, 0),
-            }
-        })
-        .collect();
+    let mut moons_x: Vec<Moon> = Vec::new();
+    let mut moons_y: Vec<Moon> = Vec::new();
+    let mut moons_z: Vec<Moon> = Vec::new();
+    for line in lines {
+        let mut pos = line.split(',').map(|part| {
+            part.split('=')
+                .nth(1)
+                .unwrap()
+                .split('>')
+                .next()
+                .unwrap()
+                .parse()
+                .unwrap()
+        });
 
-    let initial_x_state: Vec<(i64, i64)> =
-        moons.iter().map(|moon| (moon.pos.0, moon.vel.0)).collect();
-    let initial_y_state: Vec<(i64, i64)> =
-        moons.iter().map(|moon| (moon.pos.1, moon.vel.1)).collect();
-    let initial_z_state: Vec<(i64, i64)> =
-        moons.iter().map(|moon| (moon.pos.2, moon.vel.2)).collect();
+        moons_x.push(Moon {
+            pos: pos.next().unwrap(),
+            vel: 0,
+        });
 
-    for _ in 0..1000 {
-        moons = step(moons);
+        moons_y.push(Moon {
+            pos: pos.next().unwrap(),
+            vel: 0,
+        });
+
+        moons_z.push(Moon {
+            pos: pos.next().unwrap(),
+            vel: 0,
+        });
     }
 
-    let a_solution: i64 = moons.iter().map(energy).sum();
+    let initial_x_state: Vec<Moon> = moons_x.clone();
+    let initial_y_state: Vec<Moon> = moons_y.clone();
+    let initial_z_state: Vec<Moon> = moons_z.clone();
+
+    for _ in 0..1000 {
+        moons_x = step(moons_x);
+        moons_y = step(moons_y);
+        moons_z = step(moons_z);
+    }
+
+    let a_solution: i64 = moons_x
+        .iter()
+        .zip(moons_y.iter())
+        .zip(moons_z.iter())
+        .map(|((x, y), z)| energy(x, y, z))
+        .sum();
 
     let mut x_period = None;
     let mut y_period = None;
     let mut z_period = None;
 
     for i in 1001.. {
-        moons = step(moons);
+        moons_x = step(moons_x);
 
-        if x_period.is_none() {
-            let x_state = moons.iter().map(|moon| (moon.pos.0, moon.vel.0));
-            if initial_x_state.iter().zip(x_state).all(|(a, b)| *a == b) {
-                x_period = Some(i);
-            }
-        }
-
-        if y_period.is_none() {
-            let y_state = moons.iter().map(|moon| (moon.pos.1, moon.vel.1));
-            if initial_y_state.iter().zip(y_state).all(|(a, b)| *a == b) {
-                y_period = Some(i);
-            }
-        }
-
-        if z_period.is_none() {
-            let z_state = moons.iter().map(|moon| (moon.pos.2, moon.vel.2));
-            if initial_z_state.iter().zip(z_state).all(|(a, b)| *a == b) {
-                z_period = Some(i);
-            }
-        }
-
-        if let (Some(xp), Some(yp), Some(zp)) = (x_period, y_period, z_period) {
-            return (a_solution.to_string(), lcm(xp, yp, zp).to_string());
+        if initial_x_state == moons_x {
+            x_period = Some(i);
+            break;
         }
     }
-    unreachable!();
+
+    for i in 1001.. {
+        moons_y = step(moons_y);
+
+        if initial_y_state == moons_y {
+            y_period = Some(i);
+            break;
+        }
+    }
+
+    for i in 1001.. {
+        moons_z = step(moons_z);
+
+        if initial_z_state == moons_z {
+            z_period = Some(i);
+            break;
+        }
+    }
+
+    if let (Some(xp), Some(yp), Some(zp)) = (x_period, y_period, z_period) {
+        (a_solution.to_string(), lcm(xp, yp, zp).to_string())
+    } else {
+        unreachable!();
+    }
 }
