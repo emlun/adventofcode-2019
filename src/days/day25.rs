@@ -21,7 +21,7 @@ struct State {
     pos: Vec<Point>,
     unexplored_pos: Vec<Vec<Point>>,
     items: Vec<String>,
-    path_to_security: Vec<Direction>,
+    path_to_security: Vec<Point>,
     security_pos: Option<Point>,
     next_commands: VecDeque<String>,
     unlock_attempt: u32,
