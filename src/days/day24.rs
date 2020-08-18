@@ -158,12 +158,8 @@ impl LevelsState {
 
     fn get_mut(&mut self, level: i32) -> &mut State {
         let index = Self::level_to_index(level);
-        if self.levels.len() <= index {
-            self.levels.append(
-                &mut (self.levels.len()..=index)
-                    .map(|_| BoolMatrix::new(7))
-                    .collect(),
-            );
+        while self.levels.len() <= index {
+            self.levels.push(BoolMatrix::new(7));
         }
         if level < self.min_level {
             self.min_level = level;
