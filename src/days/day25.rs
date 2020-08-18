@@ -22,7 +22,7 @@ struct State {
     unexplored_pos: Vec<Vec<Point>>,
     items: Vec<String>,
     path_to_security: Vec<Point>,
-    security_pos: Option<Point>,
+    security_found: bool,
     next_commands: VecDeque<String>,
     unlock_attempt: u32,
     solution: Option<String>,
@@ -36,7 +36,7 @@ impl State {
             unexplored_pos: Vec::new(),
             items: Vec::new(),
             path_to_security: Vec::new(),
-            security_pos: None,
+            security_found: false,
             next_commands: VecDeque::new(),
             unlock_attempt: 0,
             solution: None,
@@ -64,7 +64,7 @@ impl State {
         let prev_pos = self.current_pos();
         self.pos.pop();
 
-        if self.security_pos.is_some() {
+        if self.security_found {
             if self.path_to_security.last() == Some(&self.current_pos()) {
                 self.path_to_security.pop();
             } else {
@@ -91,7 +91,7 @@ impl State {
                 let move_dir = (unexplored.0 - pos.0, unexplored.1 - pos.1);
                 let move_command = dir_to_move(move_dir).to_string();
                 if doors.contains(&move_command) {
-                    if self.security_pos.is_some() {
+                    if self.security_found {
                         self.path_to_security.push(pos);
                     }
 
@@ -277,7 +277,7 @@ fn update(mut state: State, output: String) -> State {
         Collect => {
             let room = parse_room(output);
             if room.name == "Security Checkpoint" {
-                state.security_pos = Some(state.current_pos());
+                state.security_found = true;
                 state.backtrack()
             } else {
                 for item in room.items {
