@@ -134,7 +134,7 @@ impl State {
         }
         self.stage = Unlock;
         self.last_attempt_code = (1 << self.items.len()) - 1;
-        self.unlock_attempt = gray_decode(self.last_attempt_code);
+        self.unlock_attempt = gray_decode((1 << (self.items.len() / 2 + 1)) - 1);
         self
     }
 
