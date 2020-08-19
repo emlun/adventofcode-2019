@@ -72,13 +72,11 @@ pub fn solve(lines: &[String]) -> Solution {
         orbits
             .iter()
             .fold(HashMap::new(), |mut result, (child, parent)| {
-                let nw = HashSet::new();
-                let mut adjacent = result.remove(parent.as_str()).unwrap_or(nw);
+                let adjacent = result.entry(parent).or_default();
                 adjacent.insert(child);
                 if let Some(parent) = orbits.get(parent) {
                     adjacent.insert(parent);
                 }
-                result.insert(parent, adjacent);
                 result
             });
 
