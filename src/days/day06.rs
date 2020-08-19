@@ -4,12 +4,12 @@ use std::collections::LinkedList;
 
 use crate::common::Solution;
 
-fn solve_a(orbits: &HashMap<String, String>) -> u32 {
+fn solve_a(orbits: &HashMap<&str, &str>) -> u32 {
     let mut num_orbits: HashMap<&str, u32> = HashMap::new();
 
     fn get_orbit_nums<'obt>(
         child: &'obt str,
-        orbits: &'obt HashMap<String, String>,
+        orbits: &'obt HashMap<&str, &str>,
         num_orbits: &mut HashMap<&'obt str, u32>,
     ) -> u32 {
         num_orbits.get(child).copied().unwrap_or_else(|| {
@@ -28,7 +28,7 @@ fn solve_a(orbits: &HashMap<String, String>) -> u32 {
         .sum()
 }
 
-fn solve_b(orbits: &HashMap<String, String>) -> Option<u32> {
+fn solve_b(orbits: &HashMap<&str, &str>) -> Option<u32> {
     let mut queue: LinkedList<(&str, u32, &str)> = LinkedList::new();
     let pos = orbits.get("YOU").unwrap();
     let target = orbits.get("SAN").unwrap();
@@ -48,7 +48,7 @@ fn solve_b(orbits: &HashMap<String, String>) -> Option<u32> {
 
     loop {
         if let Some((pos, steps, prev)) = queue.pop_front() {
-            if pos == target {
+            if pos == *target {
                 return Some(steps);
             } else {
                 for neighbor in adjacent
@@ -67,13 +67,13 @@ fn solve_b(orbits: &HashMap<String, String>) -> Option<u32> {
 }
 
 pub fn solve(lines: &[String]) -> Solution {
-    let orbits: HashMap<String, String> = lines
+    let orbits: HashMap<&str, &str> = lines
         .iter()
         .map(|line| {
             let mut splt = line.split(')');
             let a = splt.next().unwrap();
             let b = splt.next().unwrap();
-            (b.to_string(), a.to_string())
+            (b, a)
         })
         .collect();
 
