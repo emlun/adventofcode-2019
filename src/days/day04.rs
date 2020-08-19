@@ -27,24 +27,17 @@ struct PasswordNumber {
 
 impl PasswordNumber {
     fn next(&mut self) {
-        let mut add_digit = true;
-        for i in 0..self.digits.len() {
-            if self.digits[i] == 9 {
-                self.digits[i] = 0;
-            } else {
-                self.digits[i] += 1;
-                add_digit = false;
-                break;
-            }
+        let mut non_nine_idx = 0;
+        while non_nine_idx < self.digits.len() && self.digits[non_nine_idx] == 9 {
+            non_nine_idx += 1;
         }
-        if add_digit {
-            self.digits.push(1);
+        if non_nine_idx == self.digits.len() {
+            self.digits.push(0);
         }
 
-        for i in (1..self.digits.len()).rev() {
-            if self.digits[i] > self.digits[i - 1] {
-                self.digits[i - 1] = self.digits[i];
-            }
+        self.digits[non_nine_idx] += 1;
+        for i in 0..non_nine_idx {
+            self.digits[i] = self.digits[non_nine_idx];
         }
     }
     fn as_u32(&self) -> u32 {
@@ -62,12 +55,14 @@ impl From<u32> for PasswordNumber {
     fn from(i: u32) -> PasswordNumber {
         let mut digits = Vec::new();
         let mut pow = 1;
-        loop {
-            if pow > i {
-                break;
-            }
+        while pow <= i {
             digits.push(((i % (pow * 10)) / pow) as u8);
             pow *= 10;
+        }
+        for idx in (1..digits.len()).rev() {
+            if digits[idx - 1] < digits[idx] {
+                digits[idx - 1] = digits[idx];
+            }
         }
         PasswordNumber { digits }
     }
