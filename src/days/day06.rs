@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::collections::LinkedList;
 
 use crate::common::Solution;
 
@@ -28,39 +26,35 @@ fn solve_a(orbits: &HashMap<&str, &str>) -> u32 {
         .sum()
 }
 
-fn solve_b(orbits: &HashMap<&str, &str>) -> Option<u32> {
-    let mut queue: LinkedList<(&str, u32, &str)> = LinkedList::new();
-    let pos = orbits.get("YOU").unwrap();
-    let target = orbits.get("SAN").unwrap();
-    queue.push_back((pos, 0, pos));
+fn solve_b(orbits: &HashMap<&str, &str>) -> Option<usize> {
+    let mut steps_from_you: HashMap<&str, usize> = HashMap::new();
+    let mut steps_from_san: HashMap<&str, usize> = HashMap::new();
 
-    let adjacent: HashMap<&str, HashSet<&str>> =
-        orbits
-            .iter()
-            .fold(HashMap::new(), |mut result, (child, parent)| {
-                let adjacent = result.entry(parent).or_default();
-                adjacent.insert(child);
-                if let Some(parent) = orbits.get(parent) {
-                    adjacent.insert(parent);
-                }
-                result
-            });
+    let mut seq_from_you = std::iter::successors(Some(&"YOU"), |pos| orbits.get(*pos))
+        .skip(1)
+        .enumerate();
+    let mut seq_from_san = std::iter::successors(Some(&"SAN"), |pos| orbits.get(*pos))
+        .skip(1)
+        .enumerate();
 
     loop {
-        if let Some((pos, steps, prev)) = queue.pop_front() {
-            if pos == *target {
-                return Some(steps);
-            } else {
-                for neighbor in adjacent
-                    .get(pos)
-                    .iter()
-                    .flat_map(|set| set.iter())
-                    .filter(|neighbor| **neighbor != prev)
-                {
-                    queue.push_back((neighbor, steps + 1, pos));
-                }
+        let next_you = seq_from_you.next();
+        if let Some((steps1, pos)) = next_you {
+            if let Some(steps2) = steps_from_san.get(pos) {
+                return Some(steps1 + steps2);
             }
-        } else {
+            steps_from_you.insert(pos, steps1);
+        }
+
+        let next_san = seq_from_san.next();
+        if let Some((steps1, pos)) = next_san {
+            if let Some(steps2) = steps_from_you.get(pos) {
+                return Some(steps1 + steps2);
+            }
+            steps_from_san.insert(pos, steps1);
+        }
+
+        if (next_you, next_san) == (None, None) {
             return None;
         }
     }
