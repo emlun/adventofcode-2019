@@ -28,14 +28,23 @@ fn solve_a(orbits: &HashMap<String, String>) -> u32 {
         .sum()
 }
 
-fn solve_b(
-    orbits: &HashMap<String, String>,
-    adjacent: &HashMap<&str, HashSet<&str>>,
-) -> Option<u32> {
+fn solve_b(orbits: &HashMap<String, String>) -> Option<u32> {
     let mut queue: LinkedList<(&str, u32, &str)> = LinkedList::new();
     let pos = orbits.get("YOU").unwrap();
     let target = orbits.get("SAN").unwrap();
     queue.push_back((pos, 0, pos));
+
+    let adjacent: HashMap<&str, HashSet<&str>> =
+        orbits
+            .iter()
+            .fold(HashMap::new(), |mut result, (child, parent)| {
+                let adjacent = result.entry(parent).or_default();
+                adjacent.insert(child);
+                if let Some(parent) = orbits.get(parent) {
+                    adjacent.insert(parent);
+                }
+                result
+            });
 
     loop {
         if let Some((pos, steps, prev)) = queue.pop_front() {
@@ -68,21 +77,9 @@ pub fn solve(lines: &[String]) -> Solution {
         })
         .collect();
 
-    let adjacent: HashMap<&str, HashSet<&str>> =
-        orbits
-            .iter()
-            .fold(HashMap::new(), |mut result, (child, parent)| {
-                let adjacent = result.entry(parent).or_default();
-                adjacent.insert(child);
-                if let Some(parent) = orbits.get(parent) {
-                    adjacent.insert(parent);
-                }
-                result
-            });
-
     (
         solve_a(&orbits).to_string(),
-        solve_b(&orbits, &adjacent)
+        solve_b(&orbits)
             .map(|b| b.to_string())
             .unwrap_or_else(|| "Impossible".to_string()),
     )
