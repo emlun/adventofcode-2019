@@ -8,19 +8,11 @@ fn run(
     mut computer: IntcodeComputer,
     mut white_panels: HashMap<Point, bool>,
 ) -> HashMap<Point, bool> {
-    fn get_input(white_panels: &HashMap<Point, bool>, pos: &Point) -> Option<i64> {
-        Some(if *white_panels.get(pos).unwrap_or(&false) {
-            1
-        } else {
-            0
-        })
-    };
-
     let mut pos = (0, 0);
     let mut dir = (0, 1);
 
     while computer.is_running() {
-        computer.run_mut(get_input(&white_panels, &pos));
+        computer.run_mut(Some(i64::from(*white_panels.get(&pos).unwrap_or(&false))));
 
         if let Some(out) = computer.output.pop_front() {
             white_panels.insert(pos, out == 1);
