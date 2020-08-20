@@ -71,7 +71,7 @@ pub fn solve(lines: &[String]) -> Solution {
         })
         .collect::<Vec<(Point, Vec<Point>)>>();
     asteroid_rays.sort_by(|(dir1, _), (dir2, _)| {
-        if ray_atan(dir1) - ray_atan(dir2) < 0.0 {
+        if ray_atan(dir1) < ray_atan(dir2) {
             std::cmp::Ordering::Less
         } else {
             std::cmp::Ordering::Greater
