@@ -66,7 +66,7 @@ pub fn solve(lines: &[String]) -> Solution {
     let mut asteroid_rays: Vec<(Point, Vec<Point>)> = asteroid_rays
         .into_iter()
         .map(|(p, mut ray)| {
-            ray.sort_by_key(|(r, c)| r.abs() + c.abs());
+            ray.sort_by_key(|(r, c)| -(r.abs() + c.abs()));
             (p, ray)
         })
         .collect::<Vec<(Point, Vec<Point>)>>();
@@ -86,18 +86,15 @@ pub fn solve(lines: &[String]) -> Solution {
     let mut i = 0;
     let mut b_solution = 0;
     while !asteroid_rays.is_empty() {
-        let ast = asteroid_rays[i].remove(0);
-        let orig_ast = (ast.0 + laser_pos.0, ast.1 + laser_pos.1);
-        i += 1;
-        num += 1;
-        if num == 200 {
-            b_solution = orig_ast.0 + orig_ast.1 * 100;
-            break;
+        if let Some(ast) = asteroid_rays[i].pop() {
+            num += 1;
+            if num == 200 {
+                let orig_ast = (ast.0 + laser_pos.0, ast.1 + laser_pos.1);
+                b_solution = orig_ast.0 + orig_ast.1 * 100;
+                break;
+            }
         }
-        if i >= asteroid_rays.len() {
-            i -= asteroid_rays.len();
-            asteroid_rays.retain(|v| !v.is_empty());
-        }
+        i = (i + 1) % asteroid_rays.len();
     }
 
     (a_solution.to_string(), b_solution.to_string())
