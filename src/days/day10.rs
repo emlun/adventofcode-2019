@@ -77,16 +77,12 @@ pub fn solve(lines: &[String]) -> Solution {
             std::cmp::Ordering::Greater
         }
     });
-    let mut asteroid_rays: Vec<Vec<Point>> = asteroid_rays
-        .into_iter()
-        .map(|(_, asteroids)| asteroids)
-        .collect();
 
     let mut num = 0;
     let mut i = 0;
     let mut b_solution = 0;
     while !asteroid_rays.is_empty() {
-        if let Some(ast) = asteroid_rays[i].pop() {
+        if let Some(ast) = asteroid_rays[i].1.pop() {
             num += 1;
             if num == 200 {
                 let orig_ast = (ast.0 + laser_pos.0, ast.1 + laser_pos.1);
