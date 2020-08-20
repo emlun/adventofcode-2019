@@ -43,11 +43,15 @@ pub fn solve(lines: &[String]) -> Solution {
 
     let mut b_solution: i64 = 1;
     loop {
-        let additional_fuel = (1_000_000_000_000 - ingredients.get("ORE").unwrap()) / a_solution;
-        if additional_fuel > 0 {
-            b_solution += additional_fuel;
+        let ore_remaining = 1_000_000_000_000 - ingredients.get("ORE").unwrap();
+        if ore_remaining >= 0 {
+            let additional_fuel = std::cmp::max(1, ore_remaining / a_solution);
             *ingredients.get_mut("FUEL").unwrap() += additional_fuel;
             produce_everything(&mut ingredients, &formulae);
+
+            if *ingredients.get("ORE").unwrap() <= 1_000_000_000_000 {
+                b_solution += additional_fuel;
+            }
         } else {
             break;
         }
