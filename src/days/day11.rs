@@ -4,7 +4,10 @@ use std::collections::HashMap;
 
 type Point = (i64, i64);
 
-fn run(computer: IntcodeComputer, white_panels: HashMap<Point, bool>) -> HashMap<Point, bool> {
+fn run(
+    mut computer: IntcodeComputer,
+    mut white_panels: HashMap<Point, bool>,
+) -> HashMap<Point, bool> {
     fn get_input(white_panels: &HashMap<Point, bool>, pos: &Point) -> Option<i64> {
         Some(if *white_panels.get(pos).unwrap_or(&false) {
             1
@@ -13,42 +16,26 @@ fn run(computer: IntcodeComputer, white_panels: HashMap<Point, bool>) -> HashMap
         })
     };
 
-    computer
-        .run_with(
-            get_input(&white_panels, &(0, 0)),
-            (white_panels, (0, 0), (0, 1), 0),
-            |output: Option<i64>,
-             (mut white_panels, mut pos, mut dir, mut state): (
-                HashMap<Point, bool>,
-                Point,
-                Point,
-                u8,
-            )| {
-                if let Some(out) = output {
-                    match state {
-                        0 => {
-                            white_panels.insert(pos, out == 1);
-                        }
-                        1 => {
-                            dir = match out {
-                                0 => (-dir.1, dir.0),
-                                1 => (dir.1, -dir.0),
-                                _ => unreachable!(),
-                            };
-                            pos = (pos.0 + dir.0, pos.1 + dir.1);
-                        }
-                        _ => unreachable!(),
-                    };
+    let mut pos = (0, 0);
+    let mut dir = (0, 1);
 
-                    state = (state + 1) % 2;
-                }
+    while computer.is_running() {
+        computer.run_mut(get_input(&white_panels, &pos));
 
-                let input = get_input(&white_panels, &pos);
+        if let Some(out) = computer.output.pop_front() {
+            white_panels.insert(pos, out == 1);
+        }
+        if let Some(out) = computer.output.pop_front() {
+            dir = match out {
+                0 => (-dir.1, dir.0),
+                1 => (dir.1, -dir.0),
+                _ => unreachable!(),
+            };
+            pos = (pos.0 + dir.0, pos.1 + dir.1);
+        }
+    }
 
-                (input, (white_panels, pos, dir, state))
-            },
-        )
-        .0
+    white_panels
 }
 
 fn solve_a(computer: IntcodeComputer) -> usize {
