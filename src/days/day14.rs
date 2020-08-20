@@ -55,3 +55,19 @@ pub fn solve(lines: &[String]) -> Solution {
 
     (a_solution.to_string(), b_solution.to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+
+    #[test]
+    fn even_ingredients() {
+        assert_eq!(
+            solve(&[
+                "100 ORE => 20 FOO".to_string(),
+                "1 FOO => 1 FUEL".to_string()
+            ]),
+            ("100".to_string(), "200000000000".to_string())
+        );
+    }
+}
