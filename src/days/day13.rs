@@ -2,6 +2,7 @@ use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
 use crate::util::sign;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 type Point = (i64, i64);
 
@@ -18,9 +19,6 @@ enum Tile {
 
 struct State {
     world: HashMap<Point, Tile>,
-    state: u8,
-    output_x: i64,
-    output_y: i64,
     score: i64,
     paddle_x: i64,
     ball_x: i64,
@@ -30,9 +28,6 @@ impl State {
     fn new() -> State {
         State {
             world: HashMap::new(),
-            state: 0,
-            output_x: 0,
-            output_y: 0,
             score: 0,
             paddle_x: 0,
             ball_x: 0,
@@ -71,60 +66,105 @@ fn print_state(state: &State) {
     );
 }
 
-fn step_game(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
-    if let Some(out) = output {
-        match state.state {
-            0 => state.output_x = out,
-            1 => state.output_y = out,
-            2 => {
-                if (state.output_x, state.output_y) == (-1, 0) {
-                    state.score = out;
-                } else {
-                    let output_tile_id = match out {
-                        0 => Tile::Empty,
-                        1 => Tile::Wall,
-                        2 => Tile::Block,
-                        3 => {
-                            state.paddle_x = state.output_x;
-                            Tile::Paddle
-                        }
-                        4 => {
-                            state.ball_x = state.output_x;
-                            Tile::Ball
-                        }
-                        _ => unreachable!(),
-                    };
-                    state
-                        .world
-                        .insert((state.output_x, state.output_y), output_tile_id);
-                }
-            }
-            _ => unreachable!(),
-        };
+#[allow(dead_code)]
+fn play_game(mut computer: IntcodeComputer) -> State {
+    let mut state: State = State::new();
+    computer.run_mut(Some(0));
 
-        state.state = (state.state + 1) % 3;
+    while computer.is_running() {
+        let joystick = sign(state.ball_x - state.paddle_x);
+        computer.run_mut(Some(joystick));
+
+        while !computer.output.is_empty() {
+            let (x, y) = (
+                computer.output.pop_front().unwrap(),
+                computer.output.pop_front().unwrap(),
+            );
+
+            if (x, y) == (-1, 0) {
+                state.score = computer.output.pop_front().unwrap();
+            } else {
+                let output_tile_id = match computer.output.pop_front().unwrap() {
+                    0 => Tile::Empty,
+                    1 => Tile::Wall,
+                    2 => Tile::Block,
+                    3 => {
+                        state.paddle_x = x;
+                        Tile::Paddle
+                    }
+                    4 => {
+                        state.ball_x = x;
+                        Tile::Ball
+                    }
+                    _ => unreachable!(),
+                };
+                state.world.insert((x, y), output_tile_id);
+            }
+        }
 
         if ENABLE_OUTPUT {
             print_state(&state);
         }
     }
 
-    let joystick = sign(state.ball_x - state.paddle_x);
-    (Some(joystick), state)
+    state
 }
 
-fn solve_a(computer: IntcodeComputer) -> usize {
-    computer
-        .run_with(Some(0), State::new(), step_game)
-        .world
-        .values()
-        .filter(|tile| **tile == Tile::Block)
-        .count()
+fn solve_a(mut computer: IntcodeComputer) -> usize {
+    computer.run_mut(None);
+
+    let mut blocks = HashSet::new();
+
+    while !computer.output.is_empty() {
+        let pos = (
+            computer.output.pop_front().unwrap(),
+            computer.output.pop_front().unwrap(),
+        );
+
+        if pos == (-1, 0) {
+            computer.output.pop_front();
+        } else if computer.output.pop_front().unwrap() == 2 {
+            blocks.insert(pos);
+        }
+    }
+
+    blocks.len()
 }
 
 fn solve_b(mut computer: IntcodeComputer) -> i64 {
     computer.prog[0] = 2;
-    computer.run_with(Some(0), State::new(), step_game).score
+
+    let mut ball_x = 0;
+    let mut paddle_x = 0;
+    let mut score = 0;
+
+    while computer.is_running() {
+        let joystick = sign(ball_x - paddle_x);
+        computer.run_mut(Some(joystick));
+
+        while !computer.output.is_empty() {
+            let (x, y) = (
+                computer.output.pop_front().unwrap(),
+                computer.output.pop_front().unwrap(),
+            );
+
+            if (x, y) == (-1, 0) {
+                score = computer.output.pop_front().unwrap();
+            } else {
+                match computer.output.pop_front().unwrap() {
+                    3 => {
+                        paddle_x = x;
+                    }
+                    4 => {
+                        ball_x = x;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    score
 }
 
 pub fn solve(lines: &[String]) -> Solution {
