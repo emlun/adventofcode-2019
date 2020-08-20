@@ -31,7 +31,7 @@ fn run(
 }
 
 fn solve_a(computer: IntcodeComputer) -> usize {
-    run(computer, HashMap::new()).values().count()
+    run(computer, HashMap::new()).len()
 }
 
 fn solve_b(computer: IntcodeComputer) -> String {
