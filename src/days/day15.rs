@@ -45,35 +45,24 @@ fn dir_to_cmd(dir: Point) -> i64 {
     }
 }
 
-struct State {
-    world: HashMap<Point, Tile>,
-    goal_pos: Option<Point>,
+struct State<'world> {
+    world: &'world HashMap<Point, Tile>,
     pos: Point,
     dir: Point,
-    unexplored: HashSet<Point>,
 }
 
-impl State {
-    fn new() -> State {
-        let mut world = HashMap::new();
-        let pos = (0, 0);
-        world.insert(pos, Tile::Floor(0));
-        State {
-            world,
+struct World {
+    tiles: HashMap<Point, Tile>,
+    goal_pos: Option<Point>,
+}
+impl World {
+    fn new() -> World {
+        let mut tiles = HashMap::new();
+        tiles.insert((0, 0), Tile::Floor(0));
+        World {
+            tiles,
             goal_pos: None,
-            pos,
-            dir: (0, 1),
-            unexplored: [(1, 0), (0, 1), (-1, 0), (0, -1)].iter().copied().collect(),
         }
-    }
-}
-
-fn dist_at(world: &HashMap<Point, Tile>, pos: &Point) -> Option<u32> {
-    match world.get(&pos) {
-        Some(Tile::Floor(dist)) => Some(*dist),
-        Some(Tile::Goal(dist)) => Some(*dist),
-        Some(Tile::Wall) => None,
-        None => None,
     }
 }
 
@@ -116,11 +105,11 @@ fn print_state(state: &State) {
     );
 }
 
-fn print_distances(state: &State) {
-    let minx = *state.world.keys().map(|(x, _)| x).min().unwrap_or(&0);
-    let maxx = *state.world.keys().map(|(x, _)| x).max().unwrap_or(&0);
-    let miny = *state.world.keys().map(|(_, y)| y).min().unwrap_or(&0);
-    let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
+fn print_distances(world: &World) {
+    let minx = *world.tiles.keys().map(|(x, _)| x).min().unwrap_or(&0);
+    let maxx = *world.tiles.keys().map(|(x, _)| x).max().unwrap_or(&0);
+    let miny = *world.tiles.keys().map(|(_, y)| y).min().unwrap_or(&0);
+    let maxy = *world.tiles.keys().map(|(_, y)| y).max().unwrap_or(&0);
 
     println!(
         "{}",
@@ -129,7 +118,7 @@ fn print_distances(state: &State) {
             .rev()
             .map(|y| {
                 (minx..=maxx)
-                    .map(|x| match state.world.get(&(x, y)) {
+                    .map(|x| match world.tiles.get(&(x, y)) {
                         None => "    ".to_string(),
                         Some(Tile::Floor(dist)) => format!("{: >4}", dist),
                         Some(Tile::Wall) => "    ".to_string(),
@@ -143,27 +132,47 @@ fn print_distances(state: &State) {
     );
 }
 
-fn build_map(mut computer: IntcodeComputer) -> State {
-    let mut state = State::new();
+fn build_map(
+    mut computer: IntcodeComputer,
+    start_pos: &Point,
+    start_dir: &Point,
+    dist: u32,
+    world: &mut World,
+) {
+    let new_pos = add(&start_pos, &start_dir);
+    if !world.tiles.contains_key(&new_pos) {
+        if ENABLE_OUTPUT {
+            let state = State {
+                world: &world.tiles,
+                pos: *start_pos,
+                dir: *start_dir,
+            };
 
-    while !state.unexplored.is_empty() {
-        let command = dir_to_cmd(state.dir);
+            println!("{}", dist);
+            print_state(&state);
+            println!();
+        }
+
+        let command = dir_to_cmd(*start_dir);
         computer.run_mut(Some(command));
-        if let Some(output) = computer.output.pop_front() {
-            if output == 0 {
-                let wall_pos = add(&state.pos, &state.dir);
-                state.world.insert(wall_pos, Tile::Wall);
-                state.unexplored.remove(&wall_pos);
-            } else {
-                let new_pos = add(&state.pos, &state.dir);
-                let dist = adjacent(&new_pos)
-                    .into_iter()
-                    .flat_map(|prev_pos| dist_at(&state.world, &prev_pos))
-                    .min()
-                    .unwrap()
-                    + 1;
 
-                state.world.entry(new_pos).or_insert_with(|| {
+        let output = computer.output.pop_front().unwrap();
+        if output == 0 {
+            world.tiles.insert(new_pos, Tile::Wall);
+        } else {
+            world
+                .tiles
+                .entry(new_pos)
+                .and_modify(|tile| match *tile {
+                    Tile::Floor(d) if d > dist => {
+                        *tile = Tile::Floor(dist);
+                    }
+                    Tile::Goal(d) if d >= dist => {
+                        *tile = Tile::Goal(dist);
+                    }
+                    _ => {}
+                })
+                .or_insert_with(|| {
                     if output == 1 {
                         Tile::Floor(dist)
                     } else {
@@ -171,55 +180,50 @@ fn build_map(mut computer: IntcodeComputer) -> State {
                     }
                 });
 
-                state.unexplored.remove(&new_pos);
-                let unexplored_tile = add(&state.pos, &rotate_cw(&state.dir));
-                if !state.world.contains_key(&unexplored_tile) {
-                    state.unexplored.insert(unexplored_tile);
-                }
-
-                state.dir = rotate_ccw(&state.dir);
-                state.pos = new_pos;
-
-                if output == 2 {
-                    state.goal_pos = Some(state.pos);
-                }
+            if output == 2 {
+                world.goal_pos = Some(new_pos);
             }
 
-            while state.world.get(&add(&state.pos, &state.dir)) == Some(&Tile::Wall) {
-                state.dir = rotate_cw(&state.dir);
+            let next_candidates = [rotate_ccw(start_dir), *start_dir, rotate_cw(start_dir)];
+            let mut nexts: Vec<&Point> = next_candidates
+                .iter()
+                .filter(|dir| !world.tiles.contains_key(&add(&new_pos, dir)))
+                .collect();
+
+            while nexts.len() > 1 {
+                let next_dir = nexts.pop().unwrap();
+                let next_computer = computer.clone();
+                build_map(next_computer, &new_pos, next_dir, dist + 1, world);
             }
 
-            if ENABLE_OUTPUT {
-                println!("\n{}", state.unexplored.len());
-                if state.unexplored.len() < 10 {
-                    println!("{:?}", state.unexplored);
-                }
-                print_state(&state);
+            if !nexts.is_empty() {
+                let next_dir = nexts.pop().unwrap();
+                build_map(computer, &new_pos, next_dir, dist + 1, world);
             }
         }
     }
-    state
 }
 
-fn solve_a(computer: IntcodeComputer) -> (State, u32) {
-    let finish = build_map(computer);
+fn solve_a(computer: IntcodeComputer) -> (World, u32) {
+    let mut world = World::new();
+    build_map(computer, &(0, 0), &(0, 1), 1, &mut world);
 
-    let goal_dist = match finish.world.get(&finish.goal_pos.unwrap()).unwrap() {
+    let goal_dist = match world.tiles.get(&world.goal_pos.unwrap()).unwrap() {
         Tile::Goal(dist) => *dist,
         _ => unreachable!(),
     };
 
     if ENABLE_OUTPUT {
-        print_distances(&finish);
+        print_distances(&world);
     }
 
-    (finish, goal_dist)
+    (world, goal_dist)
 }
 
-fn solve_b(finish: State) -> u32 {
+fn solve_b(world: World) -> u32 {
     let mut heads: HashSet<Point> = HashSet::new();
     let mut has_oxygen: HashSet<Point> = HashSet::new();
-    heads.insert(finish.goal_pos.unwrap());
+    heads.insert(world.goal_pos.unwrap());
 
     let mut time = 0;
 
@@ -231,7 +235,7 @@ fn solve_b(finish: State) -> u32 {
             .flat_map(adjacent)
             .filter(|pos| {
                 !has_oxygen.contains(pos)
-                    && match finish.world.get(pos) {
+                    && match world.tiles.get(pos) {
                         Some(Tile::Floor(_)) => true,
                         Some(Tile::Goal(_)) => true,
                         _ => false,
