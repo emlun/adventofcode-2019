@@ -92,7 +92,13 @@ fn print_state(state: &State) {
                 (minx..=maxx)
                     .map(|x| {
                         if (x, y) == state.pos {
-                            "D"
+                            match state.dir {
+                                (1, 0) => ">",
+                                (-1, 0) => "<",
+                                (0, 1) => "v",
+                                (0, -1) => "^",
+                                _ => unreachable!(),
+                            }
                         } else {
                             match state.world.get(&(x, y)) {
                                 None => " ",
