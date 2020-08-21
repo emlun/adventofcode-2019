@@ -63,7 +63,7 @@ impl State {
             goal_pos: None,
             pos,
             dir: (0, 1),
-            unexplored: vec![(1, 0), (0, 1), (-1, 0), (0, -1)].into_iter().collect(),
+            unexplored: [(1, 0), (0, 1), (-1, 0), (0, -1)].iter().copied().collect(),
         }
     }
 }
