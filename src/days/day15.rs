@@ -228,16 +228,15 @@ fn solve_a(computer: IntcodeComputer) -> (World, u32) {
 }
 
 fn solve_b(world: World) -> u32 {
-    let mut heads: HashSet<Point> = HashSet::new();
     let mut has_oxygen: HashSet<Point> = HashSet::new();
-    heads.insert(world.goal_pos.unwrap());
+    let mut heads: Vec<Point> = vec![world.goal_pos.unwrap()];
 
     let mut time = 0;
 
     while !heads.is_empty() {
         time += 1;
 
-        let new_heads = heads
+        let new_heads: Vec<Point> = heads
             .iter()
             .flat_map(adjacent)
             .filter(|pos| {
@@ -250,10 +249,10 @@ fn solve_b(world: World) -> u32 {
             })
             .collect();
 
-        for head in heads.drain() {
+        for head in heads.drain(..) {
             has_oxygen.insert(head);
         }
-        heads = new_heads;
+        heads.extend(new_heads.into_iter());
     }
 
     time - 1
