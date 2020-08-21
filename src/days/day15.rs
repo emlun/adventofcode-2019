@@ -148,7 +148,6 @@ fn build_map(mut computer: IntcodeComputer) -> State {
                 let wall_pos = add(&state.pos, &state.dir);
                 state.world.insert(wall_pos, Tile::Wall);
                 state.unexplored.remove(&wall_pos);
-                state.dir = rotate_cw(&state.dir);
             } else {
                 let new_pos = add(&state.pos, &state.dir);
                 let dist = adjacent(&new_pos)
@@ -167,20 +166,21 @@ fn build_map(mut computer: IntcodeComputer) -> State {
                 });
 
                 state.unexplored.remove(&new_pos);
-                for unexplored_tile in &[
-                    add(&state.pos, &state.dir),
-                    add(&state.pos, &rotate_cw(&state.dir)),
-                ] {
-                    if !state.world.contains_key(unexplored_tile) {
-                        state.unexplored.insert(*unexplored_tile);
-                    }
+                let unexplored_tile = add(&state.pos, &rotate_cw(&state.dir));
+                if !state.world.contains_key(&unexplored_tile) {
+                    state.unexplored.insert(unexplored_tile);
                 }
+
                 state.dir = rotate_ccw(&state.dir);
                 state.pos = new_pos;
 
                 if output == 2 {
                     state.goal_pos = Some(state.pos);
                 }
+            }
+
+            while state.world.get(&add(&state.pos, &state.dir)) == Some(&Tile::Wall) {
+                state.dir = rotate_cw(&state.dir);
             }
 
             if ENABLE_OUTPUT {
