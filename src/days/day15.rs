@@ -13,7 +13,7 @@ fn add(p1: &Point, p2: &Point) -> Point {
 
 #[derive(Eq, PartialEq)]
 enum Tile {
-    Floor(u32),
+    Floor,
     Wall,
 }
 
@@ -49,7 +49,7 @@ struct World {
 impl World {
     fn new() -> World {
         let mut tiles = HashMap::new();
-        tiles.insert((0, 0), Tile::Floor(0));
+        tiles.insert((0, 0), Tile::Floor);
         World { tiles, goal: None }
     }
 }
@@ -81,44 +81,12 @@ fn print_state(state: &State, world: &World) {
                         } else {
                             match world.tiles.get(&(x, y)) {
                                 None => " ",
-                                Some(Tile::Floor(_)) => ".",
+                                Some(Tile::Floor) => ".",
                                 Some(Tile::Wall) => "#",
                             }
                         }
                     })
                     .collect::<Vec<&str>>()
-                    .join("")
-            })
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
-}
-
-fn print_distances(world: &World) {
-    let minx = *world.tiles.keys().map(|(x, _)| x).min().unwrap_or(&0);
-    let maxx = *world.tiles.keys().map(|(x, _)| x).max().unwrap_or(&0);
-    let miny = *world.tiles.keys().map(|(_, y)| y).min().unwrap_or(&0);
-    let maxy = *world.tiles.keys().map(|(_, y)| y).max().unwrap_or(&0);
-
-    println!(
-        "{}",
-        (miny..=maxy)
-            .rev()
-            .rev()
-            .map(|y| {
-                (minx..=maxx)
-                    .map(|x| match world.tiles.get(&(x, y)) {
-                        None => "    ".to_string(),
-                        Some(Tile::Floor(dist)) => {
-                            if world.goal.map(|(p, _)| p == (x, y)).unwrap_or(false) {
-                                " XX ".to_string()
-                            } else {
-                                format!("{: >4}", dist)
-                            }
-                        }
-                        Some(Tile::Wall) => "    ".to_string(),
-                    })
-                    .collect::<Vec<String>>()
                     .join("")
             })
             .collect::<Vec<String>>()
@@ -161,10 +129,7 @@ fn build_map(computer: IntcodeComputer) -> World {
                 world.tiles.insert(new_pos, Tile::Wall);
             } else {
                 let dist = state.dist + 1;
-                world
-                    .tiles
-                    .entry(new_pos)
-                    .or_insert_with(|| Tile::Floor(dist));
+                world.tiles.entry(new_pos).or_insert(Tile::Floor);
 
                 if output == 2 {
                     world.goal = Some((new_pos, dist));
@@ -200,14 +165,9 @@ fn build_map(computer: IntcodeComputer) -> World {
     world
 }
 
-fn solve_a(computer: IntcodeComputer) -> World {
+fn solve_a(computer: IntcodeComputer) -> (u32, World) {
     let world = build_map(computer);
-
-    if ENABLE_OUTPUT {
-        print_distances(&world);
-    }
-
-    world
+    (world.goal.unwrap().1, world)
 }
 
 fn solve_b(mut world: World) -> u32 {
@@ -215,10 +175,7 @@ fn solve_b(mut world: World) -> u32 {
     let mut heads: Vec<(Point, Point)> = vec![(start_pos, start_pos)];
     let mut new_heads: Vec<(Point, Point)> = Vec::new();
 
-    world.tiles.retain(|_, tile| match tile {
-        Tile::Floor(_) => true,
-        _ => false,
-    });
+    world.tiles.retain(|_, tile| tile == &Tile::Floor);
 
     let mut time = 0;
 
@@ -242,8 +199,7 @@ fn solve_b(mut world: World) -> u32 {
 
 pub fn solve(lines: &[String]) -> Solution {
     let computer: IntcodeComputer = lines.into();
-    let world = solve_a(computer);
-    let a_solution = world.goal.unwrap().1;
+    let (a_solution, world) = solve_a(computer);
     (a_solution.to_string(), solve_b(world).to_string())
 }
 
