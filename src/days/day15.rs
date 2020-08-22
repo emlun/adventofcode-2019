@@ -178,12 +178,15 @@ fn solve_a(computer: IntcodeComputer) -> (u32, World) {
 
 fn solve_b(mut world: World) -> u32 {
     let start_pos = world.goal.unwrap().0;
-    let mut heads: Vec<(Point, Point)> = vec![(start_pos, start_pos)];
-    let mut new_heads: Vec<(Point, Point)> = Vec::new();
+    let mut buf1: Vec<(Point, Point)> = vec![(start_pos, start_pos)];
+    let mut buf2: Vec<(Point, Point)> = Vec::new();
 
     world.tiles.retain(|_, tile| tile == &Tile::Floor);
 
     let mut time = 0;
+
+    let mut heads = &mut buf1;
+    let mut new_heads = &mut buf2;
 
     while !heads.is_empty() {
         time += 1;
@@ -197,7 +200,7 @@ fn solve_b(mut world: World) -> u32 {
             }
         }
 
-        heads.extend(new_heads.drain(..));
+        std::mem::swap(&mut heads, &mut new_heads);
     }
 
     time - 1
