@@ -2,6 +2,7 @@ use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::VecDeque;
 
 type Point = (i64, i64);
 
@@ -45,10 +46,11 @@ fn dir_to_cmd(dir: Point) -> i64 {
     }
 }
 
-struct State<'world> {
-    world: &'world HashMap<Point, Tile>,
+struct State {
     pos: Point,
     dir: Point,
+    dist: u32,
+    computer: IntcodeComputer,
 }
 
 struct World {
@@ -66,11 +68,11 @@ impl World {
     }
 }
 
-fn print_state(state: &State) {
-    let minx = *state.world.keys().map(|(x, _)| x).min().unwrap_or(&0);
-    let maxx = *state.world.keys().map(|(x, _)| x).max().unwrap_or(&0);
-    let miny = *state.world.keys().map(|(_, y)| y).min().unwrap_or(&0);
-    let maxy = *state.world.keys().map(|(_, y)| y).max().unwrap_or(&0);
+fn print_state(state: &State, world: &World) {
+    let minx = *world.tiles.keys().map(|(x, _)| x).min().unwrap_or(&0);
+    let maxx = *world.tiles.keys().map(|(x, _)| x).max().unwrap_or(&0);
+    let miny = *world.tiles.keys().map(|(_, y)| y).min().unwrap_or(&0);
+    let maxy = *world.tiles.keys().map(|(_, y)| y).max().unwrap_or(&0);
 
     println!(
         "{}",
@@ -89,7 +91,7 @@ fn print_state(state: &State) {
                                 _ => unreachable!(),
                             }
                         } else {
-                            match state.world.get(&(x, y)) {
+                            match world.tiles.get(&(x, y)) {
                                 None => " ",
                                 Some(Tile::Floor(_)) => ".",
                                 Some(Tile::Wall) => "#",
@@ -132,47 +134,43 @@ fn print_distances(world: &World) {
     );
 }
 
-fn build_map(
-    mut computer: IntcodeComputer,
-    start_pos: &Point,
-    start_dir: &Point,
-    dist: u32,
-    world: &mut World,
-) {
-    let new_pos = add(&start_pos, &start_dir);
-    if !world.tiles.contains_key(&new_pos) {
-        if ENABLE_OUTPUT {
-            let state = State {
-                world: &world.tiles,
-                pos: *start_pos,
-                dir: *start_dir,
-            };
+fn build_map(computer: IntcodeComputer) -> World {
+    let mut queue: VecDeque<State> = VecDeque::new();
+    let mut world = World::new();
 
-            println!("{}", dist);
-            print_state(&state);
-            println!();
-        }
+    for dir in &[(0, 1), (1, 0), (0, -1)] {
+        queue.push_back(State {
+            pos: (0, 0),
+            dir: *dir,
+            dist: 0,
+            computer: computer.clone(),
+        });
+    }
+    queue.push_back(State {
+        pos: (0, 0),
+        dir: (-1, 0),
+        dist: 0,
+        computer,
+    });
 
-        let command = dir_to_cmd(*start_dir);
-        computer.run_mut(Some(command));
+    while let Some(mut state) = queue.pop_front() {
+        let new_pos = add(&state.pos, &state.dir);
+        if !world.tiles.contains_key(&new_pos) {
+            if ENABLE_OUTPUT {
+                println!("{}", state.dist);
+                print_state(&state, &world);
+                println!();
+            }
 
-        let output = computer.output.pop_front().unwrap();
-        if output == 0 {
-            world.tiles.insert(new_pos, Tile::Wall);
-        } else {
-            world
-                .tiles
-                .entry(new_pos)
-                .and_modify(|tile| match *tile {
-                    Tile::Floor(d) if d > dist => {
-                        *tile = Tile::Floor(dist);
-                    }
-                    Tile::Goal(d) if d >= dist => {
-                        *tile = Tile::Goal(dist);
-                    }
-                    _ => {}
-                })
-                .or_insert_with(|| {
+            let command = dir_to_cmd(state.dir);
+            state.computer.run_mut(Some(command));
+
+            let output = state.computer.output.pop_front().unwrap();
+            if output == 0 {
+                world.tiles.insert(new_pos, Tile::Wall);
+            } else {
+                let dist = state.dist + 1;
+                world.tiles.entry(new_pos).or_insert_with(|| {
                     if output == 1 {
                         Tile::Floor(dist)
                     } else {
@@ -180,33 +178,42 @@ fn build_map(
                     }
                 });
 
-            if output == 2 {
-                world.goal_pos = Some(new_pos);
-            }
+                if output == 2 {
+                    world.goal_pos = Some(new_pos);
+                }
 
-            let next_candidates = [rotate_ccw(start_dir), *start_dir, rotate_cw(start_dir)];
-            let mut nexts: Vec<&Point> = next_candidates
-                .iter()
-                .filter(|dir| !world.tiles.contains_key(&add(&new_pos, dir)))
-                .collect();
+                let next_candidates = [rotate_ccw(&state.dir), state.dir, rotate_cw(&state.dir)];
+                let mut nexts: Vec<&Point> = next_candidates
+                    .iter()
+                    .filter(|dir| !world.tiles.contains_key(&add(&new_pos, dir)))
+                    .collect();
 
-            while nexts.len() > 1 {
-                let next_dir = nexts.pop().unwrap();
-                let next_computer = computer.clone();
-                build_map(next_computer, &new_pos, next_dir, dist + 1, world);
-            }
+                while nexts.len() > 1 {
+                    queue.push_back(State {
+                        pos: new_pos,
+                        dir: *nexts.pop().unwrap(),
+                        dist,
+                        computer: state.computer.clone(),
+                    });
+                }
 
-            if !nexts.is_empty() {
-                let next_dir = nexts.pop().unwrap();
-                build_map(computer, &new_pos, next_dir, dist + 1, world);
+                if !nexts.is_empty() {
+                    queue.push_back(State {
+                        pos: new_pos,
+                        dir: *nexts.pop().unwrap(),
+                        dist,
+                        computer: state.computer,
+                    });
+                }
             }
         }
     }
+
+    world
 }
 
 fn solve_a(computer: IntcodeComputer) -> (World, u32) {
-    let mut world = World::new();
-    build_map(computer, &(0, 0), &(0, 1), 1, &mut world);
+    let world = build_map(computer);
 
     let goal_dist = match world.tiles.get(&world.goal_pos.unwrap()).unwrap() {
         Tile::Goal(dist) => *dist,
