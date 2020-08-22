@@ -19,15 +19,6 @@ fn rotate_cw(dir: &Point) -> Point {
     (-dir.1, dir.0)
 }
 
-fn adjacent(pos: &Point) -> Vec<Point> {
-    vec![
-        add(pos, &(1, 0)),
-        add(pos, &(0, 1)),
-        add(pos, &(-1, 0)),
-        add(pos, &(0, -1)),
-    ]
-}
-
 #[derive(Debug)]
 struct State {
     world: HashSet<Point>,
@@ -50,8 +41,9 @@ fn intersections(world: &HashSet<Point>) -> HashSet<Point> {
         .iter()
         .filter(|(x, y)| {
             if world.contains(&(*x, *y)) {
-                let num_adjacent = adjacent(&(*x, *y))
-                    .into_iter()
+                let num_adjacent = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+                    .iter()
+                    .map(|dir| add(&(*x, *y), dir))
                     .filter(|(xx, yy)| world.contains(&(*xx, *yy)))
                     .count();
                 num_adjacent > 2
