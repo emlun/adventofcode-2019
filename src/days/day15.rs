@@ -54,7 +54,7 @@ impl World {
     }
 }
 
-fn print_state(state: &State, world: &World) {
+fn print_state(state: &State, queue: &VecDeque<State>, world: &World) {
     let minx = *world.tiles.keys().map(|(x, _)| x).min().unwrap_or(&0);
     let maxx = *world.tiles.keys().map(|(x, _)| x).max().unwrap_or(&0);
     let miny = *world.tiles.keys().map(|(_, y)| y).min().unwrap_or(&0);
@@ -76,6 +76,12 @@ fn print_state(state: &State, world: &World) {
                                 (0, -1) => "^",
                                 _ => unreachable!(),
                             }
+                        } else if queue
+                            .iter()
+                            .any(|state| add(&state.pos, &state.dir) == (x, y))
+                            || add(&state.pos, &state.dir) == (x, y)
+                        {
+                            "?"
                         } else if world.goal.map(|(p, _)| p == (x, y)).unwrap_or(false) {
                             "X"
                         } else {
@@ -118,7 +124,7 @@ fn build_map(computer: IntcodeComputer) -> World {
         if !world.tiles.contains_key(&new_pos) {
             if ENABLE_OUTPUT {
                 println!("{}", state.dist);
-                print_state(&state, &world);
+                print_state(&state, &queue, &world);
                 println!();
             }
 
