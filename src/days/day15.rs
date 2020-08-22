@@ -27,15 +27,6 @@ fn rotate_ccw(dir: &Point) -> Point {
     (-dir.1, dir.0)
 }
 
-fn adjacent(pos: &Point) -> Vec<Point> {
-    vec![
-        add(pos, &(1, 0)),
-        add(pos, &(0, 1)),
-        add(pos, &(-1, 0)),
-        add(pos, &(0, -1)),
-    ]
-}
-
 fn dir_to_cmd(dir: Point) -> i64 {
     match dir {
         (1, 0) => 4,
@@ -229,30 +220,34 @@ fn solve_a(computer: IntcodeComputer) -> (World, u32) {
 
 fn solve_b(world: World) -> u32 {
     let mut has_oxygen: HashSet<Point> = HashSet::new();
-    let mut heads: Vec<Point> = vec![world.goal_pos.unwrap()];
+    let start_pos = world.goal_pos.unwrap();
+    let mut heads: Vec<(Point, Point)> = vec![(start_pos, start_pos)];
+    let mut new_heads: Vec<(Point, Point)> = Vec::new();
 
     let mut time = 0;
 
     while !heads.is_empty() {
         time += 1;
 
-        let new_heads: Vec<Point> = heads
-            .iter()
-            .flat_map(adjacent)
-            .filter(|pos| {
-                !has_oxygen.contains(pos)
-                    && match world.tiles.get(pos) {
+        for (head, prev) in heads.drain(..) {
+            has_oxygen.insert(head);
+
+            for dir in &[(1, 0), (0, 1), (-1, 0), (0, -1)] {
+                let new_pos = add(&head, dir);
+                if new_pos != prev
+                    && !has_oxygen.contains(&new_pos)
+                    && match world.tiles.get(&new_pos) {
                         Some(Tile::Floor(_)) => true,
                         Some(Tile::Goal(_)) => true,
                         _ => false,
                     }
-            })
-            .collect();
-
-        for head in heads.drain(..) {
-            has_oxygen.insert(head);
+                {
+                    new_heads.push((new_pos, head));
+                }
+            }
         }
-        heads.extend(new_heads.into_iter());
+
+        heads.extend(new_heads.drain(..));
     }
 
     time - 1
