@@ -85,25 +85,23 @@ fn solve_b(digits: Vec<i32>) -> String {
 
         (0..8)
             .map(|i| {
-                let sum_first_cycle = digits_offset
+                let sum_first_cycle: i32 = digits_offset
                     .iter()
                     .cycle()
                     .skip(i)
                     .take(joint_cycle)
                     .enumerate()
-                    .fold(0, |sum, (index, digit)| {
-                        (sum + (pascal[NUM_PHASES - 1][index % PASCAL_PERIOD] * *digit)) % 10
-                    });
+                    .map(|(index, digit)| pascal[NUM_PHASES - 1][index % PASCAL_PERIOD] * *digit)
+                    .sum();
 
-                let sum_last_cycle = digits_offset
+                let sum_last_cycle: i32 = digits_offset
                     .iter()
                     .cycle()
                     .take(tot_len)
                     .skip(i + num_cycles * joint_cycle)
                     .enumerate()
-                    .fold(0, |sum, (index, digit)| {
-                        (sum + (pascal[NUM_PHASES - 1][index % PASCAL_PERIOD] * *digit)) % 10
-                    });
+                    .map(|(index, digit)| pascal[NUM_PHASES - 1][index % PASCAL_PERIOD] * *digit)
+                    .sum();
 
                 (sum_first_cycle * num_cycles as i32 + sum_last_cycle) % 10
             })
