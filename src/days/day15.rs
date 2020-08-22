@@ -137,7 +137,7 @@ fn build_map(computer: IntcodeComputer) -> World {
                 let dist = state.dist + 1;
                 world.tiles.entry(new_pos).or_insert(Tile::Floor);
 
-                if output == 2 {
+                if output == 2 && world.goal.is_none() {
                     world.goal = Some((new_pos, dist));
                 }
 
