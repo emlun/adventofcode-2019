@@ -33,8 +33,6 @@ struct State {
     world: HashSet<Point>,
     robot_pos: Point,
     robot_dir: Point,
-    read_x: i64,
-    read_y: i64,
 }
 
 impl State {
@@ -43,8 +41,6 @@ impl State {
             world: HashSet::new(),
             robot_pos: (0, 0),
             robot_dir: (0, 1),
-            read_x: 0,
-            read_y: 0,
         }
     }
 }
@@ -120,49 +116,58 @@ fn print_state(state: &State) {
     );
 }
 
-fn step_build_map(output: Option<i64>, mut state: State) -> (Option<i64>, State) {
-    if let Some(output) = output {
-        match output as u8 as char {
-            '.' => {
-                state.read_x += 1;
-            }
-            '#' => {
-                state.world.insert((state.read_x, state.read_y));
-                state.read_x += 1;
-            }
-            '^' | '>' | 'v' | '<' => {
-                state.robot_pos = (state.read_x, state.read_y);
-                state.robot_dir = match output as u8 as char {
-                    '^' => (0, -1),
-                    '>' => (1, 0),
-                    'v' => (0, 1),
-                    '<' => (-1, 0),
-                    _ => unreachable!(),
-                };
-                state.world.insert((state.read_x, state.read_y));
-                state.read_x += 1;
-            }
-            'X' => {
-                state.robot_pos = (state.read_x, state.read_y);
-                state.read_x += 1;
-            }
-            '\n' => {
-                state.read_y += 1;
-                state.read_x = 0;
-            }
-            _ => unreachable!(),
-        };
+fn build_map(mut computer: IntcodeComputer) -> State {
+    let mut state = State::new();
+
+    let mut read_x = 0;
+    let mut read_y = 0;
+
+    while computer.is_running() {
+        computer.run_mut(None);
+
+        for output in computer.output.drain(..) {
+            match output as u8 as char {
+                '.' => {
+                    read_x += 1;
+                }
+                '#' => {
+                    state.world.insert((read_x, read_y));
+                    read_x += 1;
+                }
+                '^' | '>' | 'v' | '<' => {
+                    state.robot_pos = (read_x, read_y);
+                    state.robot_dir = match output as u8 as char {
+                        '^' => (0, -1),
+                        '>' => (1, 0),
+                        'v' => (0, 1),
+                        '<' => (-1, 0),
+                        _ => unreachable!(),
+                    };
+                    state.world.insert((read_x, read_y));
+                    read_x += 1;
+                }
+                'X' => {
+                    state.robot_pos = (read_x, read_y);
+                    read_x += 1;
+                }
+                '\n' => {
+                    read_y += 1;
+                    read_x = 0;
+                }
+                _ => unreachable!(),
+            };
+        }
 
         if ENABLE_OUTPUT {
             println!();
             print_state(&state);
         }
     }
-    (None, state)
+    state
 }
 
 fn solve_a(computer: IntcodeComputer) -> (State, i64) {
-    let finish = computer.run_with(None, State::new(), step_build_map);
+    let finish = build_map(computer);
 
     let intrsct = intersections(&finish.world);
     let solution = intrsct.into_iter().map(|(x, y)| x * y).sum::<i64>();
