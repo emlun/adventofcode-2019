@@ -1,7 +1,6 @@
 use crate::common::Solution;
 use crate::intcode::IntcodeComputer;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::collections::VecDeque;
 
 type Point = (i64, i64);
@@ -218,11 +217,15 @@ fn solve_a(computer: IntcodeComputer) -> (World, u32) {
     (world, goal_dist)
 }
 
-fn solve_b(world: World) -> u32 {
-    let mut has_oxygen: HashSet<Point> = HashSet::new();
+fn solve_b(mut world: World) -> u32 {
     let start_pos = world.goal_pos.unwrap();
     let mut heads: Vec<(Point, Point)> = vec![(start_pos, start_pos)];
     let mut new_heads: Vec<(Point, Point)> = Vec::new();
+
+    world.tiles.retain(|_, tile| match tile {
+        Tile::Floor(_) => true,
+        _ => false,
+    });
 
     let mut time = 0;
 
@@ -230,18 +233,9 @@ fn solve_b(world: World) -> u32 {
         time += 1;
 
         for (head, prev) in heads.drain(..) {
-            has_oxygen.insert(head);
-
             for dir in &[(1, 0), (0, 1), (-1, 0), (0, -1)] {
                 let new_pos = add(&head, dir);
-                if new_pos != prev
-                    && !has_oxygen.contains(&new_pos)
-                    && match world.tiles.get(&new_pos) {
-                        Some(Tile::Floor(_)) => true,
-                        Some(Tile::Goal(_)) => true,
-                        _ => false,
-                    }
-                {
+                if new_pos != prev && world.tiles.remove(&new_pos).is_some() {
                     new_heads.push((new_pos, head));
                 }
             }
