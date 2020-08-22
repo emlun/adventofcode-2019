@@ -152,8 +152,7 @@ fn build_map(computer: IntcodeComputer) -> World {
                 println!();
             }
 
-            let command = dir_to_cmd(state.dir);
-            state.computer.run_mut(Some(command));
+            state.computer.run_mut(Some(dir_to_cmd(state.dir)));
 
             let output = state.computer.output.pop_front().unwrap();
             if output == 0 {
