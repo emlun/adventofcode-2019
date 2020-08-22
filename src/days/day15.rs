@@ -15,7 +15,6 @@ fn add(p1: &Point, p2: &Point) -> Point {
 enum Tile {
     Floor(u32),
     Wall,
-    Goal(u32),
 }
 
 fn rotate_cw(dir: &Point) -> Point {
@@ -45,16 +44,13 @@ struct State {
 
 struct World {
     tiles: HashMap<Point, Tile>,
-    goal_pos: Option<Point>,
+    goal: Option<(Point, u32)>,
 }
 impl World {
     fn new() -> World {
         let mut tiles = HashMap::new();
         tiles.insert((0, 0), Tile::Floor(0));
-        World {
-            tiles,
-            goal_pos: None,
-        }
+        World { tiles, goal: None }
     }
 }
 
@@ -80,12 +76,13 @@ fn print_state(state: &State, world: &World) {
                                 (0, -1) => "^",
                                 _ => unreachable!(),
                             }
+                        } else if world.goal.map(|(p, _)| p == (x, y)).unwrap_or(false) {
+                            "X"
                         } else {
                             match world.tiles.get(&(x, y)) {
                                 None => " ",
                                 Some(Tile::Floor(_)) => ".",
                                 Some(Tile::Wall) => "#",
-                                Some(Tile::Goal(_)) => "X",
                             }
                         }
                     })
@@ -112,9 +109,14 @@ fn print_distances(world: &World) {
                 (minx..=maxx)
                     .map(|x| match world.tiles.get(&(x, y)) {
                         None => "    ".to_string(),
-                        Some(Tile::Floor(dist)) => format!("{: >4}", dist),
+                        Some(Tile::Floor(dist)) => {
+                            if world.goal.map(|(p, _)| p == (x, y)).unwrap_or(false) {
+                                " XX ".to_string()
+                            } else {
+                                format!("{: >4}", dist)
+                            }
+                        }
                         Some(Tile::Wall) => "    ".to_string(),
-                        Some(Tile::Goal(_)) => " XX ".to_string(),
                     })
                     .collect::<Vec<String>>()
                     .join("")
@@ -159,16 +161,13 @@ fn build_map(computer: IntcodeComputer) -> World {
                 world.tiles.insert(new_pos, Tile::Wall);
             } else {
                 let dist = state.dist + 1;
-                world.tiles.entry(new_pos).or_insert_with(|| {
-                    if output == 1 {
-                        Tile::Floor(dist)
-                    } else {
-                        Tile::Goal(dist)
-                    }
-                });
+                world
+                    .tiles
+                    .entry(new_pos)
+                    .or_insert_with(|| Tile::Floor(dist));
 
                 if output == 2 {
-                    world.goal_pos = Some(new_pos);
+                    world.goal = Some((new_pos, dist));
                 }
 
                 let next_candidates = [rotate_ccw(&state.dir), state.dir, rotate_cw(&state.dir)];
@@ -201,23 +200,18 @@ fn build_map(computer: IntcodeComputer) -> World {
     world
 }
 
-fn solve_a(computer: IntcodeComputer) -> (World, u32) {
+fn solve_a(computer: IntcodeComputer) -> World {
     let world = build_map(computer);
-
-    let goal_dist = match world.tiles.get(&world.goal_pos.unwrap()).unwrap() {
-        Tile::Goal(dist) => *dist,
-        _ => unreachable!(),
-    };
 
     if ENABLE_OUTPUT {
         print_distances(&world);
     }
 
-    (world, goal_dist)
+    world
 }
 
 fn solve_b(mut world: World) -> u32 {
-    let start_pos = world.goal_pos.unwrap();
+    let start_pos = world.goal.unwrap().0;
     let mut heads: Vec<(Point, Point)> = vec![(start_pos, start_pos)];
     let mut new_heads: Vec<(Point, Point)> = Vec::new();
 
@@ -248,8 +242,9 @@ fn solve_b(mut world: World) -> u32 {
 
 pub fn solve(lines: &[String]) -> Solution {
     let computer: IntcodeComputer = lines.into();
-    let (a_finish, a_solution) = solve_a(computer);
-    (a_solution.to_string(), solve_b(a_finish).to_string())
+    let world = solve_a(computer);
+    let a_solution = world.goal.unwrap().1;
+    (a_solution.to_string(), solve_b(world).to_string())
 }
 
 #[cfg(test)]
