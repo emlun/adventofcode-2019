@@ -1,9 +1,7 @@
 use crate::common::Solution;
+use crate::util::pascal::PASCAL_DIAGONAL_100;
 
 const NUM_PHASES: usize = 100;
-
-// The 100th diagonal of Pascal's triangle is periodic with 16000 elements
-const PASCAL_PERIOD: usize = 16000;
 
 fn solve_a(digits: Vec<i32>) -> String {
     let phase_digit = |digits: &[i32], n: usize| -> i32 {
@@ -59,18 +57,6 @@ fn lcm(a: usize, b: usize) -> usize {
 
 fn solve_b(digits: Vec<i32>) -> String {
     fn transform(digits: Vec<i32>, msg_offset: usize) -> Vec<String> {
-        let mut pascal: Vec<Vec<i32>> = Vec::with_capacity(NUM_PHASES);
-        pascal.push(vec![]);
-        pascal.push((0..=9).cycle().skip(1).take(PASCAL_PERIOD).collect());
-        for phase in 2..NUM_PHASES {
-            let mut row = Vec::with_capacity(PASCAL_PERIOD);
-            row.push(1);
-            for index in 1..PASCAL_PERIOD {
-                row.push((row[index - 1] + pascal[phase - 1][index]) % 10);
-            }
-            pascal.push(row);
-        }
-
         let l = digits.len();
         let digits_offset: Vec<i32> = digits
             .into_iter()
@@ -79,7 +65,7 @@ fn solve_b(digits: Vec<i32>) -> String {
             .take(l)
             .collect();
 
-        let joint_cycle = lcm(PASCAL_PERIOD, l);
+        let joint_cycle = lcm(PASCAL_DIAGONAL_100.len(), l);
         let tot_len = l * 10000 - msg_offset;
         let num_cycles = tot_len / joint_cycle;
 
@@ -91,7 +77,9 @@ fn solve_b(digits: Vec<i32>) -> String {
                     .skip(i)
                     .take(joint_cycle)
                     .enumerate()
-                    .map(|(index, digit)| pascal[NUM_PHASES - 1][index % PASCAL_PERIOD] * *digit)
+                    .map(|(index, digit)| {
+                        PASCAL_DIAGONAL_100[index % PASCAL_DIAGONAL_100.len()] * *digit
+                    })
                     .sum();
 
                 let sum_last_cycle: i32 = digits_offset
@@ -100,7 +88,9 @@ fn solve_b(digits: Vec<i32>) -> String {
                     .take(tot_len)
                     .skip(i + num_cycles * joint_cycle)
                     .enumerate()
-                    .map(|(index, digit)| pascal[NUM_PHASES - 1][index % PASCAL_PERIOD] * *digit)
+                    .map(|(index, digit)| {
+                        PASCAL_DIAGONAL_100[index % PASCAL_DIAGONAL_100.len()] * *digit
+                    })
                     .sum();
 
                 (sum_first_cycle * num_cycles as i32 + sum_last_cycle) % 10
