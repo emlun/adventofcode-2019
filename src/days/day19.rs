@@ -17,24 +17,20 @@ fn compute_minx(computer: &IntcodeComputer, prev_minx: usize, y: usize) -> usize
 }
 
 fn compute_maxx(computer: &IntcodeComputer, prev_maxx: usize, y: usize) -> usize {
-    for x in prev_maxx.. {
-        if !check(computer, (x, y)) {
-            return x;
+    if check(computer, (prev_maxx, y)) {
+        for x in (prev_maxx + 1).. {
+            if !check(computer, (x, y)) {
+                return x;
+            }
+        }
+    } else {
+        for x in (1..prev_maxx).rev() {
+            if check(computer, (x, y)) {
+                return x + 1;
+            }
         }
     }
-    unreachable!();
-}
-
-fn reduce_maxx(computer: &IntcodeComputer, maxx: usize, y: usize) -> usize {
-    let mut result = maxx;
-    for x in (0..maxx).rev() {
-        if check(computer, (x, y)) {
-            break;
-        } else {
-            result = x;
-        }
-    }
-    result
+    0
 }
 
 fn solve_b(computer: IntcodeComputer) -> (usize, usize) {
@@ -47,7 +43,7 @@ fn solve_b(computer: IntcodeComputer) -> (usize, usize) {
 
     for y in 0..50 {
         minx = compute_minx(&computer, minx, y);
-        maxx = reduce_maxx(&computer, compute_maxx(&computer, maxx, y), y);
+        maxx = compute_maxx(&computer, maxx, y);
         if maxx < minx {
             maxx = compute_maxx(&computer, minx + 1, y);
         }
@@ -66,7 +62,7 @@ fn solve_b(computer: IntcodeComputer) -> (usize, usize) {
     while y_max > y_min {
         let y = (y_max + y_min) / 2;
         let maxx_guess = (y as f64 * k1).round() as usize;
-        let maxx = reduce_maxx(&computer, compute_maxx(&computer, maxx_guess, y), y);
+        let maxx = compute_maxx(&computer, maxx_guess, y);
         let x = maxx - DIM_WANTED;
         if check(&computer, (x, y + DIM_WANTED - 1)) {
             y_max = y;
