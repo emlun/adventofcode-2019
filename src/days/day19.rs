@@ -53,7 +53,7 @@ fn solve_b(computer: IntcodeComputer) -> (usize, usize) {
     let k1: f64 = (maxx as f64) / 49_f64;
     let k2: f64 = (minx as f64) / 49_f64;
 
-    let y_guess: usize = ((2_f64 * DIM_WANTED as f64) / (k1 - k2)).round() as usize;
+    let y_guess: usize = ((DIM_WANTED as f64 * (1_f64 + k2) - k2) / (k1 - k2)).round() as usize;
 
     let mut y_min = 50;
     let mut y_max = y_guess * 2;
