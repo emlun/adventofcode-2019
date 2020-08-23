@@ -269,7 +269,7 @@ impl<'world> Navigation<'world> {
 
                             Some(Tile::Warp(_)) => {
                                 if route.to != self.world.start && route.to != from {
-                                    moves.push(next.clone());
+                                    moves.push(next);
                                 }
                             }
 
