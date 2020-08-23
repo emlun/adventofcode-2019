@@ -255,10 +255,9 @@ impl<'world> Navigation<'world> {
             while let Some(route) = queue.pop_front() {
                 for next_pos in adjacent(route.to) {
                     if !visited.contains(&next_pos) {
-                        let next_len = route.len + 1;
                         let next = Route {
                             to: next_pos,
-                            len: next_len,
+                            len: route.len + 1,
                         };
                         visited.insert(next_pos);
 
