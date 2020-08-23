@@ -255,20 +255,22 @@ impl<'world> Navigation<'world> {
             while let Some(route) = queue.pop_front() {
                 for next_pos in adjacent(route.to) {
                     if !visited.contains(&next_pos) {
-                        let next = Route {
-                            to: next_pos,
-                            len: route.len + 1,
-                        };
                         visited.insert(next_pos);
 
                         match self.world.tiles.get(&next_pos) {
                             Some(Tile::Floor) => {
-                                queue.push_back(next);
+                                queue.push_back(Route {
+                                    to: next_pos,
+                                    len: route.len + 1,
+                                });
                             }
 
                             Some(Tile::Warp(_)) => {
                                 if route.to != self.world.start && route.to != from {
-                                    moves.push(next);
+                                    moves.push(Route {
+                                        to: next_pos,
+                                        len: route.len + 1,
+                                    });
                                 }
                             }
 
