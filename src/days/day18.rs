@@ -349,10 +349,11 @@ fn parse_world(lines: &[String]) -> (World, Point) {
 }
 
 fn duplication_key(keys: KeySet, points: &[Point]) -> u128 {
+    const COORDINATE_WIDTH: u128 = 8;
     let mut result: u128 = keys.keys as u128;
     for p in points {
-        result <<= 16;
-        result |= ((p.1 << 8) | p.0) as u128;
+        result <<= 2 * COORDINATE_WIDTH;
+        result |= ((p.1 << COORDINATE_WIDTH) | p.0) as u128;
     }
     result
 }
