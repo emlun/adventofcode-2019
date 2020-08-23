@@ -349,7 +349,7 @@ fn parse_world(lines: &[String]) -> (World, Point) {
 }
 
 fn duplication_key(keys: KeySet, points: &[Point]) -> u128 {
-    const COORDINATE_WIDTH: u128 = 8;
+    const COORDINATE_WIDTH: u128 = 12;
     let mut result: u128 = keys.keys as u128;
     for p in points {
         result <<= 2 * COORDINATE_WIDTH;
