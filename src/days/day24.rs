@@ -66,20 +66,57 @@ struct BoolMatrix {
     dim: usize,
     value: u64,
     neighbor_mask: u64,
+    left_mask: u64,
+    right_mask: u64,
+    top_mask: u64,
+    bottom_mask: u64,
 }
 
 impl BoolMatrix {
     fn new(dim: usize) -> Self {
         let neighbor_mask = 2 | (1 << dim) | (4 << dim) | (2 << (2 * dim));
+        let left_mask =
+            (2 << dim) | (2 << (2 * dim)) | (2 << (3 * dim)) | (2 << (4 * dim)) | (2 << (5 * dim));
+        let right_mask = (32 << dim)
+            | (32 << (2 * dim))
+            | (32 << (3 * dim))
+            | (32 << (4 * dim))
+            | (32 << (5 * dim));
+        let top_mask = (2 | 4 | 8 | 16 | 32) << dim;
+        let bottom_mask = (2 | 4 | 8 | 16 | 32) << (5 * dim);
         Self {
             dim,
             value: 0,
             neighbor_mask,
+            left_mask,
+            right_mask,
+            top_mask,
+            bottom_mask,
         }
     }
 
     fn get(&self, x: usize, y: usize) -> bool {
         (self.value >> self.coords_to_index(x, y)) & 1 != 0
+    }
+
+    #[inline]
+    fn count_left(&self) -> u32 {
+        (self.value & self.left_mask).count_ones()
+    }
+
+    #[inline]
+    fn count_right(&self) -> u32 {
+        (self.value & self.right_mask).count_ones()
+    }
+
+    #[inline]
+    fn count_top(&self) -> u32 {
+        (self.value & self.top_mask).count_ones()
+    }
+
+    #[inline]
+    fn count_bottom(&self) -> u32 {
+        (self.value & self.bottom_mask).count_ones()
     }
 
     fn count_neighbors(&self, x: usize, y: usize) -> u32 {
@@ -198,10 +235,10 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
 
                 let basic_neighbors = lvl.count_neighbors(x, y);
                 let level_neighbors = match (x, y) {
-                    (2, 3) => (1..=5).filter(|y| lvlup.get(1, *y)).count(),
-                    (4, 3) => (1..=5).filter(|y| lvlup.get(5, *y)).count(),
-                    (3, 2) => (1..=5).filter(|x| lvlup.get(*x, 1)).count(),
-                    (3, 4) => (1..=5).filter(|x| lvlup.get(*x, 5)).count(),
+                    (2, 3) => lvlup.count_left() as usize,
+                    (4, 3) => lvlup.count_right() as usize,
+                    (3, 2) => lvlup.count_top() as usize,
+                    (3, 4) => lvlup.count_bottom() as usize,
 
                     (1, 1) => lvldn.get(2, 3) as usize + lvldn.get(3, 2) as usize,
                     (5, 1) => lvldn.get(4, 3) as usize + lvldn.get(3, 2) as usize,
