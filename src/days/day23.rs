@@ -30,7 +30,7 @@ fn solve_b(template: &IntcodeComputer) -> (i64, i64) {
             .enumerate()
             .all(|(compi, _)| computers_stalled[compi] > 1 && computers[compi].input.is_empty());
         if network_idle {
-            if let Some(packet) = nat_buffer.as_ref() {
+            if let Some(packet) = &nat_buffer {
                 if Some(packet.y) == last_nat_y {
                     return (a_solution.unwrap(), packet.y);
                 } else {
