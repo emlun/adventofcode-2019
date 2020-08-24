@@ -70,11 +70,16 @@ struct BoolMatrix {
     right_mask: u64,
     top_mask: u64,
     bottom_mask: u64,
+    inner_topleft_mask: u64,
+    inner_topright_mask: u64,
+    inner_btmleft_mask: u64,
+    inner_btmright_mask: u64,
 }
 
 impl BoolMatrix {
     fn new(dim: usize) -> Self {
         let neighbor_mask = 2 | (1 << dim) | (4 << dim) | (2 << (2 * dim));
+
         let left_mask =
             (2 << dim) | (2 << (2 * dim)) | (2 << (3 * dim)) | (2 << (4 * dim)) | (2 << (5 * dim));
         let right_mask = (32 << dim)
@@ -84,6 +89,12 @@ impl BoolMatrix {
             | (32 << (5 * dim));
         let top_mask = (2 | 4 | 8 | 16 | 32) << dim;
         let bottom_mask = (2 | 4 | 8 | 16 | 32) << (5 * dim);
+
+        let inner_topleft_mask = (8 << (2 * dim)) | (4 << (3 * dim));
+        let inner_topright_mask = (8 << (2 * dim)) | (16 << (3 * dim));
+        let inner_btmleft_mask = (8 << (4 * dim)) | (4 << (3 * dim));
+        let inner_btmright_mask = (8 << (4 * dim)) | (16 << (3 * dim));
+
         Self {
             dim,
             value: 0,
@@ -92,6 +103,10 @@ impl BoolMatrix {
             right_mask,
             top_mask,
             bottom_mask,
+            inner_topleft_mask,
+            inner_topright_mask,
+            inner_btmleft_mask,
+            inner_btmright_mask,
         }
     }
 
@@ -117,6 +132,26 @@ impl BoolMatrix {
     #[inline]
     fn count_bottom(&self) -> u32 {
         (self.value & self.bottom_mask).count_ones()
+    }
+
+    #[inline]
+    fn count_inner_topleft(&self) -> u32 {
+        (self.value & self.inner_topleft_mask).count_ones()
+    }
+
+    #[inline]
+    fn count_inner_topright(&self) -> u32 {
+        (self.value & self.inner_topright_mask).count_ones()
+    }
+
+    #[inline]
+    fn count_inner_btmleft(&self) -> u32 {
+        (self.value & self.inner_btmleft_mask).count_ones()
+    }
+
+    #[inline]
+    fn count_inner_btmright(&self) -> u32 {
+        (self.value & self.inner_btmright_mask).count_ones()
     }
 
     fn count_neighbors(&self, x: usize, y: usize) -> u32 {
@@ -240,10 +275,10 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
                     (3, 2) => lvlup.count_top() as usize,
                     (3, 4) => lvlup.count_bottom() as usize,
 
-                    (1, 1) => lvldn.get(2, 3) as usize + lvldn.get(3, 2) as usize,
-                    (5, 1) => lvldn.get(4, 3) as usize + lvldn.get(3, 2) as usize,
-                    (5, 5) => lvldn.get(4, 3) as usize + lvldn.get(3, 4) as usize,
-                    (1, 5) => lvldn.get(2, 3) as usize + lvldn.get(3, 4) as usize,
+                    (1, 1) => lvldn.count_inner_topleft() as usize,
+                    (5, 1) => lvldn.count_inner_topright() as usize,
+                    (5, 5) => lvldn.count_inner_btmright() as usize,
+                    (1, 5) => lvldn.count_inner_btmleft() as usize,
 
                     (1, _) => lvldn.get(2, 3) as usize,
                     (5, _) => lvldn.get(4, 3) as usize,
