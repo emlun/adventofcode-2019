@@ -156,8 +156,7 @@ impl LevelsState {
         }
     }
 
-    fn get_mut(&mut self, level: i32) -> &mut State {
-        let index = Self::level_to_index(level);
+    fn get_mut(&mut self, level: i32, index: usize) -> &mut State {
         while self.levels.len() <= index {
             self.levels.push(self.empty_level.clone());
         }
@@ -168,6 +167,15 @@ impl LevelsState {
             self.max_level = level;
         }
         &mut self.levels[index]
+    }
+
+    fn set(&mut self, level: i32, x: usize, y: usize, value: bool) {
+        let level_index = Self::level_to_index(level);
+        if level <= self.max_level && level >= self.min_level {
+            self.levels[level_index].set(x, y, value);
+        } else if value {
+            self.get_mut(level, level_index).set(x, y, value);
+        }
     }
 
     fn level_to_index(level: i32) -> usize {
@@ -209,7 +217,8 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
                 };
                 let neighbors = basic_neighbors as usize + level_neighbors;
 
-                next_state.get_mut(level).set(
+                next_state.set(
+                    level,
                     x,
                     y,
                     neighbors == 1 || (neighbors == 2 && !lvl.get(x, y)),
