@@ -178,16 +178,17 @@ impl LevelsState {
 fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, LevelsState) {
     const MAXI: usize = 5;
     for level in (state.min_level - 1)..=(state.max_level + 1) {
+        let lvl = state.get(level);
+        let lvlup = state.get(level + 1);
+        let lvldn = state.get(level - 1);
+
         for y in 1..=MAXI {
             for x in 1..=MAXI {
                 if x == 3 && y == 3 {
                     continue;
                 }
 
-                let basic_neighbors = state.get(level).count_neighbors(x, y);
-
-                let lvlup = state.get(level + 1);
-                let lvldn = state.get(level - 1);
+                let basic_neighbors = lvl.count_neighbors(x, y);
                 let level_neighbors = match (x, y) {
                     (2, 3) => (1..=5).filter(|y| lvlup.get(1, *y)).count(),
                     (4, 3) => (1..=5).filter(|y| lvlup.get(5, *y)).count(),
@@ -211,7 +212,7 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
                 next_state.get_mut(level).set(
                     x,
                     y,
-                    neighbors == 1 || (neighbors == 2 && !state.get(level).get(x, y)),
+                    neighbors == 1 || (neighbors == 2 && !lvl.get(x, y)),
                 );
             }
         }
