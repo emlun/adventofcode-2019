@@ -234,8 +234,7 @@ impl LevelsState {
         }
         if level < self.min_level {
             self.min_level = level;
-        }
-        if level > self.max_level {
+        } else if level > self.max_level {
             self.max_level = level;
         }
         &mut self.levels[index]
