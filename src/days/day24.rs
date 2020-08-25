@@ -60,20 +60,36 @@ type State = BoolMatrix;
 struct BoolMatrix {
     dim: usize,
     value: u64,
+    value_mask: u64,
     neighbor_mask: u64,
+    padding_top_mask: u64,
+    padding_right_mask: u64,
+    padding_bottom_mask: u64,
+    padding_left_mask: u64,
     left_mask: u64,
     right_mask: u64,
     top_mask: u64,
     bottom_mask: u64,
-    inner_topleft_mask: u64,
-    inner_topright_mask: u64,
-    inner_btmleft_mask: u64,
-    inner_btmright_mask: u64,
 }
 
 impl BoolMatrix {
     fn new(dim: usize) -> Self {
+        let value_mask = ((2 | 4 | 8 | 16 | 32) << dim)
+            | ((2 | 4 | 8 | 16 | 32) << (2 * dim))
+            | ((2 | 4 | 8 | 16 | 32) << (3 * dim))
+            | ((2 | 4 | 8 | 16 | 32) << (4 * dim))
+            | ((2 | 4 | 8 | 16 | 32) << (5 * dim));
         let neighbor_mask = 2 | (1 << dim) | (4 << dim) | (2 << (2 * dim));
+
+        let padding_top_mask = 2 | 4 | 8 | 16 | 32;
+        let padding_right_mask = (64 << dim)
+            | (64 << (2 * dim))
+            | (64 << (3 * dim))
+            | (64 << (4 * dim))
+            | (64 << (5 * dim));
+        let padding_bottom_mask = (2 | 4 | 8 | 16 | 32) << (6 * dim);
+        let padding_left_mask =
+            (1 << dim) | (1 << (2 * dim)) | (1 << (3 * dim)) | (1 << (4 * dim)) | (1 << (5 * dim));
 
         let left_mask =
             (2 << dim) | (2 << (2 * dim)) | (2 << (3 * dim)) | (2 << (4 * dim)) | (2 << (5 * dim));
@@ -85,23 +101,19 @@ impl BoolMatrix {
         let top_mask = (2 | 4 | 8 | 16 | 32) << dim;
         let bottom_mask = (2 | 4 | 8 | 16 | 32) << (5 * dim);
 
-        let inner_topleft_mask = (8 << (2 * dim)) | (4 << (3 * dim));
-        let inner_topright_mask = (8 << (2 * dim)) | (16 << (3 * dim));
-        let inner_btmleft_mask = (8 << (4 * dim)) | (4 << (3 * dim));
-        let inner_btmright_mask = (8 << (4 * dim)) | (16 << (3 * dim));
-
         Self {
             dim,
             value: 0,
+            value_mask,
             neighbor_mask,
+            padding_top_mask,
+            padding_right_mask,
+            padding_bottom_mask,
+            padding_left_mask,
             left_mask,
             right_mask,
             top_mask,
             bottom_mask,
-            inner_topleft_mask,
-            inner_topright_mask,
-            inner_btmleft_mask,
-            inner_btmright_mask,
         }
     }
 
@@ -129,26 +141,6 @@ impl BoolMatrix {
         (self.value & self.bottom_mask).count_ones()
     }
 
-    #[inline]
-    fn count_inner_topleft(&self) -> u32 {
-        (self.value & self.inner_topleft_mask).count_ones()
-    }
-
-    #[inline]
-    fn count_inner_topright(&self) -> u32 {
-        (self.value & self.inner_topright_mask).count_ones()
-    }
-
-    #[inline]
-    fn count_inner_btmleft(&self) -> u32 {
-        (self.value & self.inner_btmleft_mask).count_ones()
-    }
-
-    #[inline]
-    fn count_inner_btmright(&self) -> u32 {
-        (self.value & self.inner_btmright_mask).count_ones()
-    }
-
     fn count_neighbors(&self, x: usize, y: usize) -> u32 {
         debug_assert!(x > 0);
         debug_assert!(y > 0);
@@ -164,6 +156,17 @@ impl BoolMatrix {
         } else {
             self.value &= !mask;
         }
+    }
+
+    fn set_padding(&mut self, padding: u64) {
+        self.value = (self.value & self.value_mask) | padding;
+    }
+
+    fn get_padding_for_inner_neighbor(&self) -> u64 {
+        self.padding_top_mask * (self.get(3, 2) as u64)
+            | self.padding_right_mask * (self.get(4, 3) as u64)
+            | self.padding_bottom_mask * (self.get(3, 4) as u64)
+            | self.padding_left_mask * (self.get(2, 3) as u64)
     }
 
     fn coords_to_index(&self, x: usize, y: usize) -> usize {
@@ -206,12 +209,17 @@ struct LevelsState {
 
 impl LevelsState {
     fn new(state: State) -> Self {
-        LevelsState {
+        let mut slf = LevelsState {
             levels: vec![state],
             empty_level: BoolMatrix::new(7),
             min_level: 0,
             max_level: 0,
-        }
+        };
+
+        let padding = slf.get(0).get_padding_for_inner_neighbor();
+        slf.set_padding(1, padding);
+
+        slf
     }
 
     fn get(&self, level: i32) -> &State {
@@ -244,6 +252,15 @@ impl LevelsState {
         }
     }
 
+    fn set_padding(&mut self, level: i32, padding: u64) {
+        let level_index = Self::level_to_index(level);
+        if level <= self.max_level && level >= self.min_level {
+            self.levels[level_index].set_padding(padding);
+        } else if padding != 0 {
+            self.get_mut(level, level_index).set_padding(padding);
+        }
+    }
+
     fn level_to_index(level: i32) -> usize {
         level.abs() as usize * 2 - ((level < 0) as usize)
     }
@@ -254,7 +271,6 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
     for level in (state.min_level - 1)..=(state.max_level + 1) {
         let lvl = state.get(level);
         let lvlup = state.get(level + 1);
-        let lvldn = state.get(level - 1);
 
         let mut matrix: u64 = 0;
         let mut mask = 1 << 7;
@@ -273,16 +289,6 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
                     (3, 2) => lvlup.count_top() as usize,
                     (3, 4) => lvlup.count_bottom() as usize,
 
-                    (1, 1) => lvldn.count_inner_topleft() as usize,
-                    (5, 1) => lvldn.count_inner_topright() as usize,
-                    (5, 5) => lvldn.count_inner_btmright() as usize,
-                    (1, 5) => lvldn.count_inner_btmleft() as usize,
-
-                    (1, _) => lvldn.get(2, 3) as usize,
-                    (5, _) => lvldn.get(4, 3) as usize,
-                    (_, 1) => lvldn.get(3, 2) as usize,
-                    (_, 5) => lvldn.get(3, 4) as usize,
-
                     _ => 0,
                 };
                 let neighbors = basic_neighbors as usize + level_neighbors;
@@ -294,6 +300,10 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
             mask <<= 2;
         }
         next_state.set_value(level, matrix);
+
+        let lvldn_now = next_state.get(level - 1);
+        let padding = lvldn_now.get_padding_for_inner_neighbor();
+        next_state.set_padding(level, padding);
     }
     (next_state, state)
 }
@@ -326,7 +336,7 @@ fn solve_b(initial_state: State) -> u32 {
     state
         .levels
         .iter()
-        .map(|level| level.value.count_ones())
+        .map(|level| (level.value & level.value_mask).count_ones())
         .sum()
 }
 
