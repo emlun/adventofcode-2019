@@ -1,5 +1,4 @@
 use crate::common::Solution;
-use std::collections::HashMap;
 use std::collections::HashSet;
 
 fn parse(lines: &[String]) -> BoolMatrix {
@@ -17,27 +16,23 @@ fn parse(lines: &[String]) -> BoolMatrix {
         .dim(7)
 }
 
-fn print_state(state: &[Vec<bool>]) {
-    let s: String = state
-        .iter()
-        .map(|row| {
-            row.iter()
-                .map(|c| if *c { "#" } else { "." }.to_string())
+fn format_state(state: &State) -> String {
+    (0..7)
+        .map(|y| {
+            (0..7)
+                .map(|x| if state.get(x, y) { "#" } else { "." }.to_string())
                 .collect::<Vec<String>>()
                 .join("")
         })
         .collect::<Vec<String>>()
-        .join("\n");
-    println!("{}", s);
+        .join("\n")
 }
 
 #[allow(dead_code)]
-fn print_levels(state: &HashMap<i32, Vec<Vec<bool>>>) {
-    let minl = *state.keys().min().unwrap();
-    let maxl = *state.keys().max().unwrap();
-    for level in minl..=maxl {
-        println!("\nLevel {}", level);
-        print_state(&state.get(&level).unwrap());
+fn print_levels(state: &LevelsState) {
+    for level in state.min_level..=state.max_level {
+        let s = format_state(state.get(level));
+        println!("\nLevel {}\n{}", level, s);
     }
 }
 
