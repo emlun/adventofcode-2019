@@ -152,16 +152,18 @@ impl State {
 
             self.unlock_attempt = (self.unlock_attempt + 1) % (1 << self.items.len());
 
+            let mut attempt_code = gray_code(self.unlock_attempt);
             while self
                 .too_heavy
                 .iter()
-                .any(|heavy| heavy & self.unlock_attempt == *heavy)
+                .any(|heavy| heavy & attempt_code == *heavy)
                 || self
                     .too_light
                     .iter()
-                    .any(|light| light | self.unlock_attempt == *light)
+                    .any(|light| light | attempt_code == *light)
             {
                 self.unlock_attempt = (self.unlock_attempt + 1) % (1 << self.items.len());
+                attempt_code = gray_code(self.unlock_attempt);
             }
 
             let pos = self.current_pos();
@@ -174,10 +176,7 @@ impl State {
 
             for i in 0..self.items.len() {
                 let mask = 1 << i;
-                match (
-                    self.last_attempt_code & mask > 0,
-                    self.unlock_attempt & mask > 0,
-                ) {
+                match (self.last_attempt_code & mask > 0, attempt_code & mask > 0) {
                     (true, false) => self
                         .next_commands
                         .push_back(format!("drop {}", self.items[i])),
@@ -187,11 +186,15 @@ impl State {
                     _ => {}
                 }
             }
-            self.last_attempt_code = self.unlock_attempt;
+            self.last_attempt_code = attempt_code;
             self.next_commands.push_back(move_command);
         }
         self
     }
+}
+
+fn gray_code(n: u32) -> u32 {
+    n ^ (n >> 1)
 }
 
 fn dir_to_move(dir: Direction) -> &'static str {
