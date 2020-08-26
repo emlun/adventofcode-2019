@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::common::Solution;
 
 fn parse_wire(desc: &str) -> Vec<LineSegment> {
@@ -102,7 +100,6 @@ impl LineSegment {
     }
 }
 
-#[derive(Eq, Hash, PartialEq)]
 struct Intersection {
     x: i32,
     y: i32,
@@ -113,11 +110,11 @@ pub fn solve(lines: &[String]) -> Solution {
     let wire1 = parse_wire(&lines[0]);
     let wire2 = parse_wire(&lines[1]);
 
-    let mut intersections: HashSet<Intersection> = HashSet::new();
+    let mut intersections: Vec<Intersection> = Vec::new();
     for seg2 in wire2 {
         for seg1 in &wire1 {
             if let Some(isct) = seg1.intersection(&seg2) {
-                intersections.insert(isct);
+                intersections.push(isct);
             }
         }
     }
