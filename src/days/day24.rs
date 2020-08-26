@@ -173,10 +173,14 @@ impl BoolMatrix {
             | self.padding_left_mask * (self.get(2, 3) as u64)
     }
 
+    fn coords_to_index_for_dim(dim: usize, x: usize, y: usize) -> usize {
+        debug_assert!(x < dim);
+        debug_assert!(y < dim);
+        y * dim + x
+    }
+
     fn coords_to_index(&self, x: usize, y: usize) -> usize {
-        debug_assert!(x < self.dim);
-        debug_assert!(y < self.dim);
-        y * self.dim + x
+        Self::coords_to_index_for_dim(self.dim, x, y)
     }
 }
 
