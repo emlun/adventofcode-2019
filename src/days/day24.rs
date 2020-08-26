@@ -45,12 +45,23 @@ fn score(state: &State) -> u64 {
 }
 
 fn update(state: State, mut next_state: State) -> (State, State) {
-    for y in 1..=5 {
-        for x in 1..=5 {
+    const MAXI: usize = 5;
+
+    let mut matrix: u64 = 0;
+    let mut mask = 1 << 7;
+    for y in 1..=MAXI {
+        for x in 1..=MAXI {
+            mask <<= 1;
+
             let neighbors = state.count_neighbors(x, y);
-            next_state.set(x, y, neighbors == 1 || (neighbors == 2 && !state.get(x, y)));
+            if neighbors == 1 || (neighbors == 2 && !state.get(x, y)) {
+                matrix |= mask;
+            }
         }
+        mask <<= 2;
     }
+    next_state.value = matrix;
+
     (next_state, state)
 }
 
@@ -129,17 +140,6 @@ impl BoolMatrix {
             (3, 4) => Self::NEIGHBOR_MASK_INNER_BOTTOM,
             (2, 3) => Self::NEIGHBOR_MASK_INNER_LEFT,
             _ => Self::NEIGHBOR_MASK << Self::coords_to_index(x - 1, y - 1),
-        }
-    }
-
-    fn set(&mut self, x: usize, y: usize, value: bool) {
-        debug_assert!(x < Self::DIM);
-        debug_assert!(y < Self::DIM);
-        let mask = 1 << Self::coords_to_index(x, y);
-        if value {
-            self.value |= mask;
-        } else {
-            self.value &= !mask;
         }
     }
 
