@@ -121,6 +121,8 @@ fn build_map(computer: IntcodeComputer) -> World {
 
     while let Some(mut state) = queue.pop_front() {
         let new_pos = add(&state.pos, &state.dir);
+
+        #[allow(clippy::map_entry)]
         if !world.tiles.contains_key(&new_pos) {
             if ENABLE_OUTPUT {
                 println!("{}", state.dist);
