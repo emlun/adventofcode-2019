@@ -167,10 +167,24 @@ impl BoolMatrix {
     }
 
     fn get_padding_for_inner_neighbor(&self) -> u64 {
-        self.padding_top_mask * (self.get(3, 2) as u64)
-            | self.padding_right_mask * (self.get(4, 3) as u64)
-            | self.padding_bottom_mask * (self.get(3, 4) as u64)
-            | self.padding_left_mask * (self.get(2, 3) as u64)
+        // if expressions seem to be a bit faster than multiplication
+        (if self.get(3, 2) {
+            self.padding_top_mask
+        } else {
+            0
+        }) | (if self.get(4, 3) {
+            self.padding_right_mask
+        } else {
+            0
+        }) | (if self.get(3, 4) {
+            self.padding_bottom_mask
+        } else {
+            0
+        }) | (if self.get(2, 3) {
+            self.padding_left_mask
+        } else {
+            0
+        })
     }
 
     fn coords_to_index_for_dim(dim: usize, x: usize, y: usize) -> usize {
