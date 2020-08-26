@@ -1,29 +1,11 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 
 use crate::common::Solution;
 
-#[derive(Debug, Eq, Hash, PartialEq)]
-struct Point(i32);
-impl Point {
-    fn new((x, y): (i16, i16)) -> Point {
-        let slf = Point(((x as i32) << 16) | (y as i32 & 0xffff));
-        debug_assert_eq!((x, y), slf.as_tuple(), "{:?}", slf);
-        slf
-    }
-
-    fn as_tuple(&self) -> (i16, i16) {
-        ((self.0 >> 16) as i16, (self.0 & 0xffff) as i16)
-    }
-
-    fn norm(&self) -> i16 {
-        ((self.0 >> 16) as i16).abs() + ((self.0 & 0xffff) as i16).abs()
-    }
-}
-
-fn parse_wire(desc: &str) -> Vec<Point> {
-    let mut points: Vec<Point> = Vec::new();
+fn parse_wire(desc: &str) -> Vec<LineSegment> {
+    let mut points: Vec<LineSegment> = Vec::new();
     let mut pos = (0, 0);
+    let mut tot_len = 0;
     for step in desc.split(',') {
         let dir = match step.chars().next().unwrap() {
             'R' => (1, 0),
@@ -32,32 +14,122 @@ fn parse_wire(desc: &str) -> Vec<Point> {
             'D' => (0, -1),
             _ => unreachable!(),
         };
-        let len: u32 = step[1..].parse().unwrap();
-        for _i in 0..len {
-            pos = (pos.0 + dir.0, pos.1 + dir.1);
-            points.push(Point::new(pos));
-        }
+        let len: i32 = step[1..].parse().unwrap();
+        let pos_off_origin = if pos == (0, 0) { dir } else { pos };
+        let end = (pos.0 + dir.0 * len, pos.1 + dir.1 * len);
+        points.push(LineSegment {
+            x_start: std::cmp::min(pos_off_origin.0, end.0),
+            x_end: std::cmp::max(pos_off_origin.0, end.0),
+            y_start: std::cmp::min(pos_off_origin.1, end.1),
+            y_end: std::cmp::max(pos_off_origin.1, end.1),
+
+            walk_pos: pos,
+            walk_len: tot_len,
+        });
+        pos = end;
+        tot_len += len;
     }
     points
+}
+
+#[derive(Eq, Hash, PartialEq)]
+struct LineSegment {
+    x_start: i32,
+    x_end: i32,
+    y_start: i32,
+    y_end: i32,
+
+    walk_pos: (i32, i32),
+    walk_len: i32,
+}
+
+impl LineSegment {
+    fn intersection(&self, other: &LineSegment) -> Option<LineSegment> {
+        if self.x_start == self.x_end
+            && other.x_start == other.x_end
+            && self.x_start == other.x_start
+        {
+            let y_start = std::cmp::max(self.y_start, other.y_start);
+            let y_end = std::cmp::min(self.y_end, other.y_end);
+            if y_end >= y_start {
+                unimplemented!("Parallel line segments are not supported")
+            } else {
+                None
+            }
+        } else if self.y_start == self.y_end
+            && other.y_start == other.y_end
+            && self.y_start == other.y_start
+        {
+            let x_start = std::cmp::max(self.x_start, other.x_start);
+            let x_end = std::cmp::min(self.x_end, other.x_end);
+            if x_end >= x_start {
+                unimplemented!("Parallel line segments are not supported")
+            } else {
+                None
+            }
+        } else if self.x_start <= other.x_start
+            && self.x_end >= other.x_start
+            && other.y_start <= self.y_start
+            && other.y_end >= self.y_start
+        {
+            let x = other.x_start;
+            let y = self.y_start;
+            Some(LineSegment {
+                x_start: x,
+                x_end: x,
+                y_start: y,
+                y_end: y,
+                walk_pos: (x, y),
+                walk_len: self.walk_len
+                    + other.walk_len
+                    + (x - self.walk_pos.0).abs()
+                    + (y - other.walk_pos.1).abs(),
+            })
+        } else if other.x_start <= self.x_start
+            && other.x_end >= self.x_start
+            && self.y_start <= other.y_start
+            && self.y_end >= other.y_start
+        {
+            let x = self.x_start;
+            let y = other.y_start;
+            Some(LineSegment {
+                x_start: x,
+                x_end: x,
+                y_start: y,
+                y_end: y,
+                walk_pos: (x, y),
+                walk_len: self.walk_len
+                    + other.walk_len
+                    + (x - other.walk_pos.0).abs()
+                    + (y - self.walk_pos.1).abs(),
+            })
+        } else {
+            None
+        }
+    }
 }
 
 pub fn solve(lines: &[String]) -> Solution {
     let wire1 = parse_wire(&lines[0]);
     let wire2 = parse_wire(&lines[1]);
 
-    let wire1_set: HashSet<&Point> = wire1.iter().collect();
-    let wire2_set: HashSet<&Point> = wire2.iter().collect();
+    let mut intersections: HashSet<LineSegment> = HashSet::new();
+    for seg2 in wire2 {
+        for seg1 in &wire1 {
+            if let Some(isct) = seg1.intersection(&seg2) {
+                intersections.insert(isct);
+            }
+        }
+    }
 
-    let wire1_inv: HashMap<&Point, usize> = wire1.iter().enumerate().map(|(i, p)| (p, i)).collect();
-    let wire2_inv: HashMap<&Point, usize> = wire2.iter().enumerate().map(|(i, p)| (p, i)).collect();
-
-    let intersections: HashSet<&&Point> = wire1_set.intersection(&wire2_set).collect();
-
-    let a_solution: i16 = intersections.iter().map(|p| p.norm()).min().unwrap();
-    let b_solution: usize = 2 + intersections
+    let a_solution = intersections
         .iter()
-        .map(|p| wire1_inv[*p] + wire2_inv[*p])
+        .map(|seg| {
+            std::cmp::min(seg.x_start.abs(), seg.x_end.abs())
+                + std::cmp::min(seg.y_start.abs(), seg.y_end.abs())
+        })
         .min()
         .unwrap();
+    let b_solution = intersections.iter().map(|seg| seg.walk_len).min().unwrap();
     (a_solution.to_string(), b_solution.to_string())
 }
