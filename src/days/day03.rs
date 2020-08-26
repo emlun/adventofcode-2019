@@ -1,4 +1,5 @@
 use crate::common::Solution;
+use std::cmp::Ordering;
 
 fn parse_wire(desc: &str) -> Vec<LineSegment> {
     let mut points: Vec<LineSegment> = Vec::new();
@@ -106,6 +107,25 @@ struct Intersection {
     walk_len: i32,
 }
 
+fn binary_search<F, T>(list: &[T], test: F) -> usize
+where
+    F: Fn(&T) -> Ordering,
+{
+    let mut i_min = 0;
+    let mut i_max = list.len();
+    while i_min < i_max {
+        let i = (i_min + i_max) / 2;
+        match test(&list[i]) {
+            Ordering::Less => i_max = i - 1,
+            Ordering::Greater => i_min = i + 1,
+            Ordering::Equal => {
+                return i;
+            }
+        };
+    }
+    i_min
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let wire1 = parse_wire(&lines[0]);
     let wire2 = parse_wire(&lines[1]);
@@ -133,18 +153,7 @@ pub fn solve(lines: &[String]) -> Solution {
 
     for seg2 in wire2 {
         if seg2.x_start == seg2.x_end {
-            let mut wire1_i_min = 0;
-            let mut wire1_i_max = wire1_y.len();
-            while wire1_i_min < wire1_i_max {
-                let wire1_i = (wire1_i_min + wire1_i_max) / 2;
-                if wire1_y[wire1_i].y_start > seg2.y_start {
-                    wire1_i_max = wire1_i - 1;
-                } else if wire1_y[wire1_i].y_start < seg2.y_start {
-                    wire1_i_min = wire1_i + 1;
-                } else {
-                    break;
-                }
-            }
+            let wire1_i_min = binary_search(&wire1_y, |seg| seg2.y_start.cmp(&seg.y_start));
             for seg1 in wire1_y
                 .iter()
                 .skip(wire1_i_min)
@@ -156,18 +165,7 @@ pub fn solve(lines: &[String]) -> Solution {
                 }
             }
         } else {
-            let mut wire1_i_min = 0;
-            let mut wire1_i_max = wire1_x.len();
-            while wire1_i_min < wire1_i_max {
-                let wire1_i = (wire1_i_min + wire1_i_max) / 2;
-                if wire1_x[wire1_i].x_start > seg2.x_start {
-                    wire1_i_max = wire1_i - 1;
-                } else if wire1_x[wire1_i].x_start < seg2.x_start {
-                    wire1_i_min = wire1_i + 1;
-                } else {
-                    break;
-                }
-            }
+            let wire1_i_min = binary_search(&wire1_x, |seg| seg2.x_start.cmp(&seg.x_start));
             for seg1 in wire1_x
                 .iter()
                 .skip(wire1_i_min)
