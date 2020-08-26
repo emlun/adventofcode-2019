@@ -32,7 +32,6 @@ fn parse_wire(desc: &str) -> Vec<LineSegment> {
     points
 }
 
-#[derive(Eq, Hash, PartialEq)]
 struct LineSegment {
     x_start: i32,
     x_end: i32,
@@ -44,7 +43,7 @@ struct LineSegment {
 }
 
 impl LineSegment {
-    fn intersection(&self, other: &LineSegment) -> Option<LineSegment> {
+    fn intersection(&self, other: &LineSegment) -> Option<Intersection> {
         if self.x_start == self.x_end
             && other.x_start == other.x_end
             && self.x_start == other.x_start
@@ -74,12 +73,9 @@ impl LineSegment {
         {
             let x = other.x_start;
             let y = self.y_start;
-            Some(LineSegment {
-                x_start: x,
-                x_end: x,
-                y_start: y,
-                y_end: y,
-                walk_pos: (x, y),
+            Some(Intersection {
+                x,
+                y,
                 walk_len: self.walk_len
                     + other.walk_len
                     + (x - self.walk_pos.0).abs()
@@ -92,12 +88,9 @@ impl LineSegment {
         {
             let x = self.x_start;
             let y = other.y_start;
-            Some(LineSegment {
-                x_start: x,
-                x_end: x,
-                y_start: y,
-                y_end: y,
-                walk_pos: (x, y),
+            Some(Intersection {
+                x,
+                y,
                 walk_len: self.walk_len
                     + other.walk_len
                     + (x - other.walk_pos.0).abs()
@@ -109,11 +102,18 @@ impl LineSegment {
     }
 }
 
+#[derive(Eq, Hash, PartialEq)]
+struct Intersection {
+    x: i32,
+    y: i32,
+    walk_len: i32,
+}
+
 pub fn solve(lines: &[String]) -> Solution {
     let wire1 = parse_wire(&lines[0]);
     let wire2 = parse_wire(&lines[1]);
 
-    let mut intersections: HashSet<LineSegment> = HashSet::new();
+    let mut intersections: HashSet<Intersection> = HashSet::new();
     for seg2 in wire2 {
         for seg1 in &wire1 {
             if let Some(isct) = seg1.intersection(&seg2) {
@@ -124,12 +124,13 @@ pub fn solve(lines: &[String]) -> Solution {
 
     let a_solution = intersections
         .iter()
-        .map(|seg| {
-            std::cmp::min(seg.x_start.abs(), seg.x_end.abs())
-                + std::cmp::min(seg.y_start.abs(), seg.y_end.abs())
-        })
+        .map(|isct| isct.x.abs() + isct.y.abs())
         .min()
         .unwrap();
-    let b_solution = intersections.iter().map(|seg| seg.walk_len).min().unwrap();
+    let b_solution = intersections
+        .iter()
+        .map(|isct| isct.walk_len)
+        .min()
+        .unwrap();
     (a_solution.to_string(), b_solution.to_string())
 }
