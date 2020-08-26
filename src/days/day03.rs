@@ -130,25 +130,13 @@ pub fn solve(lines: &[String]) -> Solution {
     let wire1 = parse_wire(&lines[0]);
     let wire2 = parse_wire(&lines[1]);
 
-    let wire1_x: Vec<&LineSegment> = {
-        let mut result: Vec<&LineSegment> = wire1
-            .iter()
-            .filter(|seg| seg.x_start == seg.x_end)
-            .collect();
-        result.sort_by_key(|seg| seg.x_start);
-        result
-    };
+    let (mut wire1_x, mut wire1_y): (Vec<&LineSegment>, Vec<&LineSegment>) =
+        wire1.iter().partition(|seg| seg.x_start == seg.x_end);
 
-    let wire1_y: Vec<&LineSegment> = {
-        let mut result: Vec<&LineSegment> = wire1
-            .iter()
-            .filter(|seg| seg.y_start == seg.y_end)
-            .collect();
-        result.sort_by_key(|seg| seg.y_start);
-        result
-    };
+    wire1_x.sort_by_key(|seg| seg.x_start);
+    wire1_y.sort_by_key(|seg| seg.y_start);
 
-    let mut a_solution = wire1.last().unwrap().walk_len;
+    let mut a_solution = wire2.last().unwrap().walk_len;
     let mut b_solution = a_solution;
 
     for seg2 in wire2 {
