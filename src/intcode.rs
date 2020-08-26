@@ -157,30 +157,6 @@ impl IntcodeComputer {
         self
     }
 
-    pub fn run_with_halt_expect<State, F>(
-        mut self,
-        initial_input: Option<Word>,
-        initial_state: State,
-        reducer: F,
-    ) -> (IntcodeComputer, State)
-    where
-        F: Fn(Option<Word>, bool, State) -> (Option<Word>, State, bool),
-    {
-        self.input.extend(initial_input);
-        let mut state = initial_state;
-        while self.is_running() {
-            self.step();
-            let stepout = reducer(self.output.pop_front(), self.expects_input(), state);
-            self.input.clear();
-            self.input.extend(stepout.0);
-            state = stepout.1;
-            if stepout.2 {
-                break;
-            }
-        }
-        (self, state)
-    }
-
     pub fn is_running(&self) -> bool {
         self.prog[self.eip] != OP_HALT
     }

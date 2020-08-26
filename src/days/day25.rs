@@ -408,33 +408,30 @@ fn solve_a(computer: IntcodeComputer) -> String {
 }
 
 #[allow(dead_code)]
-fn interact(computer: IntcodeComputer) {
-    computer.run_with_halt_expect(
-        None,
-        VecDeque::new(),
-        |output, expects_input, mut input_queue| {
-            if let Some(o) = output {
-                print!("{}", o as u8 as char);
-            }
+fn interact(mut computer: IntcodeComputer) {
+    while computer.is_running() {
+        computer.run_mut(None);
 
-            if expects_input {
-                if input_queue.is_empty() {
-                    let mut buf = [0; 100];
-                    let mut len = 0;
-                    while len == 0 || (buf[len - 1] as char) != '\n' {
-                        let n = std::io::stdin().read(&mut buf[len..]).unwrap();
-                        len += n;
-                    }
-                    for b in buf[0..len].iter() {
-                        input_queue.push_back(*b as i64);
-                    }
-                }
-                (input_queue.pop_front(), input_queue, false)
-            } else {
-                (None, input_queue, false)
-            }
-        },
-    );
+        print!(
+            "{}",
+            computer
+                .output
+                .drain(..)
+                .map(|o| (o as u8 as char).to_string())
+                .collect::<Vec<String>>()
+                .join("")
+        );
+
+        let mut buf = [0; 100];
+        let mut len = 0;
+        while len == 0 || (buf[len - 1] as char) != '\n' {
+            let n = std::io::stdin().read(&mut buf[len..]).unwrap();
+            len += n;
+        }
+        for b in buf[0..len].iter() {
+            computer.input.push_back(*b as i64);
+        }
+    }
 }
 
 pub fn solve(lines: &[String]) -> Solution {
