@@ -110,24 +110,17 @@ pub fn solve(lines: &[String]) -> Solution {
     let wire1 = parse_wire(&lines[0]);
     let wire2 = parse_wire(&lines[1]);
 
-    let mut intersections: Vec<Intersection> = Vec::new();
+    let mut a_solution = wire1.last().unwrap().walk_len;
+    let mut b_solution = a_solution;
+
     for seg2 in wire2 {
         for seg1 in &wire1 {
             if let Some(isct) = seg1.intersection(&seg2) {
-                intersections.push(isct);
+                a_solution = std::cmp::min(a_solution, isct.x.abs() + isct.y.abs());
+                b_solution = std::cmp::min(b_solution, isct.walk_len);
             }
         }
     }
 
-    let a_solution = intersections
-        .iter()
-        .map(|isct| isct.x.abs() + isct.y.abs())
-        .min()
-        .unwrap();
-    let b_solution = intersections
-        .iter()
-        .map(|isct| isct.walk_len)
-        .min()
-        .unwrap();
     (a_solution.to_string(), b_solution.to_string())
 }
