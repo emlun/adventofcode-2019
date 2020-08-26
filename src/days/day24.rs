@@ -152,7 +152,7 @@ impl BoolMatrix {
     fn count_neighbors(&self, x: usize, y: usize) -> u32 {
         debug_assert!(x > 0);
         debug_assert!(y > 0);
-        ((self.value >> self.coords_to_index(x - 1, y - 1)) & self.neighbor_mask).count_ones()
+        (self.value & (self.neighbor_mask << self.coords_to_index(x - 1, y - 1))).count_ones()
     }
 
     fn set(&mut self, x: usize, y: usize, value: bool) {
