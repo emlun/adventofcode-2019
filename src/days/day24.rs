@@ -13,7 +13,7 @@ fn parse(lines: &[String]) -> BoolMatrix {
                 .map(|c| c == '#')
         })
         .collect::<BoolMatrixBuilder>()
-        .dim(7)
+        .dim()
 }
 
 fn format_state(state: &State) -> String {
@@ -58,104 +58,71 @@ type State = BoolMatrix;
 
 #[derive(Clone)]
 struct BoolMatrix {
-    dim: usize,
     value: u64,
-    value_mask: u64,
-    neighbor_mask: u64,
-    neighbor_mask_inner_top: u64,
-    neighbor_mask_inner_right: u64,
-    neighbor_mask_inner_bottom: u64,
-    neighbor_mask_inner_left: u64,
-    padding_top_mask: u64,
-    padding_right_mask: u64,
-    padding_bottom_mask: u64,
-    padding_left_mask: u64,
-    inner_padding_top_shift: u64,
-    inner_padding_bottom_shift: u64,
-    inner_padding_right_shift: u64,
-    inner_padding_left_shift: u64,
-    left_middle_mask: u64,
-    right_middle_mask: u64,
-    top_mask: u64,
-    bottom_mask: u64,
 }
 
 impl BoolMatrix {
-    fn new(dim: usize) -> Self {
-        let value_mask = ((2 | 4 | 8 | 16 | 32) << dim)
-            | ((2 | 4 | 8 | 16 | 32) << (2 * dim))
-            | ((2 | 4 | 8 | 16 | 32) << (3 * dim))
-            | ((2 | 4 | 8 | 16 | 32) << (4 * dim))
-            | ((2 | 4 | 8 | 16 | 32) << (5 * dim));
-        let neighbor_mask = 2 | (1 << dim) | (4 << dim) | (2 << (2 * dim));
+    const DIM: usize = 7;
 
-        let padding_top_mask = 2 | 4 | 8 | 16 | 32;
-        let padding_right_mask = (64 << dim)
-            | (64 << (2 * dim))
-            | (64 << (3 * dim))
-            | (64 << (4 * dim))
-            | (64 << (5 * dim));
-        let padding_bottom_mask = (2 | 4 | 8 | 16 | 32) << (6 * dim);
-        let padding_left_mask =
-            (1 << dim) | (1 << (2 * dim)) | (1 << (3 * dim)) | (1 << (4 * dim)) | (1 << (5 * dim));
+    const VALUE_MASK: u64 = ((2 | 4 | 8 | 16 | 32) << Self::DIM)
+        | ((2 | 4 | 8 | 16 | 32) << (2 * Self::DIM))
+        | ((2 | 4 | 8 | 16 | 32) << (3 * Self::DIM))
+        | ((2 | 4 | 8 | 16 | 32) << (4 * Self::DIM))
+        | ((2 | 4 | 8 | 16 | 32) << (5 * Self::DIM));
+    const NEIGHBOR_MASK: u64 = 2 | (1 << Self::DIM) | (4 << Self::DIM) | (2 << (2 * Self::DIM));
 
-        let left_middle_mask = (2 << (2 * dim)) | (2 << (3 * dim)) | (2 << (4 * dim));
-        let right_middle_mask = (32 << (2 * dim)) | (32 << (3 * dim)) | (32 << (4 * dim));
-        let top_mask = (2 | 4 | 8 | 16 | 32) << dim;
-        let bottom_mask = (2 | 4 | 8 | 16 | 32) << (5 * dim);
+    const PADDING_TOP_MASK: u64 = 2 | 4 | 8 | 16 | 32;
+    const PADDING_RIGHT_MASK: u64 = (64 << Self::DIM)
+        | (64 << (2 * Self::DIM))
+        | (64 << (3 * Self::DIM))
+        | (64 << (4 * Self::DIM))
+        | (64 << (5 * Self::DIM));
+    const PADDING_BOTTOM_MASK: u64 = (2 | 4 | 8 | 16 | 32) << (6 * Self::DIM);
+    const PADDING_LEFT_MASK: u64 = (1 << Self::DIM)
+        | (1 << (2 * Self::DIM))
+        | (1 << (3 * Self::DIM))
+        | (1 << (4 * Self::DIM))
+        | (1 << (5 * Self::DIM));
 
-        let neighbor_mask_inner_top = (neighbor_mask
-            << Self::coords_to_index_for_dim(7, 3 - 1, 2 - 1))
-            | ((2 | 4 | 8 | 16 | 32) << (7 * dim));
-        let neighbor_mask_inner_right = (neighbor_mask
-            << Self::coords_to_index_for_dim(7, 4 - 1, 3 - 1))
-            | ((32 << (7 * dim))
-                | (32 << (8 * dim))
-                | (64 << (6 * dim))
-                | (64 << (7 * dim))
-                | (64 << (8 * dim)));
-        let neighbor_mask_inner_bottom = (neighbor_mask
-            << Self::coords_to_index_for_dim(7, 3 - 1, 4 - 1))
-            | ((2 | 4 | 8 | 16 | 32) << (8 * dim));
-        let neighbor_mask_inner_left = (neighbor_mask
-            << Self::coords_to_index_for_dim(7, 2 - 1, 3 - 1))
-            | ((2 << (7 * dim))
-                | (2 << (8 * dim))
-                | (1 << (6 * dim))
-                | (1 << (7 * dim))
-                | (1 << (8 * dim)));
+    const LEFT_MIDDLE_MASK: u64 =
+        (2 << (2 * Self::DIM)) | (2 << (3 * Self::DIM)) | (2 << (4 * Self::DIM));
+    const RIGHT_MIDDLE_MASK: u64 =
+        (32 << (2 * Self::DIM)) | (32 << (3 * Self::DIM)) | (32 << (4 * Self::DIM));
+    const TOP_MASK: u64 = (2 | 4 | 8 | 16 | 32) << Self::DIM;
+    const BOTTOM_MASK: u64 = (2 | 4 | 8 | 16 | 32) << (5 * Self::DIM);
 
-        let inner_padding_top_shift = 6 * dim as u64;
-        let inner_padding_bottom_shift = 3 * dim as u64;
-        let inner_padding_right_shift = 4 * dim as u64 + 1;
-        let inner_padding_left_shift = 4 * dim as u64 - 1;
+    const NEIGHBOR_MASK_INNER_TOP: u64 = (Self::NEIGHBOR_MASK
+        << Self::coords_to_index(3 - 1, 2 - 1))
+        | ((2 | 4 | 8 | 16 | 32) << (7 * Self::DIM));
+    const NEIGHBOR_MASK_INNER_RIGHT: u64 = (Self::NEIGHBOR_MASK
+        << Self::coords_to_index(4 - 1, 3 - 1))
+        | ((32 << (7 * Self::DIM))
+            | (32 << (8 * Self::DIM))
+            | (64 << (6 * Self::DIM))
+            | (64 << (7 * Self::DIM))
+            | (64 << (8 * Self::DIM)));
+    const NEIGHBOR_MASK_INNER_BOTTOM: u64 = (Self::NEIGHBOR_MASK
+        << Self::coords_to_index(3 - 1, 4 - 1))
+        | ((2 | 4 | 8 | 16 | 32) << (8 * Self::DIM));
+    const NEIGHBOR_MASK_INNER_LEFT: u64 = (Self::NEIGHBOR_MASK
+        << Self::coords_to_index(2 - 1, 3 - 1))
+        | ((2 << (7 * Self::DIM))
+            | (2 << (8 * Self::DIM))
+            | (1 << (6 * Self::DIM))
+            | (1 << (7 * Self::DIM))
+            | (1 << (8 * Self::DIM)));
 
-        Self {
-            dim,
-            value: 0,
-            value_mask,
-            neighbor_mask,
-            neighbor_mask_inner_top,
-            neighbor_mask_inner_right,
-            neighbor_mask_inner_bottom,
-            neighbor_mask_inner_left,
-            padding_top_mask,
-            padding_right_mask,
-            padding_bottom_mask,
-            padding_left_mask,
-            inner_padding_top_shift,
-            inner_padding_bottom_shift,
-            inner_padding_right_shift,
-            inner_padding_left_shift,
-            left_middle_mask,
-            right_middle_mask,
-            top_mask,
-            bottom_mask,
-        }
+    const INNER_PADDING_TOP_SHIFT: u64 = 6 * Self::DIM as u64;
+    const INNER_PADDING_BOTTOM_SHIFT: u64 = 3 * Self::DIM as u64;
+    const INNER_PADDING_RIGHT_SHIFT: u64 = 4 * Self::DIM as u64 + 1;
+    const INNER_PADDING_LEFT_SHIFT: u64 = 4 * Self::DIM as u64 - 1;
+
+    fn new() -> Self {
+        Self { value: 0 }
     }
 
     fn get(&self, x: usize, y: usize) -> bool {
-        (self.value >> self.coords_to_index(x, y)) & 1 != 0
+        (self.value >> Self::coords_to_index(x, y)) & 1 != 0
     }
 
     fn count_neighbors(&self, x: usize, y: usize) -> u32 {
@@ -166,18 +133,18 @@ impl BoolMatrix {
 
     fn get_neighbor_mask(&self, x: usize, y: usize) -> u64 {
         match (x, y) {
-            (3, 2) => self.neighbor_mask_inner_top,
-            (4, 3) => self.neighbor_mask_inner_right,
-            (3, 4) => self.neighbor_mask_inner_bottom,
-            (2, 3) => self.neighbor_mask_inner_left,
-            _ => self.neighbor_mask << self.coords_to_index(x - 1, y - 1),
+            (3, 2) => Self::NEIGHBOR_MASK_INNER_TOP,
+            (4, 3) => Self::NEIGHBOR_MASK_INNER_RIGHT,
+            (3, 4) => Self::NEIGHBOR_MASK_INNER_BOTTOM,
+            (2, 3) => Self::NEIGHBOR_MASK_INNER_LEFT,
+            _ => Self::NEIGHBOR_MASK << Self::coords_to_index(x - 1, y - 1),
         }
     }
 
     fn set(&mut self, x: usize, y: usize, value: bool) {
-        debug_assert!(x < self.dim);
-        debug_assert!(y < self.dim);
-        let mask = 1 << self.coords_to_index(x, y);
+        debug_assert!(x < Self::DIM);
+        debug_assert!(y < Self::DIM);
+        let mask = 1 << Self::coords_to_index(x, y);
         if value {
             self.value |= mask;
         } else {
@@ -187,45 +154,39 @@ impl BoolMatrix {
 
     fn set_padding(&mut self, outer_neighbor_padding: u64, inner_neighbor_padding: u64) {
         self.value =
-            (self.value & self.value_mask) | outer_neighbor_padding | inner_neighbor_padding;
+            (self.value & Self::VALUE_MASK) | outer_neighbor_padding | inner_neighbor_padding;
     }
 
     fn get_padding_for_inner_neighbor(&self) -> u64 {
         // if expressions seem to be a bit faster than multiplication
         (if self.get(3, 2) {
-            self.padding_top_mask
+            Self::PADDING_TOP_MASK
         } else {
             0
         }) | (if self.get(4, 3) {
-            self.padding_right_mask
+            Self::PADDING_RIGHT_MASK
         } else {
             0
         }) | (if self.get(3, 4) {
-            self.padding_bottom_mask
+            Self::PADDING_BOTTOM_MASK
         } else {
             0
         }) | (if self.get(2, 3) {
-            self.padding_left_mask
+            Self::PADDING_LEFT_MASK
         } else {
             0
         })
     }
 
     fn get_padding_for_outer_neighbor(&self) -> u64 {
-        ((self.value & self.top_mask) << self.inner_padding_top_shift)
-            | ((self.value & self.bottom_mask) << self.inner_padding_bottom_shift)
-            | ((self.value & self.left_middle_mask) << self.inner_padding_left_shift)
-            | ((self.value & self.right_middle_mask) << self.inner_padding_right_shift)
+        ((self.value & Self::TOP_MASK) << Self::INNER_PADDING_TOP_SHIFT)
+            | ((self.value & Self::BOTTOM_MASK) << Self::INNER_PADDING_BOTTOM_SHIFT)
+            | ((self.value & Self::LEFT_MIDDLE_MASK) << Self::INNER_PADDING_LEFT_SHIFT)
+            | ((self.value & Self::RIGHT_MIDDLE_MASK) << Self::INNER_PADDING_RIGHT_SHIFT)
     }
 
-    fn coords_to_index_for_dim(dim: usize, x: usize, y: usize) -> usize {
-        debug_assert!(x < dim);
-        debug_assert!(y < dim);
-        y * dim + x
-    }
-
-    fn coords_to_index(&self, x: usize, y: usize) -> usize {
-        Self::coords_to_index_for_dim(self.dim, x, y)
+    const fn coords_to_index(x: usize, y: usize) -> usize {
+        y * Self::DIM + x
     }
 }
 
@@ -234,8 +195,8 @@ struct BoolMatrixBuilder {
 }
 
 impl BoolMatrixBuilder {
-    fn dim(self, dim: usize) -> BoolMatrix {
-        let mut m = BoolMatrix::new(dim);
+    fn dim(self) -> BoolMatrix {
+        let mut m = BoolMatrix::new();
         m.value = self.value;
         m
     }
@@ -264,7 +225,7 @@ impl LevelsState {
     fn new(state: State) -> Self {
         let mut slf = LevelsState {
             levels: vec![state],
-            empty_level: BoolMatrix::new(7),
+            empty_level: BoolMatrix::new(),
             min_level: 0,
             max_level: 0,
         };
@@ -390,7 +351,7 @@ fn solve_b(initial_state: State) -> u32 {
     state
         .levels
         .iter()
-        .map(|level| (level.value & level.value_mask).count_ones())
+        .map(|level| (level.value & BoolMatrix::VALUE_MASK).count_ones())
         .sum()
 }
 
