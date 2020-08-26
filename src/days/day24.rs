@@ -235,12 +235,12 @@ impl LevelsState {
         &mut self.levels[index]
     }
 
-    fn set(&mut self, level: i32, x: usize, y: usize, value: bool) {
+    fn set_value(&mut self, level: i32, value: u64) {
         let level_index = Self::level_to_index(level);
         if level <= self.max_level && level >= self.min_level {
-            self.levels[level_index].set(x, y, value);
-        } else if value {
-            self.get_mut(level, level_index).set(x, y, value);
+            self.levels[level_index].value = value;
+        } else if value != 0 {
+            self.get_mut(level, level_index).value = value;
         }
     }
 
@@ -256,8 +256,12 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
         let lvlup = state.get(level + 1);
         let lvldn = state.get(level - 1);
 
+        let mut matrix: u64 = 0;
+        let mut mask = 1 << 7;
         for y in 1..=MAXI {
             for x in 1..=MAXI {
+                mask <<= 1;
+
                 if x == 3 && y == 3 {
                     continue;
                 }
@@ -283,14 +287,13 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
                 };
                 let neighbors = basic_neighbors as usize + level_neighbors;
 
-                next_state.set(
-                    level,
-                    x,
-                    y,
-                    neighbors == 1 || (neighbors == 2 && !lvl.get(x, y)),
-                );
+                if neighbors == 1 || (neighbors == 2 && !lvl.get(x, y)) {
+                    matrix |= mask;
+                }
             }
+            mask <<= 2;
         }
+        next_state.set_value(level, matrix);
     }
     (next_state, state)
 }
