@@ -110,14 +110,73 @@ pub fn solve(lines: &[String]) -> Solution {
     let wire1 = parse_wire(&lines[0]);
     let wire2 = parse_wire(&lines[1]);
 
+    let wire1_x: Vec<&LineSegment> = {
+        let mut result: Vec<&LineSegment> = wire1
+            .iter()
+            .filter(|seg| seg.x_start == seg.x_end)
+            .collect();
+        result.sort_by_key(|seg| seg.x_start);
+        result
+    };
+
+    let wire1_y: Vec<&LineSegment> = {
+        let mut result: Vec<&LineSegment> = wire1
+            .iter()
+            .filter(|seg| seg.y_start == seg.y_end)
+            .collect();
+        result.sort_by_key(|seg| seg.y_start);
+        result
+    };
+
     let mut a_solution = wire1.last().unwrap().walk_len;
     let mut b_solution = a_solution;
 
     for seg2 in wire2 {
-        for seg1 in &wire1 {
-            if let Some(isct) = seg1.intersection(&seg2) {
-                a_solution = std::cmp::min(a_solution, isct.x.abs() + isct.y.abs());
-                b_solution = std::cmp::min(b_solution, isct.walk_len);
+        if seg2.x_start == seg2.x_end {
+            let mut wire1_i_min = 0;
+            let mut wire1_i_max = wire1_y.len();
+            while wire1_i_min < wire1_i_max {
+                let wire1_i = (wire1_i_min + wire1_i_max) / 2;
+                if wire1_y[wire1_i].y_start > seg2.y_start {
+                    wire1_i_max = wire1_i - 1;
+                } else if wire1_y[wire1_i].y_start < seg2.y_start {
+                    wire1_i_min = wire1_i + 1;
+                } else {
+                    break;
+                }
+            }
+            for seg1 in wire1_y
+                .iter()
+                .skip(wire1_i_min)
+                .take_while(|seg| seg.y_start <= seg2.y_end)
+            {
+                if let Some(isct) = seg1.intersection(&seg2) {
+                    a_solution = std::cmp::min(a_solution, isct.x.abs() + isct.y.abs());
+                    b_solution = std::cmp::min(b_solution, isct.walk_len);
+                }
+            }
+        } else {
+            let mut wire1_i_min = 0;
+            let mut wire1_i_max = wire1_x.len();
+            while wire1_i_min < wire1_i_max {
+                let wire1_i = (wire1_i_min + wire1_i_max) / 2;
+                if wire1_x[wire1_i].x_start > seg2.x_start {
+                    wire1_i_max = wire1_i - 1;
+                } else if wire1_x[wire1_i].x_start < seg2.x_start {
+                    wire1_i_min = wire1_i + 1;
+                } else {
+                    break;
+                }
+            }
+            for seg1 in wire1_x
+                .iter()
+                .skip(wire1_i_min)
+                .take_while(|seg| seg.x_start <= seg2.x_end)
+            {
+                if let Some(isct) = seg1.intersection(&seg2) {
+                    a_solution = std::cmp::min(a_solution, isct.x.abs() + isct.y.abs());
+                    b_solution = std::cmp::min(b_solution, isct.walk_len);
+                }
             }
         }
     }
