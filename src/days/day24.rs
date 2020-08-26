@@ -71,51 +71,42 @@ impl BoolMatrix {
         | ((2 | 4 | 8 | 16 | 32) << (5 * Self::DIM));
     const NEIGHBOR_MASK: u64 = 2 | (1 << Self::DIM) | (4 << Self::DIM) | (2 << (2 * Self::DIM));
 
-    const PADDING_TOP_MASK: u64 = 2 | 4 | 8 | 16 | 32;
-    const PADDING_RIGHT_MASK: u64 = (64 << Self::DIM)
-        | (64 << (2 * Self::DIM))
-        | (64 << (3 * Self::DIM))
-        | (64 << (4 * Self::DIM))
-        | (64 << (5 * Self::DIM));
-    const PADDING_BOTTOM_MASK: u64 = (2 | 4 | 8 | 16 | 32) << (6 * Self::DIM);
-    const PADDING_LEFT_MASK: u64 = (1 << Self::DIM)
-        | (1 << (2 * Self::DIM))
-        | (1 << (3 * Self::DIM))
-        | (1 << (4 * Self::DIM))
-        | (1 << (5 * Self::DIM));
-
     const LEFT_MIDDLE_MASK: u64 =
         (2 << (2 * Self::DIM)) | (2 << (3 * Self::DIM)) | (2 << (4 * Self::DIM));
     const RIGHT_MIDDLE_MASK: u64 =
         (32 << (2 * Self::DIM)) | (32 << (3 * Self::DIM)) | (32 << (4 * Self::DIM));
+
+    const LEFT_MASK: u64 = (2 << Self::DIM) | Self::LEFT_MIDDLE_MASK | (2 << (5 * Self::DIM));
+    const RIGHT_MASK: u64 = (32 << Self::DIM) | Self::RIGHT_MIDDLE_MASK | (32 << (5 * Self::DIM));
     const TOP_MASK: u64 = (2 | 4 | 8 | 16 | 32) << Self::DIM;
     const BOTTOM_MASK: u64 = (2 | 4 | 8 | 16 | 32) << (5 * Self::DIM);
 
-    const NEIGHBOR_MASK_INNER_TOP: u64 = (Self::NEIGHBOR_MASK
-        << Self::coords_to_index(3 - 1, 2 - 1))
-        | ((2 | 4 | 8 | 16 | 32) << (7 * Self::DIM));
-    const NEIGHBOR_MASK_INNER_RIGHT: u64 = (Self::NEIGHBOR_MASK
-        << Self::coords_to_index(4 - 1, 3 - 1))
-        | ((32 << (7 * Self::DIM))
-            | (32 << (8 * Self::DIM))
-            | (64 << (6 * Self::DIM))
-            | (64 << (7 * Self::DIM))
-            | (64 << (8 * Self::DIM)));
-    const NEIGHBOR_MASK_INNER_BOTTOM: u64 = (Self::NEIGHBOR_MASK
-        << Self::coords_to_index(3 - 1, 4 - 1))
-        | ((2 | 4 | 8 | 16 | 32) << (8 * Self::DIM));
-    const NEIGHBOR_MASK_INNER_LEFT: u64 = (Self::NEIGHBOR_MASK
-        << Self::coords_to_index(2 - 1, 3 - 1))
-        | ((2 << (7 * Self::DIM))
-            | (2 << (8 * Self::DIM))
-            | (1 << (6 * Self::DIM))
-            | (1 << (7 * Self::DIM))
-            | (1 << (8 * Self::DIM)));
+    const PADDING_TOP_MASK: u64 = Self::TOP_MASK >> Self::DIM;
+    const PADDING_RIGHT_MASK: u64 = Self::RIGHT_MASK << 1;
+    const PADDING_BOTTOM_MASK: u64 = Self::BOTTOM_MASK << Self::DIM;
+    const PADDING_LEFT_MASK: u64 = Self::LEFT_MASK >> 1;
 
     const INNER_PADDING_TOP_SHIFT: u64 = 6 * Self::DIM as u64;
     const INNER_PADDING_BOTTOM_SHIFT: u64 = 3 * Self::DIM as u64;
     const INNER_PADDING_RIGHT_SHIFT: u64 = 4 * Self::DIM as u64 + 1;
     const INNER_PADDING_LEFT_SHIFT: u64 = 4 * Self::DIM as u64 - 1;
+
+    const NEIGHBOR_MASK_INNER_TOP: u64 = (Self::NEIGHBOR_MASK
+        << Self::coords_to_index(3 - 1, 2 - 1))
+        | (Self::TOP_MASK << Self::INNER_PADDING_TOP_SHIFT);
+    const NEIGHBOR_MASK_INNER_RIGHT: u64 = (Self::NEIGHBOR_MASK
+        << Self::coords_to_index(4 - 1, 3 - 1))
+        | (32 << (7 * Self::DIM))
+        | (32 << (8 * Self::DIM))
+        | (Self::RIGHT_MIDDLE_MASK << Self::INNER_PADDING_RIGHT_SHIFT);
+    const NEIGHBOR_MASK_INNER_BOTTOM: u64 = (Self::NEIGHBOR_MASK
+        << Self::coords_to_index(3 - 1, 4 - 1))
+        | (Self::BOTTOM_MASK << Self::INNER_PADDING_BOTTOM_SHIFT);
+    const NEIGHBOR_MASK_INNER_LEFT: u64 = (Self::NEIGHBOR_MASK
+        << Self::coords_to_index(2 - 1, 3 - 1))
+        | (2 << (7 * Self::DIM))
+        | (2 << (8 * Self::DIM))
+        | (Self::LEFT_MIDDLE_MASK << Self::INNER_PADDING_LEFT_SHIFT);
 
     fn new() -> Self {
         Self { value: 0 }
