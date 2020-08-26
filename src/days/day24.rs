@@ -17,7 +17,7 @@ fn parse(lines: &[String]) -> BoolMatrix {
 }
 
 fn format_state(state: &State) -> String {
-    (0..7)
+    (0..9)
         .map(|y| {
             (0..7)
                 .map(|x| if state.get(x, y) { "#" } else { "." }.to_string())
@@ -62,12 +62,20 @@ struct BoolMatrix {
     value: u64,
     value_mask: u64,
     neighbor_mask: u64,
+    neighbor_mask_inner_top: u64,
+    neighbor_mask_inner_right: u64,
+    neighbor_mask_inner_bottom: u64,
+    neighbor_mask_inner_left: u64,
     padding_top_mask: u64,
     padding_right_mask: u64,
     padding_bottom_mask: u64,
     padding_left_mask: u64,
-    left_mask: u64,
-    right_mask: u64,
+    inner_padding_top_shift: u64,
+    inner_padding_bottom_shift: u64,
+    inner_padding_right_shift: u64,
+    inner_padding_left_shift: u64,
+    left_middle_mask: u64,
+    right_middle_mask: u64,
     top_mask: u64,
     bottom_mask: u64,
 }
@@ -91,27 +99,56 @@ impl BoolMatrix {
         let padding_left_mask =
             (1 << dim) | (1 << (2 * dim)) | (1 << (3 * dim)) | (1 << (4 * dim)) | (1 << (5 * dim));
 
-        let left_mask =
-            (2 << dim) | (2 << (2 * dim)) | (2 << (3 * dim)) | (2 << (4 * dim)) | (2 << (5 * dim));
-        let right_mask = (32 << dim)
-            | (32 << (2 * dim))
-            | (32 << (3 * dim))
-            | (32 << (4 * dim))
-            | (32 << (5 * dim));
+        let left_middle_mask = (2 << (2 * dim)) | (2 << (3 * dim)) | (2 << (4 * dim));
+        let right_middle_mask = (32 << (2 * dim)) | (32 << (3 * dim)) | (32 << (4 * dim));
         let top_mask = (2 | 4 | 8 | 16 | 32) << dim;
         let bottom_mask = (2 | 4 | 8 | 16 | 32) << (5 * dim);
+
+        let neighbor_mask_inner_top = (neighbor_mask
+            << Self::coords_to_index_for_dim(7, 3 - 1, 2 - 1))
+            | ((2 | 4 | 8 | 16 | 32) << (7 * dim));
+        let neighbor_mask_inner_right = (neighbor_mask
+            << Self::coords_to_index_for_dim(7, 4 - 1, 3 - 1))
+            | ((32 << (7 * dim))
+                | (32 << (8 * dim))
+                | (64 << (6 * dim))
+                | (64 << (7 * dim))
+                | (64 << (8 * dim)));
+        let neighbor_mask_inner_bottom = (neighbor_mask
+            << Self::coords_to_index_for_dim(7, 3 - 1, 4 - 1))
+            | ((2 | 4 | 8 | 16 | 32) << (8 * dim));
+        let neighbor_mask_inner_left = (neighbor_mask
+            << Self::coords_to_index_for_dim(7, 2 - 1, 3 - 1))
+            | ((2 << (7 * dim))
+                | (2 << (8 * dim))
+                | (1 << (6 * dim))
+                | (1 << (7 * dim))
+                | (1 << (8 * dim)));
+
+        let inner_padding_top_shift = 6 * dim as u64;
+        let inner_padding_bottom_shift = 3 * dim as u64;
+        let inner_padding_right_shift = 4 * dim as u64 + 1;
+        let inner_padding_left_shift = 4 * dim as u64 - 1;
 
         Self {
             dim,
             value: 0,
             value_mask,
             neighbor_mask,
+            neighbor_mask_inner_top,
+            neighbor_mask_inner_right,
+            neighbor_mask_inner_bottom,
+            neighbor_mask_inner_left,
             padding_top_mask,
             padding_right_mask,
             padding_bottom_mask,
             padding_left_mask,
-            left_mask,
-            right_mask,
+            inner_padding_top_shift,
+            inner_padding_bottom_shift,
+            inner_padding_right_shift,
+            inner_padding_left_shift,
+            left_middle_mask,
+            right_middle_mask,
             top_mask,
             bottom_mask,
         }
@@ -121,26 +158,6 @@ impl BoolMatrix {
         (self.value >> self.coords_to_index(x, y)) & 1 != 0
     }
 
-    #[inline]
-    fn count_left(&self) -> u32 {
-        (self.value & self.left_mask).count_ones()
-    }
-
-    #[inline]
-    fn count_right(&self) -> u32 {
-        (self.value & self.right_mask).count_ones()
-    }
-
-    #[inline]
-    fn count_top(&self) -> u32 {
-        (self.value & self.top_mask).count_ones()
-    }
-
-    #[inline]
-    fn count_bottom(&self) -> u32 {
-        (self.value & self.bottom_mask).count_ones()
-    }
-
     fn count_neighbors(&self, x: usize, y: usize) -> u32 {
         debug_assert!(x > 0);
         debug_assert!(y > 0);
@@ -148,7 +165,13 @@ impl BoolMatrix {
     }
 
     fn get_neighbor_mask(&self, x: usize, y: usize) -> u64 {
-        self.neighbor_mask << self.coords_to_index(x - 1, y - 1)
+        match (x, y) {
+            (3, 2) => self.neighbor_mask_inner_top,
+            (4, 3) => self.neighbor_mask_inner_right,
+            (3, 4) => self.neighbor_mask_inner_bottom,
+            (2, 3) => self.neighbor_mask_inner_left,
+            _ => self.neighbor_mask << self.coords_to_index(x - 1, y - 1),
+        }
     }
 
     fn set(&mut self, x: usize, y: usize, value: bool) {
@@ -162,8 +185,9 @@ impl BoolMatrix {
         }
     }
 
-    fn set_padding(&mut self, padding: u64) {
-        self.value = (self.value & self.value_mask) | padding;
+    fn set_padding(&mut self, outer_neighbor_padding: u64, inner_neighbor_padding: u64) {
+        self.value =
+            (self.value & self.value_mask) | outer_neighbor_padding | inner_neighbor_padding;
     }
 
     fn get_padding_for_inner_neighbor(&self) -> u64 {
@@ -185,6 +209,13 @@ impl BoolMatrix {
         } else {
             0
         })
+    }
+
+    fn get_padding_for_outer_neighbor(&self) -> u64 {
+        ((self.value & self.top_mask) << self.inner_padding_top_shift)
+            | ((self.value & self.bottom_mask) << self.inner_padding_bottom_shift)
+            | ((self.value & self.left_middle_mask) << self.inner_padding_left_shift)
+            | ((self.value & self.right_middle_mask) << self.inner_padding_right_shift)
     }
 
     fn coords_to_index_for_dim(dim: usize, x: usize, y: usize) -> usize {
@@ -238,8 +269,10 @@ impl LevelsState {
             max_level: 0,
         };
 
-        let padding = slf.get(0).get_padding_for_inner_neighbor();
-        slf.set_padding(1, padding);
+        let padding_inwards = slf.get(0).get_padding_for_inner_neighbor();
+        let padding_outwards = slf.get(0).get_padding_for_outer_neighbor();
+        slf.set_padding(1, padding_inwards, 0);
+        slf.set_padding(-1, 0, padding_outwards);
 
         slf
     }
@@ -274,12 +307,18 @@ impl LevelsState {
         }
     }
 
-    fn set_padding(&mut self, level: i32, padding: u64) {
+    fn set_padding(
+        &mut self,
+        level: i32,
+        outer_neighbor_padding: u64,
+        inner_neighbor_padding: u64,
+    ) {
         let level_index = Self::level_to_index(level);
         if level <= self.max_level && level >= self.min_level {
-            self.levels[level_index].set_padding(padding);
-        } else if padding != 0 {
-            self.get_mut(level, level_index).set_padding(padding);
+            self.levels[level_index].set_padding(outer_neighbor_padding, inner_neighbor_padding);
+        } else if (outer_neighbor_padding | inner_neighbor_padding) != 0 {
+            self.get_mut(level, level_index)
+                .set_padding(outer_neighbor_padding, inner_neighbor_padding);
         }
     }
 
@@ -292,7 +331,6 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
     const MAXI: usize = 5;
     for level in (state.min_level - 1)..=(state.max_level + 1) {
         let lvl = state.get(level);
-        let lvlup = state.get(level + 1);
 
         let mut matrix: u64 = 0;
         let mut mask = 1 << 7;
@@ -304,17 +342,7 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
                     continue;
                 }
 
-                let basic_neighbors = lvl.count_neighbors(x, y);
-                let level_neighbors = match (x, y) {
-                    (2, 3) => lvlup.count_left() as usize,
-                    (4, 3) => lvlup.count_right() as usize,
-                    (3, 2) => lvlup.count_top() as usize,
-                    (3, 4) => lvlup.count_bottom() as usize,
-
-                    _ => 0,
-                };
-                let neighbors = basic_neighbors as usize + level_neighbors;
-
+                let neighbors = lvl.count_neighbors(x, y);
                 if neighbors == 1 || (neighbors == 2 && !lvl.get(x, y)) {
                     matrix |= mask;
                 }
@@ -322,10 +350,14 @@ fn update_b(state: LevelsState, mut next_state: LevelsState) -> (LevelsState, Le
             mask <<= 2;
         }
         next_state.set_value(level, matrix);
+    }
 
+    for level in (state.min_level - 1)..=(state.max_level + 1) {
         let lvldn_now = next_state.get(level - 1);
-        let padding = lvldn_now.get_padding_for_inner_neighbor();
-        next_state.set_padding(level, padding);
+        let outer_neighbor_padding = lvldn_now.get_padding_for_inner_neighbor();
+        let lvlup_now = next_state.get(level + 1);
+        let inner_neighbor_padding = lvlup_now.get_padding_for_outer_neighbor();
+        next_state.set_padding(level, outer_neighbor_padding, inner_neighbor_padding);
     }
     (next_state, state)
 }
