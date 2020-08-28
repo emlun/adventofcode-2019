@@ -45,15 +45,12 @@ fn lcm(a: usize, b: usize, c: usize) -> usize {
 }
 
 fn find_period(initial_state: Vec<Moon>, mut moons: Vec<Moon>) -> usize {
-    'outer: for i in 1001.. {
+    for i in 1001.. {
         step(&mut moons);
 
-        for moon in &moons {
-            if moon.vel != 0 {
-                continue 'outer;
-            }
+        if moons.iter().all(|moon| moon.vel == 0) {
+            return i * 2;
         }
-        return i * 2;
     }
     unreachable!();
 }
