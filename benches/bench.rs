@@ -7,136 +7,42 @@ use adventofcode_2019::days;
 use adventofcode_2019::intcode::IntcodeComputer;
 use test::Bencher;
 
-fn run_bench(day: u8, b: &mut Bencher) {
-    let input_lines = get_file_lines(&day_input_filename(day)).unwrap();
-    let solve = days::get_solver(day).unwrap();
-    b.iter(|| solve(&input_lines));
+macro_rules! run_bench {
+    ($name: ident, $day: literal) => {
+        #[bench]
+        fn $name(b: &mut Bencher) {
+            let input_lines = get_file_lines(&day_input_filename($day)).unwrap();
+            let solve = days::get_solver($day).unwrap();
+            b.iter(|| solve(&input_lines));
+        }
+    };
 }
 
-#[bench]
-fn day01(b: &mut Bencher) {
-    run_bench(1, b);
-}
-
-#[bench]
-fn day02(b: &mut Bencher) {
-    run_bench(2, b);
-}
-
-#[bench]
-fn day03(b: &mut Bencher) {
-    run_bench(3, b);
-}
-
-#[bench]
-fn day04(b: &mut Bencher) {
-    run_bench(4, b);
-}
-
-#[bench]
-fn day05(b: &mut Bencher) {
-    run_bench(5, b);
-}
-
-#[bench]
-fn day06(b: &mut Bencher) {
-    run_bench(6, b);
-}
-
-#[bench]
-fn day07(b: &mut Bencher) {
-    run_bench(7, b);
-}
-
-#[bench]
-fn day08(b: &mut Bencher) {
-    run_bench(8, b);
-}
-
-#[bench]
-fn day09(b: &mut Bencher) {
-    run_bench(9, b);
-}
-
-#[bench]
-fn day10(b: &mut Bencher) {
-    run_bench(10, b);
-}
-
-#[bench]
-fn day11(b: &mut Bencher) {
-    run_bench(11, b);
-}
-
-#[bench]
-fn day12(b: &mut Bencher) {
-    run_bench(12, b);
-}
-
-#[bench]
-fn day13(b: &mut Bencher) {
-    run_bench(13, b);
-}
-
-#[bench]
-fn day14(b: &mut Bencher) {
-    run_bench(14, b);
-}
-
-#[bench]
-fn day15(b: &mut Bencher) {
-    run_bench(15, b);
-}
-
-#[bench]
-fn day16(b: &mut Bencher) {
-    run_bench(16, b);
-}
-
-#[bench]
-fn day17(b: &mut Bencher) {
-    run_bench(17, b);
-}
-
-#[bench]
-fn day18(b: &mut Bencher) {
-    run_bench(18, b);
-}
-
-#[bench]
-fn day19(b: &mut Bencher) {
-    run_bench(19, b);
-}
-
-#[bench]
-fn day20(b: &mut Bencher) {
-    run_bench(20, b);
-}
-
-#[bench]
-fn day21(b: &mut Bencher) {
-    run_bench(21, b);
-}
-
-#[bench]
-fn day22(b: &mut Bencher) {
-    run_bench(22, b);
-}
-
-#[bench]
-fn day23(b: &mut Bencher) {
-    run_bench(23, b);
-}
-
-#[bench]
-fn day24(b: &mut Bencher) {
-    run_bench(24, b);
-}
-
-#[bench]
-fn day25(b: &mut Bencher) {
-    run_bench(25, b);
-}
+run_bench!(day01, 1);
+run_bench!(day02, 2);
+run_bench!(day03, 3);
+run_bench!(day04, 4);
+run_bench!(day05, 5);
+run_bench!(day06, 6);
+run_bench!(day07, 7);
+run_bench!(day08, 8);
+run_bench!(day09, 9);
+run_bench!(day10, 10);
+run_bench!(day11, 11);
+run_bench!(day12, 12);
+run_bench!(day13, 13);
+run_bench!(day14, 14);
+run_bench!(day15, 15);
+run_bench!(day16, 16);
+run_bench!(day17, 17);
+run_bench!(day18, 18);
+run_bench!(day19, 19);
+run_bench!(day20, 20);
+run_bench!(day21, 21);
+run_bench!(day22, 22);
+run_bench!(day23, 23);
+run_bench!(day24, 24);
+run_bench!(day25, 25);
 
 #[bench]
 fn days_all(b: &mut Bencher) {

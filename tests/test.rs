@@ -22,147 +22,59 @@ fn test_day(day: u8, correct_a: &str, correct_b: &str) -> Result<(), std::io::Er
     Ok(())
 }
 
-#[test]
-fn day01() -> Result<(), std::io::Error> {
-    test_day(1, "3262356", "4890664")
+macro_rules! test_day {
+    ($name: ident, $day: literal, $sol_a: literal, $sol_b: literal) => {
+        #[test]
+        fn $name() -> Result<(), std::io::Error> {
+            test_day($day, $sol_a, $sol_b)
+        }
+    };
 }
 
-#[test]
-fn day02() -> Result<(), std::io::Error> {
-    test_day(2, "3101844", "8478")
-}
-
-#[test]
-fn day03() -> Result<(), std::io::Error> {
-    test_day(3, "232", "6084")
-}
-
-#[test]
-fn day04() -> Result<(), std::io::Error> {
-    test_day(4, "1063", "686")
-}
-
-#[test]
-fn day05() -> Result<(), std::io::Error> {
-    test_day(5, "5577461", "7161591")
-}
-
-#[test]
-fn day06() -> Result<(), std::io::Error> {
-    test_day(6, "268504", "409")
-}
-
-#[test]
-fn day07() -> Result<(), std::io::Error> {
-    test_day(7, "77500", "22476942")
-}
-
-#[test]
-fn day08() -> Result<(), std::io::Error> {
-    test_day(
-        8,
-        "1965",
-        "
+test_day!(day01, 1, "3262356", "4890664");
+test_day!(day02, 2, "3101844", "8478");
+test_day!(day03, 3, "232", "6084");
+test_day!(day04, 4, "1063", "686");
+test_day!(day05, 5, "5577461", "7161591");
+test_day!(day06, 6, "268504", "409");
+test_day!(day07, 7, "77500", "22476942");
+test_day!(
+    day08,
+    8,
+    "1965",
+    "
  ##  #### #  #   ## #   #
 #  #    # # #     # #   #
 #      #  ##      #  # # 
 # ##  #   # #     #   #  
 #  # #    # #  #  #   #  
- ### #### #  #  ##    #  ",
-    )
-}
-
-#[test]
-fn day09() -> Result<(), std::io::Error> {
-    test_day(9, "3839402290", "35734")
-}
-
-#[test]
-fn day10() -> Result<(), std::io::Error> {
-    test_day(10, "269", "612")
-}
-
-#[test]
-fn day11() -> Result<(), std::io::Error> {
-    test_day(
-        11,
-        "1932",
-        "
+ ### #### #  #  ##    #  "
+);
+test_day!(day09, 9, "3839402290", "35734");
+test_day!(day10, 10, "269", "612");
+test_day!(
+    day11,
+    11,
+    "1932",
+    "
  ####  ##  #  # #  #  ##    ## #### ###    
  #    #  # #  # # #  #  #    # #    #  #   
  ###  #    #### ##   #       # ###  #  #   
  #    # ## #  # # #  # ##    # #    ###    
  #    #  # #  # # #  #  # #  # #    # #    
- ####  ### #  # #  #  ###  ##  #### #  #   ",
-    )
-}
-
-#[test]
-fn day12() -> Result<(), std::io::Error> {
-    test_day(12, "5937", "376203951569712")
-}
-
-#[test]
-fn day13() -> Result<(), std::io::Error> {
-    test_day(13, "200", "9803")
-}
-
-#[test]
-fn day14() -> Result<(), std::io::Error> {
-    test_day(14, "374457", "3568888")
-}
-
-#[test]
-fn day15() -> Result<(), std::io::Error> {
-    test_day(15, "336", "360")
-}
-
-#[test]
-fn day16() -> Result<(), std::io::Error> {
-    test_day(16, "59281788", "96062868")
-}
-
-#[test]
-fn day17() -> Result<(), std::io::Error> {
-    test_day(17, "5056", "942367")
-}
-
-#[test]
-fn day18() -> Result<(), std::io::Error> {
-    test_day(18, "4406", "1964")
-}
-
-#[test]
-fn day19() -> Result<(), std::io::Error> {
-    test_day(19, "217", "6840937")
-}
-
-#[test]
-fn day20() -> Result<(), std::io::Error> {
-    test_day(20, "620", "7366")
-}
-
-#[test]
-fn day21() -> Result<(), std::io::Error> {
-    test_day(21, "19350938", "1142986901")
-}
-
-#[test]
-fn day22() -> Result<(), std::io::Error> {
-    test_day(22, "4775", "37889219674304")
-}
-
-#[test]
-fn day23() -> Result<(), std::io::Error> {
-    test_day(23, "18513", "13286")
-}
-
-#[test]
-fn day24() -> Result<(), std::io::Error> {
-    test_day(24, "17863711", "1937")
-}
-
-#[test]
-fn day25() -> Result<(), std::io::Error> {
-    test_day(25, "35332", "-")
-}
+ ####  ### #  # #  #  ###  ##  #### #  #   "
+);
+test_day!(day12, 12, "5937", "376203951569712");
+test_day!(day13, 13, "200", "9803");
+test_day!(day14, 14, "374457", "3568888");
+test_day!(day15, 15, "336", "360");
+test_day!(day16, 16, "59281788", "96062868");
+test_day!(day17, 17, "5056", "942367");
+test_day!(day18, 18, "4406", "1964");
+test_day!(day19, 19, "217", "6840937");
+test_day!(day20, 20, "620", "7366");
+test_day!(day21, 21, "19350938", "1142986901");
+test_day!(day22, 22, "4775", "37889219674304");
+test_day!(day23, 23, "18513", "13286");
+test_day!(day24, 24, "17863711", "1937");
+test_day!(day25, 25, "35332", "-");
