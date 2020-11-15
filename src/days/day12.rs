@@ -49,7 +49,11 @@ fn find_period(initial_state: Vec<Moon>, mut moons: Vec<Moon>) -> usize {
         step(&mut moons);
 
         if moons.iter().all(|moon| moon.vel == 0) {
-            return i * 2;
+            if moons == initial_state {
+                return i;
+            } else {
+                return i * 2;
+            }
         }
     }
     unreachable!();
